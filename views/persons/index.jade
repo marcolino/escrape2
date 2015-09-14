@@ -1,0 +1,21 @@
+extends ../layout
+
+block content
+  h1.
+    #{title}
+  ul
+  - each person, i in persons
+    li
+    = person.name
+    = person.vote
+    = person.dateofcreation
+    = person.isloved
+    = person._id
+    form(action='/persons/#{person._id}/edit',method='post',enctype='application/x-www-form-urlencoded')
+      input(type='hidden',value='DELETE',name='_method')
+      button(type='submit').
+        Delete
+    p 
+      a(href='/persons/#{person._id}/edit') Edit
+    p
+      a(href='/persons/#{person._id}') Show
