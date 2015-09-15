@@ -116,13 +116,17 @@ router.get('/sync', function(req, res) { // GET to sync persons
 
   providers.forEach(function(provider) {
 console.log('provider:', provider.key);
-console.log('url:', 'http://m.sexyguidaitalia.com/escort/torino');
-    sfetch('http://www.sexyguidaitalia.com/escort/torino', // TODO...
+      var url = provider.url + provider.listCategories[setup.category].path + '/' + setup.city;
+
+    //console.log('url:', 'http://www.sexyguidaitalia.com/escort/torino');
+    //sfetch('http://www.sexyguidaitalia.com/escort/torino', // TODO...
+    sfetch(url,
       function(err) { // error
         console.error('provider ' + provider.key + ' page error:', err);
         res.send('There was a problem syncing provider ' + provider.key);
       },
       function(contents) { // success
+console.log('url ok');
         $ = cheerio.load(contents);
 
         // loop to get each element
@@ -347,13 +351,11 @@ router.route('/:id/edit').delete(function(req, res) { // DELETE to delete a pers
 function sfetch(url, error, success) { // fetch url contents, securely
   var options = {
     url: url,
-/*
     agentClass: Agent,
     agentOptions: {
       socksHost: setup.tor.host,
       socksPort: setup.tor.port,
     },
-*/
     headers: {
       'User-Agent': random_useragent.getRandom(),
     }
@@ -366,7 +368,6 @@ function sfetch(url, error, success) { // fetch url contents, securely
     }
     if (response.statusCode !== 200) {
       console.error('Get status code:', response.statusCode);
-      error(error);
     }
     //console.info(contents);
     return success(contents);
