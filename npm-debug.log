@@ -1,0 +1,68 @@
+0 info it worked if it ends with ok
+1 verbose cli [ '/usr/bin/node', '/usr/bin/npm', 'install', 'chherio', '--save' ]
+2 info using npm@1.4.28
+3 info using node@v0.10.40
+4 verbose readDependencies using package.json deps
+5 verbose cache add [ 'chherio', null ]
+6 verbose cache add name=undefined spec="chherio" args=["chherio",null]
+7 verbose parsed url { protocol: null,
+7 verbose parsed url   slashes: null,
+7 verbose parsed url   auth: null,
+7 verbose parsed url   host: null,
+7 verbose parsed url   port: null,
+7 verbose parsed url   hostname: null,
+7 verbose parsed url   hash: null,
+7 verbose parsed url   search: null,
+7 verbose parsed url   query: null,
+7 verbose parsed url   pathname: 'chherio',
+7 verbose parsed url   path: 'chherio',
+7 verbose parsed url   href: 'chherio' }
+8 silly lockFile a87bcacf-chherio chherio
+9 verbose lock chherio /home/msolari/.npm/a87bcacf-chherio.lock
+10 silly lockFile a87bcacf-chherio chherio
+11 silly lockFile a87bcacf-chherio chherio
+12 verbose addNamed [ 'chherio', '' ]
+13 verbose addNamed [ null, '*' ]
+14 silly lockFile b1a5b4a8-chherio chherio@
+15 verbose lock chherio@ /home/msolari/.npm/b1a5b4a8-chherio.lock
+16 silly addNameRange { name: 'chherio', range: '*', hasData: false }
+17 verbose request where is /chherio
+18 verbose request registry https://registry.npmjs.org/
+19 verbose request id 3b02b295c7e653ce
+20 verbose url raw /chherio
+21 verbose url resolving [ 'https://registry.npmjs.org/', './chherio' ]
+22 verbose url resolved https://registry.npmjs.org/chherio
+23 verbose request where is https://registry.npmjs.org/chherio
+24 info trying registry request attempt 1 at 15:41:55
+25 http GET https://registry.npmjs.org/chherio
+26 http 404 https://registry.npmjs.org/chherio
+27 silly registry.get cb [ 404,
+27 silly registry.get   { 'content-type': 'application/json',
+27 silly registry.get     'cache-control': 'max-age=0',
+27 silly registry.get     'content-length': '2',
+27 silly registry.get     'accept-ranges': 'bytes',
+27 silly registry.get     date: 'Tue, 15 Sep 2015 13:41:28 GMT',
+27 silly registry.get     via: '1.1 varnish',
+27 silly registry.get     age: '0',
+27 silly registry.get     connection: 'keep-alive',
+27 silly registry.get     'x-served-by': 'cache-lhr6320-LHR',
+27 silly registry.get     'x-cache': 'MISS',
+27 silly registry.get     'x-cache-hits': '0',
+27 silly registry.get     'x-timer': 'S1442324488.240182,VS0,VE98' } ]
+28 silly lockFile b1a5b4a8-chherio chherio@
+29 silly lockFile b1a5b4a8-chherio chherio@
+30 error 404 Not Found
+30 error 404
+30 error 404 'chherio' is not in the npm registry.
+30 error 404 You should bug the author to publish it
+30 error 404 It was specified as a dependency of 'escrape2'
+30 error 404
+30 error 404 Note that you can also install from a
+30 error 404 tarball, folder, or http url, or git url.
+31 error System Linux 2.6.32-504.12.2.el6.x86_64
+32 error command "/usr/bin/node" "/usr/bin/npm" "install" "chherio" "--save"
+33 error cwd /home/msolari/apps/escrape2
+34 error node -v v0.10.40
+35 error npm -v 1.4.28
+36 error code E404
+37 verbose exit [ 1, true ]

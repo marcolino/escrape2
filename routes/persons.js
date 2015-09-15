@@ -1,12 +1,57 @@
 var express = require('express'), // express
-    router = express.Router(), // express router
     mongoose = require('mongoose'), // mongo abstraction
-    bodyParser = require('body-parser'), // parses information from POST
-    methodOverride = require('method-override') // used to manipulate POST
+    bodyParser = require('body-parser'), // to parse information from POST
+    methodOverride = require('method-override') // to manipulate POST
+    cheerio = require('cheerio'), // to parse fetched DOM data
+    request = require('request'), // to request external data
+    random_useragent = require('random-useragent'), // to use a random user-agent
+    Agent = require('socks5-http-client/lib/Agent') // to be able to proxy requests
 ;
 
+// TODO: externalize these
+var setup = {
+  local: true,
+  debug: true,
+  category: 'females',
+  city: 'torino',
+  tor: {
+    host: 'localhost',
+    port: 9050,
+  },
+};
+ 
+var providers = [
+  {
+    'key': 'SGI',
+    'url': 'http://www.sexyguidaitalia.com',
+    'listCategories': {
+      'females': {
+        'path': '/escort/',
+        'selectors': {
+          'category': 'li[id="ctl00_escort"]',
+          'listCities': 'li',
+        },
+      },
+    },
+    'selectors': {
+      'listElements': 'a[itemprop=url][href^="annuncio/"]',
+      'element': {
+        'name': 'td[id="ctl00_content_CellaNome"]',
+        'sex': 'td[id="ctl00_content_CellaSesso"]',
+        'zone': 'td[id="ctl00_content_CellaZona"]',
+        'description': 'td[id="ctl00_content_CellaDescrizione"]',
+        'phone': 'td[id="ctl00_content_CellaTelefono"]',
+        'photos': 'a[rel="group"][class="fancybox"]',
+      },
+    },
+  },
+];
+
+var router = express.Router(); // express router
+
 router.use(bodyParser.urlencoded({ extended: true }))
-router.use(methodOverride(function(req, res) {
+
+router.use(methodOverride(function(req, res) { // method verride for clients supporting only POST method
   if (req.body && typeof req.body === 'object' && '_method' in req.body) {
     // look in urlencoded POST bodies and delete it
     var method = req.body._method;
@@ -15,97 +60,196 @@ router.use(methodOverride(function(req, res) {
   }
 }));
 
-// build the REST operations at the base for persons
-// this will be accessible from http://localhost:3000/persons
-// if the default route for '/' is left unchanged
-router.route('/')
-  .get(function(req, res, next) { // GET all persons
-    // retrieve all persons from mongo database
-    mongoose.model('Person').find({}, function (err, persons) {
-      if (err) {
-        return console.error(err);
-      } else {
-        // respond to both HTML and JSON.
-        // JSON responses require 'Accept: application/json;' in the Request Header
-        res.format({
-          // HTML response will render the index.jade file in the views/persons folder. We are also setting "persons" to be an accessible variable in our jade view
-          html: function() {
-            res.render('persons/index', {
-              title: 'All persons',
-              "persons": persons
-            });
-          },
-          // JSON response will show all persons in JSON format
-          json: function() {
-            res.json(persons);
-          }
-        });
-      }   
-    });
-  })
-  .post(function(req, res) { // POST a new person
-    // get values from POST request.
-    // These can be done through forms or REST calls.
-    // These rely on the "name" attributes for forms.
-    var name = req.body.name;
-    var vote = req.body.vote;
-    var dateofcreation = req.body.dateofcreation;
-    var company = req.body.company;
-    var isloved = req.body.isloved;
-    // call the create function for our database
-    mongoose.model('Person').create({
-      name: name,
-      vote: vote,
-      dateofcreation: dateofcreation,
-      isloved: isloved
-    }, function (err, person) {
-      if (err) {
-        res.send("There was a problem adding the information to the database.");
-      } else {
-        // Person has been created
-        console.log('POST creating new person: ' + person);
-        res.format({
-          // HTML response will set the location and redirect back to the home page.
-          // You could also create a 'success' page if that's your thing
-          html: function() {
-            // if it worked, set the header so the address bar doesn't still say /adduser
-            res.location("persons");
-            // and forward to success page
-            res.redirect("/persons");
-          },
-          // JSON response will show the newly created person
-          json: function() {
-            res.json(person);
-          }
-        });
-      }
-    })
-  })
-;
+router.route('/').get(function(req, res, next) { // GET all persons
+  // retrieve all persons from mongo database
+  mongoose.model('Person').find({}, function(err, persons) {
+    if (err) {
+      console.error('There was a problem retrieving persons:', err);
+    } else {
+      res.json(persons);
+    }   
+  });
+});
 
-/* GET new person page */
+router.route('/').post(function(req, res) { // POST a new person
+/*
+  var name = req.body.name;
+  var vote = req.body.vote;
+  var dateofcreation = req.body.dateofcreation;
+  var company = req.body.company;
+  var isloved = req.body.isloved;
+*/
+  var record = {
+    name: req.body.name,
+    vote: req.body.vote,
+    dateofcreation: req.body.dateofcreation,
+    company: req.body.company,
+    isloved: req.body.isloved,
+  };
+
+/*
+  mongoose.model('Person').create({
+    name: name,
+    vote: vote,
+    dateofcreation: dateofcreation,
+    isloved: isloved
+  }, function(err, person) {
+*/
+  mongoose.model('Person').create(record, function(err, person) {
+    if (err) {
+      res.send("There was a problem adding a person to the database:", err);
+    } else { // person has been created
+      console.log('POST creating new person: ' + person);
+      res.json(person);
+    }
+  })
+});
+
+// GET new person page
 router.get('/new', function(req, res) {
   res.render('persons/new', { title: 'Add New Person' });
 });
+
+router.get('/sync', function(req, res) { // GET to sync persons
+  var persons = [];
+  var n = 0;
+
+  providers.forEach(function(provider) {
+console.log('provider:', provider.key);
+console.log('url:', 'http://m.sexyguidaitalia.com/escort/torino');
+    sfetch('http://www.sexyguidaitalia.com/escort/torino', // TODO...
+      function(err) { // error
+        console.error('provider ' + provider.key + ' page error:', err);
+        res.send('There was a problem syncing provider ' + provider.key);
+      },
+      function(contents) { // success
+        $ = cheerio.load(contents);
+
+        // loop to get each element
+        $(provider.selectors.listElements).each(function(i, elem) {
+          var person = {};
+          person.url = parseUrl(elem, provider, setup);
+          person.key = parseKey(elem, provider);
+//console.log('5', person.url);
+//res.json(i);
+//return false;
+          sfetch(person.url,
+            function(err) { // error
+              console.error('provider ' + provider.key + ', person ' + person.key + ' page error:', err);
+              res.send('There was a problem syncing provider ' + provider.key + ', person ' + person.key + ' page');
+            },
+            function(contents) {
+              console.info('person ' + person.key + ' found');
+              $ = cheerio.load(contents);
+              person.name = parseName($, provider);
+              person.sex = parseSex($, provider);
+              person.zone = parseZone($, provider);
+              person.description = parseDescription($, provider);
+              person.phone = parsePhone($, provider);
+              person.photos = parsePhotos($, provider);
+              persons.push(person); // add this person to persons list
+              n++; // increment persons counter
+              if (0/*<FINISHED>*/) {
+                if (setup.debug) { // DEBUG ONLY
+                  console.log('number of persons found is', n);
+                  console.log('persons found are:', persons);
+                }
+                res.json(n);
+              }
+            }
+          );
+        });
+      }
+    );
+  });
+
+  function parseCities($, provider, setup) {
+    var val = {};
+    if (provider.key === 'SGI') {
+      $(provider.listCategories[setup.category].selectors.category + ' > ul > li > a').each(function() {
+        var region = $(this).text();
+        var city = $(this).next('ul').find('li a').map(function() {
+          return $(this).text();
+        }).get();
+        val[region] = city;
+      });
+    }
+    return val;
+  }
+  
+  function parseKey($, provider) {
+    var val;
+    if (provider.key === 'SGI') {
+      val = $.attribs.href.substr($.attribs.href.lastIndexOf('/') + 1);
+    }
+    return val;
+  }
+
+  function parseUrl($, provider, setup) {
+    var val;
+    if (provider.key === 'SGI') {
+      val = provider.url + provider.listCategories[setup.category].path + 'torino/' + $.attribs.href;
+    }
+    return val;
+  }
+  
+  function parseName($, provider) {
+    return $(provider.selectors.element.name).text();
+  }
+  
+  function parseSex($, provider) {
+    var val = $(provider.selectors.element.sex).text();
+    return (
+      (val === 'F') ?  'F' :
+      (val === 'M') ?  'M' :
+      (val === 'TX') ? 'TX' :
+                       '?'
+    );
+  }
+  
+  function parseZone($, provider) {
+    return $(provider.selectors.element.zone).text();
+  }
+  
+  function parseDescription($, provider) {
+    var val = $(provider.selectors.element.description).html();
+    val = val.replace(/<br>.*$/, ''); // remove trailing fixed part
+    val = val.replace(/\r+/, ''); // remove CRs
+    val = val.replace(/\n+/, '\n'); // remove multiple LFs
+    return val;
+  }
+  
+  function parsePhone($, provider) {
+    var val = $(provider.selectors.element.phone).text();
+    val = val.replace(/[^\d]/, '');
+    return val;
+  }
+  
+  function parsePhotos($, provider) {
+    var val = [];
+    // loop to get each photo
+    $(provider.selectors.element.photos).each(function(i, elem) {
+      var href = elem.attribs.href;
+      href = href.replace(/(\.\.\/)+/, ''); // remove relative paths
+      href = href.replace(/\?.*$/, ''); // remove query string
+      val.push(href);
+    });
+    return val;
+  }
+});
+
 
 // route middleware to validate :id
 router.param('id', function(req, res, next, id) {
   console.log('validating ' + id + ' exists');
   // find the ID in the Database
-  mongoose.model('Person').findById(id, function (err, person) {
+  mongoose.model('Person').findById(id, function(err, person) {
     if (err) { // if it isn't found, we are going to repond with 404
-      console.error(id + ' was not found');
+      console.error('There was a problem retrieving person with id ' + id + ':', err);
       res.status(404)
       var err = new Error('Not Found');
       err.status = 404;
-      res.format({
-        html: function() {
-          next(err);
-        },
-        json: function() {
-          res.json({message : err.status  + ' ' + err});
-        }
-      });
+      res.json({ message: err.status  + ' ' + err});
     } else { // if it is found we continue on
       console.log('JSON of person of id', id, ':', person);
       // once validation is done save the new item in the req
@@ -116,128 +260,119 @@ router.param('id', function(req, res, next, id) {
   });
 });
 
-router.route('/:id')
-  .get(function(req, res) {
-    mongoose.model('Person').findById(req.id, function (err, person) {
-      if (err) {
-        console.error('There was a problem retrieving person:', err);
-      } else {
-        console.log('GET Retrieving ID: ' + person._id);
-        var persondateofcreation = person.dateofcreation.toISOString();
-        persondateofcreation = persondateofcreation.substring(0, persondateofcreation.indexOf('T'))
-        res.format({
-          html: function() {
-            res.render('persons/show', {
-              "persondateofcreation" : persondateofcreation,
-              "person" : person
-            });
-          },
-          json: function() {
-            res.json(person);
-          }
-        });
-      }
-    });
-  })
-;
+router.route('/:id').get(function(req, res) { // GET to get person by ID
+  mongoose.model('Person').findById(req.id, function(err, person) {
+    if (err) {
+      console.error('X There was a problem retrieving person with id ' + req.id + ':', err);
+    } else {
+      console.log('GET person id: ' + person._id);
+      res.json(person);
+    }
+  });
+});
 
-router.route('/:id/edit')
-  // GET the individual person by Mongo ID
-  .get(function(req, res) {
-    // find the person within Mongo
-    mongoose.model('Person').findById(req.id, function (err, person) {
-      if (err) {
-        console.error('There was a problem retrieving person:', err);
-      } else {
-        // return the person
-        console.log('GET Retrieving ID: ' + person._id);
-        var persondateofcreation = person.dateofcreation.toISOString();
-        persondateofcreation = persondateofcreation.substring(0, persondateofcreation.indexOf('T'))
-        res.format({
-          // HTML response will render the 'edit.jade' template
-          html: function() {
-             res.render('persons/edit', {
-              title: 'Person' + person._id,
-              "persondateofcreation": persondateofcreation,
-              "person": person
-            });
-          },
-          // JSON response will return the JSON output
-          json: function() {
-            res.json(person);
-          }
-        });
-      }
-    });
-  })
+router.route('/:id/edit').get(function(req, res) { // GET to get person by ID
+  mongoose.model('Person').findById(req.id, function(err, person) {
+    if (err) {
+      console.error('There was a problem retrieving person with id ' + req.id + ':', err);
+    } else { // get the person
+      console.log('GET person id: ' + person._id);
+      res.json(person);
+    }
+  });
+});
 
-  // PUT to update a person by ID
-  .put(function(req, res) {
-    // Get our REST or form values; these rely on the "name" attributes
-    var name = req.body.name;
-    var vote = req.body.vote;
-    var dateofcreation = req.body.dateofcreation;
-    var company = req.body.company;
-    var isloved = req.body.isloved;
+router.route('/:id/edit').put(function(req, res) { // PUT to update a person by ID
+/*
+  var name = req.body.name;
+  var vote = req.body.vote;
+  var dateofcreation = req.body.dateofcreation;
+  var company = req.body.company;
+  var isloved = req.body.isloved;
+*/
+  var record = {
+    name: req.body.name,
+    vote: req.body.vote,
+    dateofcreation: req.body.dateofcreation,
+    company: req.body.company,
+    isloved: req.body.isloved,
+  };
 
-    //find the document by ID
-    mongoose.model('Person').findById(req.id, function (err, person) {
-      // update it
+  // find the document by ID
+  mongoose.model('Person').findById(req.id, function(err, person) {
+    if (err) {
+      console.error('There was a problem retrieving person with id ' + req.id + ':', err);
+    } else { // update the person
+/*
       person.update({
         name: name,
         vote: vote,
         dateofcreation: dateofcreation,
         isloved: isloved
-      }, function (err, personID) {
+      }, function(err, personID) {
+*/        person.update(record, function(err, personID) {
         if (err) {
-          res.send("There was a problem updating the information to the database: " + err);
+          res.send('There was a problem updating person with id ' + req.id + ':', err);
         } else {
-          // HTML responds by going back to the page or you can be fancy and create a new view that shows a success page
-          res.format({
-            html: function() {
-              res.redirect("/persons/" + person._id);
-            },
-            // JSON responds showing the updated values
-            json: function() {
-              res.json(person);
-            }
+          res.json(person);
+        }
+      });
+    }
+  });
+});
+
+router.route('/:id/edit').delete(function(req, res) { // DELETE to delete a person by ID
+  // find person by ID
+  mongoose.model('Person').findById(req.id, function(err, person) {
+    if (err) {
+      console.error('There was a problem retrieving person with id ' + req.id + ':', err);
+    } else { // remove the person
+      person.remove(function(err, person) {
+        if (err) {
+          console.error(err);
+          res.send('There was a problem updating person with id ' + req.id + ':', err);
+        } else {
+          // returning success messages saying it was deleted
+          console.log('DELETE removing ID: ' + person._id);
+          res.json({
+            message: 'deleted',
+            item: person
           });
         }
-      })
-    });
-  })
-  // DELETE a Person by ID
-  .delete(function (req, res) {
-    // find person by ID
-    mongoose.model('Person').findById(req.id, function (err, person) {
-      if (err) {
-        return console.error(err);
-      } else {
-        //remove it from Mongo
-        person.remove(function (err, person) {
-          if (err) {
-            return console.error(err);
-          } else {
-            // Returning success messages saying it was deleted
-            console.log('DELETE removing ID: ' + person._id);
-            res.format({
-              // HTML returns us back to the main page, or you can create a success page
-              html: function() {
-                res.redirect("/persons");
-              },
-              // JSON returns the item with the message that is has been deleted
-              json: function() {
-                res.json({
-                  message: 'deleted',
-                  item: person
-                });
-               }
-            });
-          }
-        });
-      }
-    });
-  })
-;
+      });
+    }
+  });
+});
 
+function sfetch(url, error, success) { // fetch url contents, securely
+  var options = {
+    url: url,
+/*
+    agentClass: Agent,
+    agentOptions: {
+      socksHost: setup.tor.host,
+      socksPort: setup.tor.port,
+    },
+*/
+    headers: {
+      'User-Agent': random_useragent.getRandom(),
+    }
+  };
+
+  request(options, function(error, response, contents) {
+    if (error) {
+      console.error('Get error:', error);
+      error(error);
+    }
+    if (response.statusCode !== 200) {
+      console.error('Get status code:', response.statusCode);
+      error(error);
+    }
+    //console.info(contents);
+    return success(contents);
+  });
+}
+
+
+// export all router methods
 module.exports = router;
