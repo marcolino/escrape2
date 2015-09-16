@@ -38,7 +38,7 @@ var providers = [
 
 router.route('/').get(function(req, res, next) { // GET all providers
   // retrieve all persons from mongo database
-  mongoose.model('Provider').find({}, function(err, persons) {
+  mongoose.model('Provider').find({}, function(err, providers) {
     if (err) {
       console.error('There was a problem retrieving providers:', err);
       err.context = 'get /';
@@ -50,7 +50,7 @@ router.route('/').get(function(req, res, next) { // GET all providers
   });
 });
 
- router.get('/sync', function(req, res) { // GET to sync persons
+router.get('/sync', function(req, res) { // GET to sync persons
   var persons = [];
   var n = 0;
 
