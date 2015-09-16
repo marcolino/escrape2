@@ -1,16 +1,21 @@
 var express = require('express');
 var path = require('path');
 var favicon = require('serve-favicon');
-var logger = require('morgan');
+var logger = require('morgan'); // TODO: read about
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
+var config = require('./config');
+ 
 var db = require('./model/db');
+var user = require('./model/user');
 var person = require('./model/person');
+var provider = require('./model/provider');
 
 var routes = require('./routes/index');
 var users = require('./routes/users');
 var persons = require('./routes/persons');
+var providers = require('./routes/providers');
 
 var app = express();
 
@@ -29,10 +34,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', routes);
 app.use('/users', users);
 app.use('/persons', persons);
+app.use('/providers', providers);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
-  var err = new Error('Not Found:', req);
+  var err = new Error('Not found:', req);
   err.status = 404;
   next(err);
 });
@@ -43,6 +49,12 @@ app.use(function(req, res, next) {
 if (app.get('env') === 'development') {
   app.use(function(err, req, res, next) {
     res.status(err.status || 500);
+/*
+    res.json({
+      message: err.message,
+      error: err,
+    });
+*/
     res.render('error', {
       message: err.message,
       error: err
@@ -53,10 +65,16 @@ if (app.get('env') === 'development') {
 // production error handler (no stacktraces leaked to user)
 app.use(function(err, req, res, next) {
   res.status(err.status || 500);
+  res.json({
+    message: err.message,
+    error: {}
+  });
+/*
   res.render('error', {
     message: err.message,
     error: {}
   });
+*/
 });
 
 module.exports = app;
