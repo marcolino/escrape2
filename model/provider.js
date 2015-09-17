@@ -39,6 +39,7 @@ var populateProviders = function(callback) {
       '_id': new objectId,
       'type': 'persons',
       'key': 'SGI',
+      // TODO: do not test config.local here wgen populating d, but when using it...
       'url': config.local ? 'http://localhost/data/SGI' : 'http://www.sexyguidaitalia.com',
       'dateOfLastSync': new Date(0),
       'listCategories': {

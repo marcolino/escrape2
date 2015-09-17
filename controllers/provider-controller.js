@@ -9,7 +9,7 @@ var
 ;
 
 var exports = {};
-var locals = {};
+var locals = {};  // TODO: locals => internals ?
         
 /*
 exports.getAll = function(req, res, next) { // GET all providers
@@ -70,7 +70,7 @@ exports.syncPersons = function(req, res) { // GET to sync persons
       console.error('Error retrieving providers:', err);
       res.json({ error: err });
     } else {
-//console.log('getAll', 'providers:', providers);
+console.log('getAll', 'providers:', providers);
 
       /*
        * providers are expected to publish a main page containing
@@ -83,7 +83,9 @@ exports.syncPersons = function(req, res) { // GET to sync persons
         function(provider, callback) { // 2nd param is the function that each item is passed to
       //providers.forEach(function(provider) {
           console.log('provider:', provider.key);
-          var url = provider.url + provider.listCategories[config.category].path; // + config.city;
+//console.log('plC path:', provider.listCategories[config.category].path);
+          var url = provider.url + provider.listCategories[config.category].path + config.city;
+console.log('provider url:', url);
           sfetch(
             url,
             function(err) { // error
@@ -178,12 +180,12 @@ exports.syncPersons = function(req, res) { // GET to sync persons
   
   function parseSex($, provider) {
     var val = $(provider.selectors.element.sex).text();
-    return (
+    return val ? (
       (val === 'F') ?  'F' :
       (val === 'M') ?  'M' :
       (val === 'TX') ? 'TX' :
                        '?'
-    );
+    ) : null;
   }
   
   function parseZone($, provider) {
@@ -192,16 +194,20 @@ exports.syncPersons = function(req, res) { // GET to sync persons
   
   function parseDescription($, provider) {
     var val = $(provider.selectors.element.description).html();
-    val = val.replace(/<br>.*$/, ''); // remove trailing fixed part
-    val = val.replace(/\r+/, ''); // remove CRs
-    val = val.replace(/\n+/, '\n'); // remove multiple LFs
-    return val;
+    return val ? (
+      val.
+        replace(/<br>.*$/, ''). // remove trailing fixed part
+        replace(/\r+/, ''). // remove CRs
+        replace(/\n+/, '\n') // remove multiple LFs
+    ) : null;
   }
   
   function parsePhone($, provider) {
     var val = $(provider.selectors.element.phone).text();
-    val = val.replace(/[^\d]/, '');
-    return val;
+    return val ? (
+      val.
+        replace(/[^\d]/, '')
+    ) : null;
   }
   
   function parsePhotos($, provider) {
@@ -270,7 +276,7 @@ function sfetch(url, error, success) { // fetch url contents, securely
     } else {
       if (response.statusCode !== 200) {
         //console.error('Request status code:', response.statusCode);
-        var err = new Error('Wrong status code');
+        var err = new Error('Request error');
         err.status = response.statusCode;
         error(err);
       } else {

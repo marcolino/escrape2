@@ -61,6 +61,8 @@ exports.syncPlaces = function(req, res) { // GET to sync persons
 };
 
 exports.syncPersons = function(req, res) { // GET to sync persons
+console.log('1111111111');
+return;
   var persons = [];
   var n = 0;
 
@@ -244,7 +246,7 @@ function sfetch(url, error, success) { // fetch url contents, securely
     } else {
       if (response.statusCode !== 200) {
         //console.error('Request status code:', response.statusCode);
-        var err = new Error('Wrong status code');
+        var err = new Error('Request error');
         err.status = response.statusCode;
         error(err);
       } else {
