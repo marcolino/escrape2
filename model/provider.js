@@ -1,7 +1,10 @@
-var mongoose = require('mongoose');
-var ObjectId = mongoose.Types.ObjectId;
+var
+  mongoose = require('mongoose'),
+  config = require('../config') // global configuration
+;
 
 var providerSchema = new mongoose.Schema({
+  type: String,
   key: String,
   url: String,
   listCategories: Object,
@@ -11,28 +14,7 @@ var providerSchema = new mongoose.Schema({
 
 var Provider = mongoose.model('Provider', providerSchema);
 
-var populateProviders = function(callback) {
-  var providerIds = [ new ObjectId, new ObjectId ];
-  var providers = [];
-
-  providers.push({
-  	_id: providerIds[0],
-    key: 'SGI',
-    dateOfLastSync: new Date(0),
-  });
-  providers.push({
-  	_id: providerIds[1],
-    key: 'TOE',
-    dateOfLastSync: new Date(0),
-  });
-
-  Provider.create(providers, function(err, provider) {
-    if (err) {
-      console.error(err);
-    }
-    callback(null, providerIds);
-  });
-};
+var objectId = mongoose.Types.ObjectId;
 
 mongoose.connection.on('open', function () {
   Provider.findOne({}, function (err, result) { // check if Provider collection is empty
@@ -49,3 +31,75 @@ mongoose.connection.on('open', function () {
     }
   });
 });
+
+var populateProviders = function(callback) {
+
+  var providers = [
+    {
+      '_id': new objectId,
+      'type': 'persons',
+      'key': 'SGI',
+      'url': config.local ? 'http://localhost/data/SGI' : 'http://www.sexyguidaitalia.com',
+      'dateOfLastSync': new Date(0),
+      'listCategories': {
+        'females': {
+          'path': '/escort/',
+          'selectors': {
+            'category': 'li[id="ctl00_escort"]',
+            'listCities': 'li',
+          },
+        },
+      },
+      'selectors': {
+        'listElements': 'a[itemprop=url][href^="annuncio/"]',
+        'element': {
+          'name': 'td[id="ctl00_content_CellaNome"]',
+          'sex': 'td[id="ctl00_content_CellaSesso"]',
+          'zone': 'td[id="ctl00_content_CellaZona"]',
+          'description': 'td[id="ctl00_content_CellaDescrizione"]',
+          'phone': 'td[id="ctl00_content_CellaTelefono"]',
+          'photos': 'a[rel="group"][class="fancybox"]',
+        },
+      },
+    },
+    {
+      '_id': new objectId,
+      'type': 'persons',
+      'key': 'SGI2',
+      'url': config.local ? 'http://localhost/data/SGI' : 'http://www.sexyguidaitalia.com',
+      'dateOfLastSync': new Date(0),
+      'listCategories': {
+        'females': {
+          'path': '/escort/',
+          'selectors': {
+            'category': 'li[id="ctl00_escort"]',
+            'listCities': 'li',
+          },
+        },
+      },
+      'selectors': {
+        'listElements': 'a[itemprop=url][href^="annuncio/"]',
+        'element': {
+          'name': 'td[id="ctl00_content_CellaNome"]',
+          'sex': 'td[id="ctl00_content_CellaSesso"]',
+          'zone': 'td[id="ctl00_content_CellaZona"]',
+          'description': 'td[id="ctl00_content_CellaDescrizione"]',
+          'phone': 'td[id="ctl00_content_CellaTelefono"]',
+          'photos': 'a[rel="group"][class="fancybox"]',
+        },
+      },
+    },
+    {
+      '_id': new objectId,
+      'type': 'comments',
+      'key': 'GF',
+    },
+  ];
+
+  Provider.create(providers, function(err, provider) {
+    if (err) {
+      console.error(err);
+    }
+    callback(null, providers);
+  });
+};
