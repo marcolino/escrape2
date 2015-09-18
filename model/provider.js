@@ -7,6 +7,7 @@ var providerSchema = new mongoose.Schema({
   type: String,
   key: String,
   url: String,
+  urlFake: String,
   listCategories: Object,
   selectors: Object,
   dateOfLastSync: { type: Date },
@@ -39,8 +40,8 @@ var populateProviders = function(callback) {
       '_id': new objectId,
       'type': 'persons',
       'key': 'SGI',
-      // TODO: do not test config.local here wgen populating d, but when using it...
-      'url': config.local ? 'http://localhost/data/SGI' : 'http://www.sexyguidaitalia.com',
+      'url': 'http://www.sexyguidaitalia.com',
+      'urlFake': 'http://localhost/data/providers/SGI',
       'dateOfLastSync': new Date(0),
       'listCategories': {
         'females': {
@@ -54,7 +55,7 @@ var populateProviders = function(callback) {
       'selectors': {
         'listElements': 'a[itemprop=url][href^="annuncio/"]',
         'element': {
-          'name': 'td[id="ctl00_content_CellaNome"]',
+          'name': 'h1[class="titolo"]',
           'sex': 'td[id="ctl00_content_CellaSesso"]',
           'zone': 'td[id="ctl00_content_CellaZona"]',
           'description': 'td[id="ctl00_content_CellaDescrizione"]',
@@ -66,12 +67,13 @@ var populateProviders = function(callback) {
     {
       '_id': new objectId,
       'type': 'persons',
-      'key': 'SGI2',
-      'url': config.local ? 'http://localhost/data/SGI' : 'http://www.sexyguidaitalia.com',
+      'key': 'TOE',
+      'url': 'http://www.torinoerotica.com',
+      'urlFake': 'http://localhost/data/providers/TOE',
       'dateOfLastSync': new Date(0),
       'listCategories': {
         'females': {
-          'path': '/escort/',
+          'path': '/annunci-escort-donna.html',
           'selectors': {
             'category': 'li[id="ctl00_escort"]',
             'listCities': 'li',
@@ -79,14 +81,14 @@ var populateProviders = function(callback) {
         },
       },
       'selectors': {
-        'listElements': 'a[itemprop=url][href^="annuncio/"]',
+        'listElements': 'div[id="row-viewmode"]',
         'element': {
-          'name': 'td[id="ctl00_content_CellaNome"]',
-          'sex': 'td[id="ctl00_content_CellaSesso"]',
-          'zone': 'td[id="ctl00_content_CellaZona"]',
-          'description': 'td[id="ctl00_content_CellaDescrizione"]',
-          'phone': 'td[id="ctl00_content_CellaTelefono"]',
-          'photos': 'a[rel="group"][class="fancybox"]',
+          'name': 'span[class="nomeTitle"]',
+          'sex': 'T O D O', // TODO: ?
+          'zone': 'a > i[class="icon-location"]',
+          'description': 'p[class="annuncio"]',
+          'phone': 'span[title^="Telefono"]',
+          'photos': 'div[id="links"] > a',
         },
       },
     },

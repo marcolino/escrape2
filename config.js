@@ -3,7 +3,8 @@ var os = require("os");
 var config = {};
 
 config.env = 'development';
-config.local = (os.hostname() === 'linux-backup');
+config.fake = (os.hostname() === 'linux-backup');
+console.log('fake:', config.fake);
 config.debug = true;
 config.category = 'females';
 config.city = 'torino';

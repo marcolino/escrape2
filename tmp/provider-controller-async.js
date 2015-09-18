@@ -239,7 +239,7 @@ return;
     if (provider.key === 'SGI') {
       val = $.attribs.href.substr($.attribs.href.lastIndexOf('/') + 1);
     }
-    if (provider.key === 'SGI2') {
+    if (provider.key === 'TOE') {
       val = $.attribs.href.substr($.attribs.href.lastIndexOf('/') + 1);
     }
     return val;
@@ -248,10 +248,10 @@ return;
   function parseUrl($, provider, config) {
     var val;
     if (provider.key === 'SGI') {
-      val = provider.url + provider.listCategories[config.category].path + $.attribs.href;
+      val = (config.fake ? provider.urlFake : provider.url) + provider.listCategories[config.category].path + $.attribs.href;
     }
-    if (provider.key === 'SGI2') {
-      val = provider.url + provider.listCategories[config.category].path + $.attribs.href;
+    if (provider.key === 'TOE') {
+      val = (config.fake ? provider.urlFake : provider.url) + provider.listCategories[config.category].path + $.attribs.href;
     }
     return val;
   }
@@ -334,7 +334,7 @@ function sfetch(url, error, success) { // fetch url contents, securely
     }
     */
   };
-  if (!config.local) { // not local, use TOR
+  if (!config.fake) { // not fake, use TOR
     options.agentClass = agent;
     options.agentOptions = {
       socksHost: config.tor.host,
