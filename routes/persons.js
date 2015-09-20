@@ -1,7 +1,7 @@
 var express = require('express'), // express
-    mongoose = require('mongoose'), // mongo abstraction
-    bodyParser = require('body-parser'), // to parse information from POST
-    methodOverride = require('method-override') // to manipulate POST
+  mongoose = require('mongoose'), // mongo abstraction
+  bodyParser = require('body-parser'), // to parse information from POST
+  methodOverride = require('method-override') // to manipulate POST
 ;
 
 var router = express.Router(); // express router
@@ -17,7 +17,7 @@ router.use(methodOverride(function(req, res) { // method verride for clients sup
   }
 }));
 
-router.route('/').get(function(req, res, next) { // GET all persons
+router.route('/').get(function(req, res, next) { // get all persons
   // retrieve all persons from mongo database
   mongoose.model('Person').find({}, function(err, persons) {
     if (err) {
@@ -30,7 +30,7 @@ router.route('/').get(function(req, res, next) { // GET all persons
   });
 });
 
-router.route('/').post(function(req, res) { // POST a new person
+router.route('/').post(function(req, res) { // post a new person
   var record = {
     name: req.body.name,
     vote: req.body.vote,
@@ -78,7 +78,7 @@ router.param('id', function(req, res, next, id) {
   });
 });
 
-router.route('/:id').get(function(req, res) { // GET to get person by ID
+router.route('/:id').get(function(req, res) { // get person by ID
   mongoose.model('Person').findById(req.id, function(err, person) {
     if (err) {
       console.error('Error retrieving person with id ' + req.id + ':', err);
@@ -95,7 +95,7 @@ router.route('/:id').get(function(req, res) { // GET to get person by ID
   });
 });
 
-router.route('/:id/edit').get(function(req, res) { // GET to get person by ID
+router.route('/:id/edit').get(function(req, res) { // get person by ID
   mongoose.model('Person').findById(req.id, function(err, person) {
     if (err) {
       console.error('Error retrieving person with id ' + req.id + ':', err);
@@ -107,7 +107,7 @@ router.route('/:id/edit').get(function(req, res) { // GET to get person by ID
   });
 });
 
-router.route('/:id/edit').put(function(req, res) { // PUT to update a person by ID
+router.route('/:id/edit').put(function(req, res) { // update a person by id
 /*
   var name = req.body.name;
   var vote = req.body.vote;
@@ -142,7 +142,7 @@ router.route('/:id/edit').put(function(req, res) { // PUT to update a person by 
   });
 });
 
-router.route('/:id/edit').delete(function(req, res) { // DELETE to delete a person by ID
+router.route('/:id/edit').delete(function(req, res) { // delete a person by id
   // find person by ID
   mongoose.model('Person').findById(req.id, function(err, person) {
     if (err) {

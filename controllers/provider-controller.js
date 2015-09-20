@@ -1,9 +1,6 @@
 var
   mongoose = require('mongoose'), // mongo abstraction
   cheerio = require('cheerio'), // to parse fetched DOM data
-//  request = require('request'), // to request external data
-//  randomUseragent = require('random-useragent'), // to use a random user-agent
-//  agent = require('socks5-http-client/lib/Agent'), // to be able to proxy requests
   async = require("async"), // to call many async functions in a loop
   network = require('./network-controller'), // network handling
   config = require('../config') // global configuration
@@ -11,19 +8,8 @@ var
 var exports = {};
 var internals = {};
         
-/*
-exports.getAll = function(req, res, next) { // GET all providers
-  mongoose.model('Provider').find({}, function(err, providers) {
-    if (err) {
-      console.error('Error retrieving providers:', err);
-      res.json({ error: err });
-    } else {
-      console.log('GET providers: ' + providers);
-      res.json(providers);
-    }   
-  });
-}
-*/
+// use LOG() to log only when debugging
+var LOG = config.debug ? console.log.bind(console) : function() {};
 
 exports.getAll = function(req, res, next) { // GET all providers
   internals.getAll(function(err, providers) {
@@ -31,19 +17,13 @@ exports.getAll = function(req, res, next) { // GET all providers
       console.error('Error retrieving providers:', err);
       res.json({ error: err });
     } else {
-      console.log('GET providers: ' + providers);
+      LOG('providers.getAll: ' + providers);
       res.json(providers);
     }   
   });
 }
 
-internals.getAll = function(filter, result) { // GET all providers
-  mongoose.model('Provider').find(filter, function(err, providers) {
-    result(err, providers);
-  });
-}
-
-exports.syncPlaces = function(req, res) { // GET to sync persons
+exports.syncPlaces = function(req, res) { // sync persons
   // ... parsePlaces($, provider, config);
 
   function parsePlaces($, provider, config) {
@@ -61,11 +41,10 @@ exports.syncPlaces = function(req, res) { // GET to sync persons
   }
 };
 
-exports.syncPersons = function(req, res) { // GET to sync persons
+exports.syncPersons = function(req, res) { // sync persons
   var persons = [];
-  var n = 0;
 
-  internals.getAll({ type: 'persons', key: 'TOE' }, function(err, providers) { // GET all providers
+  internals.getAll({ type: 'persons', key: 'SGI' }, function(err, providers) { // GET all providers
     if (err) {
       console.error('Error retrieving providers:', err);
       res.json({ error: err });
@@ -80,60 +59,65 @@ exports.syncPersons = function(req, res) { // GET to sync persons
       async.each(
         providers, // 1st param in async.each() is the array of items
         function(provider, callbackOuter) { // 2nd param is the function that each item is passed to
-          console.log('provider:', provider.key);
-          // TODO: 'url =' in a method dependent by provider.key...
-          var url
-          if (provider.key === 'SGI') {
-            url = (config.fake ? provider.urlFake : provider.url) + provider.listCategories[config.category].path + config.city;
-          }
-          if (provider.key === 'TOE') {
-            url = (config.fake ? provider.urlFake : provider.url) + provider.listCategories[config.category].path;
-          }
-console.log('provider url:', url);
+          LOG('provider:', provider.key);
+          var url = internals.buildUrl(provider, config);
+LOG('url:', url);
           network.sfetch(
             url,
             function(err) { // error
-              console.error('Error syncing provider ' + provider.key + ':', err);
+              console.error('Error syncing provider', provider.key + ':', err);
               res.json({ error: err });
             },
             function(contents) { // success
-              //console.log('getAll', url, 'contents:', contents);
+LOG('url', url, 'contents arrived, lenght is', contents.length);
+              if (!contents) {
+                console.warn('Error syncing provider', provider.key + ':', 'empty contents', '-', 'skipping');
+                return callbackOuter(); // skip this outer loop
+              }
               $ = cheerio.load(contents);
     
               // loop to get each element url (person url)
-              var list = parseList($, provider);
-console.log('LIST:', provider.key, list);
+              var list = internals.parseList($, provider);
+LOG('list of provider', provider.key, 'is long', list.length);
               async.each(
                 list, // 1st param in async.each() is the array of items
                 function(element, callbackInner) { // 2nd param is the function that each item is passed to
                   var person = {};
-                  person.url = parseUrl(element, provider, config);
-console.log('ELEMENT:', provider.key, element);
-                  person.key = parseKey(element, provider);
-                  //console.log('FETCHING person url:', person.url);
+                  person.url = internals.parseUrl(element, provider, config);
+                  LOG(provider.key, '-', 'person.url:', person.url);
+                  person.key = internals.parseKey(element, provider);
                   network.sfetch(
                     person.url,
                     function(err) { // error
-                      console.error('Error fetching provider ' + provider.key + ', person ' + person.key + ':', err);
+                      console.warn('Error syncing provider', provider.key + ',', 'person', person.key + ':', err, '-', 'skipping');
+                      return callbackInner(); // skip this iner loop
                     },
                     function(contents) {
+                      if (!contents) {
+                        console.warn('Error syncing provider', provider.key + ',', 'person', person.key + ':', 'empty contents', '-', 'skipping');
+                        return callbackInner(); // skip this inner loop
+                      }
                       $ = cheerio.load(contents);
-                      person.name = parseName($, provider);
-console.log('person', person.key, '(' + person.name + ')', 'found');
-                      person.sex = parseSex($, provider);
-                      person.zone = parseZone($, provider);
-                      person.description = parseDescription($, provider);
-                      person.phone = parsePhone($, provider);
-                      person.photos = parsePhotos($, provider);
+                      person.name = internals.parseName($, provider);
+                      person.zone = internals.parseZone($, provider);
+                      person.description = internals.parseDescription($, provider);
+                      person.phone = internals.parsePhone($, provider);
+                      person.photos = internals.parsePhotos($, provider);
+                      person.nationality = internals.detectNationality(person, provider, config);
                       persons.push(person); // add this person to persons list
+
                       // TODO: save this person to database
+
                       callbackInner();
                     }
                   );
                 },
                 function(err) { // 3rd param is the function to call when everything's done (callback)
                   if (err) {
-                    console.error('Error in the final internal async callback:', err);
+                    console.error('Error in the final internal async callback:', err, '\n',
+                      'One of the iterations produced an error.\n',
+                      'All processing will now stop.'
+                    );
                   } else {
                     // all tasks are successfully done now
                     callbackOuter();
@@ -145,127 +129,28 @@ console.log('person', person.key, '(' + person.name + ')', 'found');
         },
         function(err) { // 3rd param is the function to call when everything's done (callback)
           if (err) {
-            console.error('Error in the final external async callback:', err);
+            console.error('Error in the final external async callback:', err, '\n',
+              'One of the iterations produced an error.\n',
+              'All processing will now stop.'
+            );
+            res.json(0);
           } else {
             // all tasks are successfully done now
+            LOG('---------------', persons, '---------------')
             res.json(persons.length);
           }
         }
       );
     }
   });
-
-  function parseList($, provider) {
-    var val;
-    if (provider.key === 'SGI') {
-      val = $(provider.selectors.listElements);
-    }
-    if (provider.key === 'TOE') {
-      var val = [];
-      $(provider.selectors.listElements).find('div > div > a').each(function (index, element) {
-        val.push($(element).attr('href'));
-      });
-      console.dir(val);
-    }
-    return val;
-  }
-
-  function parseKey($, provider) {
-    var val;
-    if (provider.key === 'SGI') {
-      val = $.attribs.href.substr($.attribs.href.lastIndexOf('/') + 1);
-    }
-    if (provider.key === 'TOE') {
-//console.log('ELEMENT xx:', provider.key, $);
-      val = $; //.attribs.href.substr($.attribs.href.lastIndexOf('/') + 1);
-//console.log('ELEMENT xx:', provider.key, val);
-//console.log('parseKey', provider.key, val);
-      var regex = /id=(.*)$/; // keep only leading not lower case
-      val = val.match(regex)[1]; // TODO...
-console.log('ELEMENT xx:', provider.key, val);
-    }
-console.log(' * parseKey', provider.key, val);
-    return val;
-  }
-
-  function parseUrl($, provider, config) {
-    var val;
-    if (provider.key === 'SGI') {
-      val = (config.fake ? provider.urlFake : provider.url) + provider.listCategories[config.category].path + $.attribs.href;
-    }
-    if (provider.key === 'TOE') {
-      val = (config.fake ? provider.urlFake : provider.url) + provider.listCategories[config.category].path; // + $.attribs.href;
-    }
-//console.log('parseUrl', provider.key, val);
-    return val;
-  }
-  
-  function parseName($, provider) {
-    var val;
-    if (provider.key === 'SGI') {
-      val = $(provider.selectors.element.name).text();
-      val = val.trim(); // trim value
-    }
-    if (provider.key === 'TOE') {
-      val = $(provider.selectors.element.name).text();
-console.log('parseName', provider.key, val);
-      var regex = /^([^a-z]+)/; // keep only leading not lower case
-      val = val.match(regex).trim(); // trim value
-    }
-    return val;
-  }
-  
-  function parseSex($, provider) {
-    var val = $(provider.selectors.element.sex).text();
-    return val ? (
-      (val === 'F') ?  'F' :
-      (val === 'M') ?  'M' :
-      (val === 'TX') ? 'TX' :
-                       '?'
-    ) : null;
-  }
-  
-  function parseZone($, provider) {
-    return $(provider.selectors.element.zone).text();
-  }
-  
-  function parseDescription($, provider) {
-    var val = $(provider.selectors.element.description).html();
-    return val ? (
-      val.
-        replace(/<br>.*$/, ''). // remove trailing fixed part
-        replace(/\r+/, ''). // remove CRs
-        replace(/\n+/, '\n') // remove multiple LFs
-    ) : null;
-  }
-  
-  function parsePhone($, provider) {
-    var val = $(provider.selectors.element.phone).text();
-    return val ? (
-      val.
-        replace(/[^\d]/, '')
-    ) : null;
-  }
-  
-  function parsePhotos($, provider) {
-    var val = [];
-    // loop to get each photo
-    $(provider.selectors.element.photos).each(function(i, elem) {
-      var href = elem.attribs.href;
-      href = href.replace(/(\.\.\/)+/, ''); // remove relative paths
-      href = href.replace(/\?.*$/, ''); // remove query string
-      val.push(href);
-    });
-    return val;
-  }
-
 };
 
 exports.syncComments = function(req, res) { // sync comments
   // TODO
 };
 
-exports.status = function(req, res) { // GET providers status
+// TODO: in a different module ('globals') ?
+exports.status = function(req, res) { // get providers status
   mongoose.model('Globals').find({ 'key': 'status-current' }, function(err, currentStatus) {
     if (err) {
       console.error('Error retrieving current status:', err);
@@ -276,5 +161,415 @@ exports.status = function(req, res) { // GET providers status
     }   
   });
 };
+
+exports.testDetectNationality = function(req, res) { // test detect nationality
+  internals.getAll({ type: 'persons', }, function(err, providers) { // get all providers
+    if (err) {
+      console.error('Error retrieving providers:', err);
+      res.json({ error: err });
+    } else {
+      var person = {};  
+      person.url = 'http://www.example.com';
+      person.key = 'test-key';
+      person.name = 'Isabel Russa';
+      person.zone = 'Corso Francia';
+      person.description = 'Viene dall\'Argentina, ha 32 anni, è ricercatrice biologica';
+      person.phone = '3333333333';
+
+      res.json(
+        internals.detectNationality(person, providers[0], config)
+      );
+    }
+  });
+}
+
+internals.getAll = function(filter, result) { // get all providers
+  mongoose.model('Provider').find(filter, function(err, providers) {
+    result(err, providers);
+  });
+}
+
+internals.buildUrl = function(provider, config) {
+  var val;
+  if (provider.key === 'SGI') {
+    val = (config.fake ? provider.urlFake : provider.url) + provider.listCategories[config.category].path + config.city;
+  }
+  if (provider.key === 'TOE') {
+    val = (config.fake ? provider.urlFake : provider.url) + provider.listCategories[config.category].path;
+  }
+  LOG('buildUrl()', '-', provider.key, '-', 'provider url:', val);
+  return val;
+}
+
+internals.parseList = function($, provider) {
+  var val = [];
+  if (provider.key === 'SGI') {
+    val = $(provider.selectors.listElements).each(function (index, element) {
+      val.push($(element).attr('href'));
+    });
+  }
+  if (provider.key === 'TOE') {
+    $(provider.selectors.listElements).find('div > div > a').each(function (index, element) {
+      val.push($(element).attr('href'));
+    });
+    LOG('parseList()', '-', provider.key, '-', 'details list:', val);
+  }
+  return val;
+}
+
+internals.parseKey = function($, provider) {
+  var val;
+  if (provider.key === 'SGI') {
+    val = $.attribs.href.substr($.attribs.href.lastIndexOf('/') + 1);
+  }
+  if (provider.key === 'TOE') {
+    val = $.match(/id=(.*)$/)[1];
+  }
+  LOG('parseKey()', '-', provider.key, '-', 'key:', val);
+  return val;
+}
+
+internals.parseUrl = function($, provider, config) {
+  var val;
+  if (provider.key === 'SGI') {
+    var key = $.attribs.href;
+    val = (config.fake ? provider.urlFake : provider.url) + provider.listCategories[config.category].path + key;
+  }
+  if (provider.key === 'TOE') {
+    var key = $.match(/id=(.*)$/);
+    if (key) {
+      val = (config.fake ? provider.urlFake : provider.url) + '/annuncio?id=' + key[1];
+} else { // TODO: DEBUGGING...
+console.error('parseUrl()', '-', provider.key, '-', 'EMPTY DETAILS URL: $ does not match /id=(.*)$/ pattern !!!!!', '$:', $);
+    }
+  }
+  LOG('parseUrl()', '-', provider.key, '-', 'url:', val);
+  return val;
+}
+
+internals.parseName = function($, provider) {
+  var val;
+  if (provider.key === 'SGI') {
+    val = $(provider.selectors.element.name).text();
+    val = val.trim();
+  }
+  if (provider.key === 'TOE') {
+    val = $(provider.selectors.element.name).text();
+  //val = val.match(/^([^a-z]+)/)[1].trim(); // keep only leading not lower case
+    val = val.match(/^([\w]+)/)[1].trim(); // keep only from start to first non word character
+  }
+  LOG('parseName()', '-', provider.key, '-', 'name:', val);
+  return val;
+}
+
+internals.parseZone = function($, provider) {
+  var val;
+  val = $(provider.selectors.element.zone).text();
+  LOG('parseZone()', '-', provider.key, '-', 'zone:', val);
+  return val;
+}
+
+internals.parseDescription = function($, provider) { 
+  var val = $(provider.selectors.element.description).text();
+  if (val) {
+    val.
+      replace(/<br>.*$/, ''). // remove trailing fixed part
+      replace(/\r+/, ''). // remove CRs
+      replace(/\n+/, '\n') // remove multiple LFs
+  }
+  LOG('parseDescription()', '-', provider.key, '-', 'description:', val ? val.substr(0, 32) : null);
+  return val;
+}
+
+internals.parsePhone = function($, provider) {
+  var val = $(provider.selectors.element.phone).text();
+  if (val) {
+    val.
+      replace(/[^\d]/, '')
+  }
+  LOG('parsePhone()', '-', provider.key, '-', 'phone:', val);
+  return val;
+}
+
+internals.parsePhotos = function($, provider) {
+  var val = [];
+  // loop to get each photo
+  $(provider.selectors.element.photos).each(function(i, elem) {
+    var href = elem.attribs.href;
+    if (href) {
+      href.
+        replace(/(\.\.\/)+/, ''). // remove relative paths
+        replace(/\?.*$/, '') // remove query string
+      val.push(href);
+    }
+  });
+  //LOG('parsePhotos()', '-', provider.key, '-', 'photos:', val);
+  return val;
+}
+
+internals.detectNationality = function(person, provider, config) {
+  var
+    name = person.name,
+    description = person.description,
+    language = provider.language,
+    category = config.category
+  ;
+
+  var nationalityPatterns = [
+    {
+      'it': [
+        {
+          'females': [
+            { 'alban(ia|ese)': 'al' },
+            { 'argentina': 'ar' },
+            { 'australi(a|ana)': 'au' },
+            { 'barbados': 'bb' },
+            { 'belg(a|io)': 'be' },
+            { 'bolivi(a|ana)': 'bo' },
+            { 'bosni(a|aca)': 'ba' },
+            { 'brasil(e|iana)': 'br' },
+            { 'bulgar(a|ia)': 'bu' },
+            { 'canad(a|ese)': 'ca' },
+            { 'capo\s*verd(e|iana)': 'cv' },
+            { 'ch?il(e|ena)': 'cl' },
+            { 'ch?in(a|ese)': 'cn' },
+            { 'orient(e|ale)': 'asia' },
+            { 'colombi(a|ana)': 'co' },
+            { 'costa\s*ric(a|he..)': 'cr' },
+            { 'croa([tz]ia|ta)': 'hr' },
+            { 'cub(a|ana)': 'cu' },
+            { 'c(zech|eca)': 'cz' },
+            { 'dan(imarca|ese)': 'dk' },
+            { 'dominic(a|ana)': 'do' },
+            { 'ecuador(e..)?': 'ec' },
+            { 'eston(ia|e)': 'ee' },
+            { 'finland(ia|ese)': 'fi' },
+            { 'franc(ia|ese|esina)': 'fr' },
+            { '(germania|tedesc(a|ina))': 'de' },
+            { '(gran bretagna|ing(hilterra|les(e|ina)))': 'en' },
+            { 'grec(a|ia)': 'gr' },
+            { 'greanad(a|iana)': 'gd' },
+            { 'guatemal(a|teca)': 'gt' },
+            { 'hait(i|iana)': 'ht' },
+            { 'h?ondur(as|e(...)?)': 'hn' },
+            { 'ungher(ia|ese)': 'hu' },
+            { 'island(a|ese)': 'is' },
+            { 'indi(a|ana)': 'in' },
+            { 'indonesi(a|ana)': 'id' },
+            { 'irland(a|ese)': 'ie' },
+            { 'israel(e|iana)': 'ie' },
+            { 'italian(a|issima)': 'it' },
+            { '(j|gi)amaic(a|ana)': 'jm' },
+            { '(japan)|(giappon(e|ese))': 'jp' },
+            { 'ken[iy](a|ana)': 'ke' },
+            { 'core(a|ana)': 'kr' },
+            { 'lituan(a|ia)': 'lt' },
+            { 'liban(o|ese)': 'lb' },
+            { 'letton(ia|e)': 'lv' },
+            { 'lussemburg(o|hese)': 'lu' },
+            { 'macedon(ia|e)': 'mk' },
+            { 'malta': 'mt' },
+            { 'me(x|ss)ic(o|ana)': 'mx' },
+            { 'moldov(a|iana)': 'md' },
+            { 'monaco': 'mc' },
+            { 'mongol(ia|a)': 'mn' },
+            { 'montenegr(o|ina)': 'me' },
+            { 'm([ao]rocco)|(arocchina)': 'ma' },
+            { 'oland(a|ese)': 'nl' },
+            { '(neo|nuova)[\s-]?zeland(a|ese)': 'nz' },
+            { 'nicaragu(a|e...)': 'ni' },
+            { 'niger': 'ne' },
+            { 'nigeri(a|ana)': 'ng' },
+            { 'norveg(ia|ese)': 'no' },
+            { 'pa(k|ch)istan(a)?': 'pk' },
+            { 'panam(a|ense)': 'pa' },
+            { 'paragua(y|iana)': 'py' },
+            { 'peru(viana)?': 'pe' },
+            { '(ph|f)ilippin(e|a)': 'ph' },
+            { 'pol(onia|acca)': 'pl' },
+            { 'portoric(o|ana)': 'pr' },
+            { 'portog(allo|hese)': 'pt' },
+            { 'r(omania|(o|u)mena)': 'ro' },
+            { 'd[ae]ll[\s\']est': 'ro' },
+            { 'russ(i)?a': 'ru' },
+            { 'san[\s-]?marin(o|ese)': 'sm' },
+            { 'arab(i)?a': 'sa' },
+            { 'senegal(ese)?': 'sn' },
+            { 'serb(i)?a': 'rs' },
+            { 'se[yi]chelles': 'sc' },
+            { 'sierra[\s-]?leone': 'sl' },
+            { 'singapore': 'sg' },
+            { 'slovacch(i)?a': 'sk' },
+            { 'sloven(i)?a': 'si' },
+            { 'somal(i)?a': 'so' },
+            { 'spagn(a)': 'es' }, // "spagnola" ignored on purpose, since often it's not a nationality...
+            { 'sve(zia|dese)': 'se' },
+            { 'svizzera': 'ch' },
+            { 's[yi]ria(na)?': 'sy' },
+            { 'taiwan(ese)?': 'tw' },
+            { 't(h)?ai(land(ia|ese)?)?': 'th' },
+            { 'trinidad': 'tt' },
+            { 'tunisi(a|ina)': 'tn' },
+            { 'turc(hia|a)': 'tr' },
+            { 'u[kc]raina': 'ua' },
+            { 'urugua([yi])|(gia)|([yi]ana)': 'uy' },
+            { 'america(na)?': 'us' },
+            { 'venezuela(na)?': 've' },
+            { 'vietnam(ita)?': 'vn' },
+            { 'asia(tica)?': 'asia' },
+            { 'africa(na)?': 'africa' },
+            { 'america[\s-]?centrale': 'central-america' },
+            { 'caraibi(ca)?': 'caribbean' },
+            { 'nord[\s-]?america(na)?': 'north-america' },
+            { 'europa[\s-]+orientale]': 'eastern-europe' },
+            { 'europea': 'europe' },
+            { 'orient[e|(ale)]': 'asia' },
+            { 'medio[\s-]?orientale': 'middle-east' },
+            { 'oceania': 'oceania' },
+            { 'sud[\s-]?america(na)?': 'south-america' },
+          ],
+        },
+      ],
+    },
+  ];
+
+  var negativeLookbehinds = [
+    {
+      'it': [
+        'alla',
+        'amica',
+        'autostrada',
+        'area',
+        'belvedere',
+        'borgata',
+        'borgo',
+        'calata',
+        'campo',
+        'carraia',
+        'cascina',
+        'circonvallazione',
+        'circumvallazione',
+        'contrada',
+        'c\.so',
+        'corso',
+        'cso',
+        'diramazione',
+        'frazione',
+        'isola',
+        'largo',
+        'lido',
+        'litoranea',
+        'loc\.',
+        'località',
+        'lungo',
+        'masseria',
+        'molo',
+        'parallela',
+        'parco',
+        'passaggio',
+        'passo',
+        'p\.za',
+        'p\.zza',
+        'piazza',
+        'piazzale',
+        'piazzetta',
+        'ponte',
+        'quartiere',
+        'regione',
+        'rione',
+        'rio',
+        'riva',
+        'riviera',
+        'rondò',
+        'rotonda',
+        'salita',
+        'scalinata',
+        'sentiero',
+        'sopraelevata',
+        'sottopassaggio',
+        'sottopasso',
+        'spiazzo',
+        'strada',
+        'stradone',
+        'stretto',
+        'svincolo',
+        'superstrada',
+        'tangenziale',
+        'traforo',
+        'traversa',
+        'v\.',
+        'via',
+        'viale',
+        'vicolo',
+        'viottolo',
+        'zona',
+      ]
+    },
+  ];
+
+  var result;
+  fields = [ name, description ];
+  loop1:
+  for (var p = 0; p < fields.length; p++) {
+    var field = fields[p];
+    loop2:
+    for (var i = 0; i < nationalityPatterns.length; i++) {
+      var patternObj = nationalityPatterns[i];
+      loop3:
+      for (var lang in patternObj) {
+        if (lang === language) {
+          var langPatterns = patternObj[lang];
+          loop4:
+          for (var j = 0; j < langPatterns.length; j++) {
+            var langPatternObj = langPatterns[j];
+            loop5:
+            for (var cat in langPatternObj) {
+              if (cat === category) {
+                var catPatterns = langPatternObj[cat];
+                loop6:
+                for (var k = 0; k < catPatterns.length; k++) {
+                  var catPatternObj = catPatterns[k];
+                  loop7:
+                  for (var catPattern in catPatternObj) {
+                    country = catPatternObj[catPattern];
+                    var regexLangPattern = new RegExp('\\b' + catPattern + '\\b', 'gi');
+                    if (field.match(regexLangPattern)) { // country pattern matched
+                      // check for eventual negative look-behinds
+                      var negative = false;
+                      loop8:
+                      for (var q = 0; q < negativeLookbehinds.length; q++) {
+                        var negativeLookbehindObj = negativeLookbehinds[q];
+                        loop9:
+                        for (var lang in negativeLookbehindObj) {
+                          if (lang === language) {
+                            var negativeLookbehindPatterns = negativeLookbehindObj[lang];
+                            loop10:
+                            for (var r = 0; r < negativeLookbehindPatterns.length; r++) {
+                              var negativeLookbehind = negativeLookbehindPatterns[r];
+                              var regexNegativeLookbehind = new RegExp('\\b' + negativeLookbehind + '\\s+' + catPattern + '\\b', 'gi');
+                              if (field.match(regexNegativeLookbehind)) { // negative lookbehind pattern matched
+                                negative = true;
+                                break loop7;
+                              }
+                            }
+                          }
+                        }
+                      }
+                      if (!negative) {
+                        result = country;
+                        break loop1; // country matched, negative is false: break first loop
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return result;
+}
 
 module.exports = exports;

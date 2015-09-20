@@ -8,6 +8,7 @@ var providerSchema = new mongoose.Schema({
   key: String,
   url: String,
   urlFake: String,
+  language: String,
   listCategories: Object,
   selectors: Object,
   dateOfLastSync: { type: Date },
@@ -18,6 +19,9 @@ var Provider = mongoose.model('Provider', providerSchema);
 var objectId = mongoose.Types.ObjectId;
 
 mongoose.connection.on('open', function () {
+
+  // TODO: ALWAYS POPULATE PROVIDERS !!!!!!!!!!! (?)
+
   Provider.findOne({}, function (err, result) { // check if Provider collection is empty
     if (err) {
       console.error(err);
@@ -42,10 +46,11 @@ var populateProviders = function(callback) {
       'key': 'SGI',
       'url': 'http://www.sexyguidaitalia.com',
       'urlFake': 'http://localhost/data/providers/SGI',
+      'language': 'it',
       'dateOfLastSync': new Date(0),
       'listCategories': {
         'females': {
-          'path': '/escort/',
+          'path': '/escort/', // TODO: which path? list path or details path? differentiate?
           'selectors': {
             'category': 'li[id="ctl00_escort"]',
             'listCities': 'li',
@@ -55,8 +60,7 @@ var populateProviders = function(callback) {
       'selectors': {
         'listElements': 'a[itemprop=url][href^="annuncio/"]',
         'element': {
-          'name': 'h1[class="titolo"]',
-          'sex': 'td[id="ctl00_content_CellaSesso"]',
+          'name': 'td[id="ctl00_content_CellaNome"]',
           'zone': 'td[id="ctl00_content_CellaZona"]',
           'description': 'td[id="ctl00_content_CellaDescrizione"]',
           'phone': 'td[id="ctl00_content_CellaTelefono"]',
@@ -70,10 +74,11 @@ var populateProviders = function(callback) {
       'key': 'TOE',
       'url': 'http://www.torinoerotica.com',
       'urlFake': 'http://localhost/data/providers/TOE',
+      'language': 'it',
       'dateOfLastSync': new Date(0),
       'listCategories': {
         'females': {
-          'path': '/annunci-escort-donna.html',
+          'path': '/annunci-escort-donna/',
           'selectors': {
             'category': 'li[id="ctl00_escort"]',
             'listCities': 'li',
@@ -81,11 +86,15 @@ var populateProviders = function(callback) {
         },
       },
       'selectors': {
-        'listElements': 'div[id="row-viewmode"]',
+        'listElements': 'div[id="row-viewmode"] > div > div[class~="/pi-img-shadow"]',
         'element': {
-          'name': 'span[class="nomeTitle"]',
-          'sex': 'T O D O', // TODO: ?
-          'zone': 'a > i[class="icon-location"]',
+          'name': 'h1[class~="titolo"]',
+          'zone': 'a > span > i[class="icon-location"]',
+/*
+          <a href="#" title="Espandi">
+                                <span class="pi-accordion-toggle"></span><i class="icon-location pi-icon-left"></i> Location (Pozzo Strada)
+                                </a>
+*/
           'description': 'p[class="annuncio"]',
           'phone': 'span[title^="Telefono"]',
           'photos': 'div[id="links"] > a',

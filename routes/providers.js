@@ -8,8 +8,7 @@ router.get('/', providerController.getAll);
 router.get('/syncPlaces', providerController.syncPlaces);
 router.get('/syncPersons', providerController.syncPersons);
 router.get('/syncComments', providerController.syncComments);
-/*
-router.get('/status', providerController.status);
-*/
+router.get('/testDetectNationality', providerController.testDetectNationality);
+//router.get('/status', providerController.status);
 
 module.exports = router;

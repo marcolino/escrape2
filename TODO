@@ -1,2 +1,6 @@
+- where to put common code?
+    function inArray(arr, obj) {
+      return (arr.indexOf(obj) != -1);
+    }
 
 V remove all "err.context = " lines

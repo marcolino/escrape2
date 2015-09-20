@@ -39,36 +39,23 @@ app.use('/providers', providers);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
-  var err = new Error('Not found:', req);
+  var err = new Error('Not found', req);
   err.status = 404;
   next(err);
 });
 
 // error handlers
-
-// development error handler (will print stacktrace)
-if (app.get('env') === 'development') {
-  app.use(function(err, req, res, next) {
-
-//(function fakerr() { console.log(new Error('test').stack); })();
-console.error('CATCHED AN ERROR:', err);
-console.error(' ERROR STACK:', err.stack);
-console.error(' PLEASE TRY TO RETURN STACK TRACE, TOO, TO THE CLIENT REQUEST...');
-    res.status(err.status || 500);
-    res.json({
-      message: err.message,
-      error: err,
-    });
-  });
-}
-
-// production error handler (no stacktraces leaked to user)
 app.use(function(err, req, res, next) {
-  res.status(err.status || 500);
-  res.json({
-    message: err.message,
-    error: {}
-  });
+
+  var error = { message: err.message };
+  if (app.get('env') === 'development') {
+    // development error handler (will print stacktrace)
+    error.stack = err.stack;
+  }
+  for (var prop in err) {
+    error[prop] = err[prop];
+  }
+  res.json({ error: error });
 });
 
 module.exports = app;
