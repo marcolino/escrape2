@@ -216,22 +216,25 @@ internals.buildUrl = function(provider, config) {
 internals.parseList = function($, provider) {
   var val = [];
   if (provider.key === 'SGI') {
-    val = $(provider.selectors.listElements).each(function (index, element) {
+    val = $(provider.selectors.listElements).each(function(index, element) {
       val.push($(element).attr('href'));
     });
   }
   if (provider.key === 'TOE') {
-    val = $(provider.selectors.listElements).each(function (index, element) {
+    val = $(provider.selectors.listElements).each(function(index, element) {
       val.push($(element).attr('href'));
     });
     LOG('parseList()', '-', provider.key, '-', 'details list:', val);
   }
   if (provider.key === 'FORBES') {
     console.log("£££");
-    console.log("AAA", $('h2 > span[id="2015"]').next().find('ol').find('li'));
-    $('h2 > span[id="2015"]').next().find('ol').find('li').each(function(index, element) {
-    //$('h2 > span[id="2015"]').find('ol > li').each(function(index, element) {
-      console.log('*************** title:', element.attr('title'), 'href:', element.attr('href'));
+    //console.log("AAA", $('h2 > span[id="2015"]').next().find('ol').find('li'));
+    console.log('AAA:', $('h2 > span[id="2015"]').parent().next('div').find('ol > li > a'));
+    //$('h2 > span[id="2015"]').next().find('ol').find('li').each(function(index, element) {
+    $('h2 > span[id="2015"]').parent().next('div').find('ol > li > a').each(function(index, element) {
+      console.log('*************** element:', element);
+      console.log('*************** href:', element.attribs.href);
+      //console.log('*************** title:', element.attr('title'), 'href:', element.attr('href'));
     });
 
 /*
