@@ -67,10 +67,10 @@ LOG('url:', url);
             provider,
             function(err) { // error
               console.error('Error syncing provider', provider.key + ':', err);
-              res.json({ error: err });
+              res.json(err);
             },
             function(contents) { // success
-LOG('url', url, 'contents:', contents);
+//LOG('url', url, 'contents:', contents);
 LOG('url', url, 'contents arrived, lenght is', contents.length);
               if (!contents) {
                 console.warn('Error syncing provider', provider.key + ':', 'empty contents', '-', 'skipping');
@@ -81,11 +81,16 @@ LOG('url', url, 'contents arrived, lenght is', contents.length);
               // loop to get each element url (person url)
               var list = internals.parseList($, provider);
 LOG('list of provider', provider.key, 'is long', list.length);
+return callbackOuter();
               async.each(
                 list, // 1st param in async.each() is the array of items
                 function(element, callbackInner) { // 2nd param is the function that each item is passed to
                   var person = {};
                   person.url = internals.parseUrl(element, provider, config);
+                  if (!person.url) { // TODO: are we checking for undefined AND null?
+                    console.warn('Error syncing provider', provider.key + ',', 'person', person.key + ':', err, '-', 'skipping');
+                    return callbackInner(); // skip this iner loop
+                  }
                   LOG(provider.key, '-', 'person.url:', person.url);
                   person.key = internals.parseKey(element, provider);
                   network.sfetch(
@@ -216,17 +221,28 @@ internals.parseList = function($, provider) {
     });
   }
   if (provider.key === 'TOE') {
-    $(provider.selectors.listElements).find('div > div > a').each(function (index, element) {
+    val = $(provider.selectors.listElements).each(function (index, element) {
       val.push($(element).attr('href'));
     });
     LOG('parseList()', '-', provider.key, '-', 'details list:', val);
   }
   if (provider.key === 'FORBES') {
-LOG('parseList()', '-', provider.key, '-', 'elements:', $(provider.selectors.elements));
-    val = $(provider.selectors.elements).each(function (index, element) {
-      val.push($(element).attr('href'));
+    console.log("£££");
+    console.log("AAA", $('h2 > span[id="2015"]').next().find('ol').find('li'));
+    $('h2 > span[id="2015"]').next().find('ol').find('li').each(function(index, element) {
+    //$('h2 > span[id="2015"]').find('ol > li').each(function(index, element) {
+      console.log('*************** title:', element.attr('title'), 'href:', element.attr('href'));
     });
+
+/*
+//LOG('parseList()', '-', provider.key, '-', 'elements:', $(provider.selectors.elements));
+    val = $(provider.selectors.listElements).find(provider.selectors.listElements2);
     LOG('parseList()', '-', provider.key, '-', 'elements list:', val);
+    //val = $(provider.selectors.elements).each(function (index, element) {
+    //  val.push($(element).attr('href'));
+    //});
+    //LOG('parseList()', '-', provider.key, '-', 'elements list:', val);
+*/
   }
   return val;
 }

@@ -59,7 +59,7 @@ var populateProviders = function(callback) {
       'key': 'FORBES',
       'mode': 'fake',
       'type': 'persons',
-      'url': 'https://it.wikipedia.org',
+      'url': 'http://it.wikipedia.org',
       'language': 'en',
       'dateOfLastSync': new Date(0),
       'forbiddenRegexp': { // TODO: verify this re...
@@ -80,7 +80,15 @@ var populateProviders = function(callback) {
       },
       'selectors': {
         //'elements': 'tbody[id="list-table-body"] > tr > td[class="name"] > a[href]',
-        'elements': 'span[id="2015"]',
+        //'elements': 'span[id="2015"] ...
+        //'elements': 'span[id="2015"]
+        'elements': 'h2:contains("2015")', // div > ol > li > a', //' span[id="2015"] >> div[id="mw-content-text"] > div > ol > li > a[href]',
+        'elements2': 'div[id="mw-content-text"] > div > ol > li > a[href]',
+/*
+<ol>
+<li><a href="/wiki/Angela_Merkel" title="Angela Merkel">Angela Merkel</a> <a href="/wiki/File:Flag_of_Germany.svg" class="image" title="Germania"><img alt="Germania" src="//upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Flag_of_Germany.svg/20px-Flag_of_Germany.svg.png" class="noviewer thumbborder" srcset="//upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Flag_of_Germany.svg/30px-Flag_of_Germany.svg.png 1.5x, //upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Flag_of_Germany.svg/40px-Flag_of_Germany.svg.png 2x" data-file-width="1000" data-file-height="600" height="12" width="20"></a></li>
+*/
+
 /*
         <tbody id="list-table-body">     
         <tr class="data">

@@ -44,7 +44,7 @@ exports.sfetch = function(url, provider, error, success) {
   	options,
   	function (err, response, contents) {
       if (err) {
-        console.error(' !!!!!!!!!!!!!! error in sfetch( request() ) callback:', err);
+        console.error('error in sfetch( request() ) callback:', err);
         return error(err);
       }
       success(contents);
