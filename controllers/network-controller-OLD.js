@@ -16,7 +16,7 @@ exports.sfetch = function(url, error, success) {
     url: url,
     _retries: 0,
   };
-  if (!config.fake) { // not fake, use TOR
+  if (config.mode !== 'fake') { // not fake, use TOR
     options.agentClass = agent;
     options.agentOptions = {
       socksHost: config.tor.host,

@@ -44,7 +44,7 @@ exports.syncPlaces = function(req, res) { // sync persons
 exports.syncPersons = function(req, res) { // sync persons
   var persons = [];
 
-  internals.getAll({ type: 'persons', key: 'SGI' }, function(err, providers) { // GET all providers
+  internals.getAll({ type: 'persons', mode: (config.mode ? 'fake' : 'normal'), /*key: 'SGI'*/ }, function(err, providers) { // GET all providers
     if (err) {
       console.error('Error retrieving providers:', err);
       res.json({ error: err });
@@ -59,16 +59,18 @@ exports.syncPersons = function(req, res) { // sync persons
       async.each(
         providers, // 1st param in async.each() is the array of items
         function(provider, callbackOuter) { // 2nd param is the function that each item is passed to
-          LOG('provider:', provider.key);
+          LOG('*** provider:', provider.key);
           var url = internals.buildUrl(provider, config);
 LOG('url:', url);
           network.sfetch(
             url,
+            provider,
             function(err) { // error
               console.error('Error syncing provider', provider.key + ':', err);
               res.json({ error: err });
             },
             function(contents) { // success
+LOG('url', url, 'contents:', contents);
 LOG('url', url, 'contents arrived, lenght is', contents.length);
               if (!contents) {
                 console.warn('Error syncing provider', provider.key + ':', 'empty contents', '-', 'skipping');
@@ -88,6 +90,7 @@ LOG('list of provider', provider.key, 'is long', list.length);
                   person.key = internals.parseKey(element, provider);
                   network.sfetch(
                     person.url,
+                    provider,
                     function(err) { // error
                       console.warn('Error syncing provider', provider.key + ',', 'person', person.key + ':', err, '-', 'skipping');
                       return callbackInner(); // skip this iner loop
@@ -112,33 +115,32 @@ LOG('list of provider', provider.key, 'is long', list.length);
                     }
                   );
                 },
-                function(err) { // 3rd param is the function to call when everything's done (callback)
+                function(err) { // 3rd param is the function to call when everything's done (inner callback)
                   if (err) {
                     console.error('Error in the final internal async callback:', err, '\n',
                       'One of the iterations produced an error.\n',
-                      'All processing will now stop.'
+                      'Skipping this iteration.'
                     );
-                  } else {
-                    // all tasks are successfully done now
-                    callbackOuter();
+                    return;
                   }
+                  // all tasks are successfully done now
+                  callbackOuter();
                 }
               );
             }
           );
         },
-        function(err) { // 3rd param is the function to call when everything's done (callback)
+        function(err) { // 3rd param is the function to call when everything's done (outer callback)
           if (err) {
             console.error('Error in the final external async callback:', err, '\n',
               'One of the iterations produced an error.\n',
               'All processing will now stop.'
             );
-            res.json(0);
-          } else {
-            // all tasks are successfully done now
-            LOG('---------------', persons, '---------------')
-            res.json(persons.length);
+            return res.json(-1);
           }
+          // all tasks are successfully done now
+          LOG('---------------\n', persons, '\n---------------')
+          res.json(persons.length);
         }
       );
     }
@@ -173,7 +175,7 @@ exports.testDetectNationality = function(req, res) { // test detect nationality
       person.key = 'test-key';
       person.name = 'Isabel Russa';
       person.zone = 'Corso Francia';
-      person.description = 'Viene dall\'Argentina, ha 32 anni, è ricercatrice biologica';
+      person.description = 'Viene dalla Argentina, ha 32 anni, è ricercatrice biologica';
       person.phone = '3333333333';
 
       res.json(
@@ -192,10 +194,15 @@ internals.getAll = function(filter, result) { // get all providers
 internals.buildUrl = function(provider, config) {
   var val;
   if (provider.key === 'SGI') {
-    val = (config.fake ? provider.urlFake : provider.url) + provider.listCategories[config.category].path + config.city;
+    //val = (config.mode ==='fake' ? provider.urlFake : provider.url) + provider.listCategories[config.category].path + config.city;
+    val = provider.url + provider.categories[config.category].path + config.city;
   }
   if (provider.key === 'TOE') {
-    val = (config.fake ? provider.urlFake : provider.url) + provider.listCategories[config.category].path;
+    //val = (config.mode === 'fake' ? provider.urlFake : provider.url) + provider.listCategories[config.category].path;
+    val = provider.url + provider.categories[config.category].path;
+  }
+  if (provider.key === 'FORBES') {
+    val = provider.url + provider.categories[config.category].path;
   }
   LOG('buildUrl()', '-', provider.key, '-', 'provider url:', val);
   return val;
@@ -214,6 +221,13 @@ internals.parseList = function($, provider) {
     });
     LOG('parseList()', '-', provider.key, '-', 'details list:', val);
   }
+  if (provider.key === 'FORBES') {
+LOG('parseList()', '-', provider.key, '-', 'elements:', $(provider.selectors.elements));
+    val = $(provider.selectors.elements).each(function (index, element) {
+      val.push($(element).attr('href'));
+    });
+    LOG('parseList()', '-', provider.key, '-', 'elements list:', val);
+  }
   return val;
 }
 
@@ -223,7 +237,7 @@ internals.parseKey = function($, provider) {
     val = $.attribs.href.substr($.attribs.href.lastIndexOf('/') + 1);
   }
   if (provider.key === 'TOE') {
-    val = $.match(/id=(.*)$/)[1];
+    val = $.match(/id=(.*)$/)[1]; // TODO: split, to avoid error in case of non-match...
   }
   LOG('parseKey()', '-', provider.key, '-', 'key:', val);
   return val;
@@ -233,12 +247,12 @@ internals.parseUrl = function($, provider, config) {
   var val;
   if (provider.key === 'SGI') {
     var key = $.attribs.href;
-    val = (config.fake ? provider.urlFake : provider.url) + provider.listCategories[config.category].path + key;
+    val = (config.mode === 'fake' ? provider.urlFake : provider.url) + provider.listCategories[config.category].path + key;
   }
   if (provider.key === 'TOE') {
     var key = $.match(/id=(.*)$/);
     if (key) {
-      val = (config.fake ? provider.urlFake : provider.url) + '/annuncio?id=' + key[1];
+      val = (config.mode === 'fake' ? provider.urlFake : provider.url) + '/annuncio?id=' + key[1];
 } else { // TODO: DEBUGGING...
 console.error('parseUrl()', '-', provider.key, '-', 'EMPTY DETAILS URL: $ does not match /id=(.*)$/ pattern !!!!!', '$:', $);
     }
@@ -256,7 +270,7 @@ internals.parseName = function($, provider) {
   if (provider.key === 'TOE') {
     val = $(provider.selectors.element.name).text();
   //val = val.match(/^([^a-z]+)/)[1].trim(); // keep only leading not lower case
-    val = val.match(/^([\w]+)/)[1].trim(); // keep only from start to first non word character
+    val = val.match(/^([\w]+)/)[1].trim(); // keep only word character from start to first non word character
   }
   LOG('parseName()', '-', provider.key, '-', 'name:', val);
   return val;
@@ -308,9 +322,11 @@ internals.parsePhotos = function($, provider) {
 }
 
 internals.detectNationality = function(person, provider, config) {
+  var fields = [
+    person.name,
+    person.description,
+  ];
   var
-    name = person.name,
-    description = person.description,
     language = provider.language,
     category = config.category
   ;
@@ -319,7 +335,7 @@ internals.detectNationality = function(person, provider, config) {
     {
       'it': [
         {
-          'females': [
+          'women': [
             { 'alban(ia|ese)': 'al' },
             { 'argentina': 'ar' },
             { 'australi(a|ana)': 'au' },
@@ -436,128 +452,113 @@ internals.detectNationality = function(person, provider, config) {
   var negativeLookbehinds = [
     {
       'it': [
-        'alla',
-        'amica',
-        'autostrada',
-        'area',
-        'belvedere',
-        'borgata',
-        'borgo',
-        'calata',
-        'campo',
-        'carraia',
-        'cascina',
-        'circonvallazione',
-        'circumvallazione',
-        'contrada',
-        'c\.so',
-        'corso',
-        'cso',
-        'diramazione',
-        'frazione',
-        'isola',
-        'largo',
-        'lido',
-        'litoranea',
-        'loc\.',
-        'località',
-        'lungo',
-        'masseria',
-        'molo',
-        'parallela',
-        'parco',
-        'passaggio',
-        'passo',
-        'p\.za',
-        'p\.zza',
-        'piazza',
-        'piazzale',
-        'piazzetta',
-        'ponte',
-        'quartiere',
-        'regione',
-        'rione',
-        'rio',
-        'riva',
-        'riviera',
-        'rondò',
-        'rotonda',
-        'salita',
-        'scalinata',
-        'sentiero',
-        'sopraelevata',
-        'sottopassaggio',
-        'sottopasso',
-        'spiazzo',
-        'strada',
-        'stradone',
-        'stretto',
-        'svincolo',
-        'superstrada',
-        'tangenziale',
-        'traforo',
-        'traversa',
-        'v\.',
-        'via',
-        'viale',
-        'vicolo',
-        'viottolo',
-        'zona',
-      ]
+        {
+          'women': [
+            'alla',
+            'amica',
+            'autostrada',
+            'area',
+            'belvedere',
+            'borgata',
+            'borgo',
+            'calata',
+            'campo',
+            'carraia',
+            'cascina',
+            'circonvallazione',
+            'circumvallazione',
+            'contrada',
+            'c\.so',
+            'corso',
+            'cso',
+            'diramazione',
+            'frazione',
+            'isola',
+            'largo',
+            'lido',
+            'litoranea',
+            'loc\.',
+            'località',
+            'lungo',
+            'masseria',
+            'molo',
+            'parallela',
+            'parco',
+            'passaggio',
+            'passo',
+            'p\.za',
+            'p\.zza',
+            'piazza',
+            'piazzale',
+            'piazzetta',
+            'ponte',
+            'quartiere',
+            'regione',
+            'rione',
+            'rio',
+            'riva',
+            'riviera',
+            'rondò',
+            'rotonda',
+            'salita',
+            'scalinata',
+            'sentiero',
+            'sopraelevata',
+            'sottopassaggio',
+            'sottopasso',
+            'spiazzo',
+            'strada',
+            'stradone',
+            'stretto',
+            'svincolo',
+            'superstrada',
+            'tangenziale',
+            'traforo',
+            'traversa',
+            'v\.',
+            'via',
+            'viale',
+            'vicolo',
+            'viottolo',
+            'zona',
+          ]
+        },
+      ],
     },
   ];
 
-  var result;
-  fields = [ name, description ];
-  loop1:
-  for (var p = 0; p < fields.length; p++) {
-    var field = fields[p];
-    loop2:
-    for (var i = 0; i < nationalityPatterns.length; i++) {
-      var patternObj = nationalityPatterns[i];
-      loop3:
-      for (var lang in patternObj) {
-        if (lang === language) {
-          var langPatterns = patternObj[lang];
-          loop4:
-          for (var j = 0; j < langPatterns.length; j++) {
-            var langPatternObj = langPatterns[j];
-            loop5:
-            for (var cat in langPatternObj) {
-              if (cat === category) {
-                var catPatterns = langPatternObj[cat];
-                loop6:
-                for (var k = 0; k < catPatterns.length; k++) {
-                  var catPatternObj = catPatterns[k];
-                  loop7:
-                  for (var catPattern in catPatternObj) {
-                    country = catPatternObj[catPattern];
-                    var regexLangPattern = new RegExp('\\b' + catPattern + '\\b', 'gi');
-                    if (field.match(regexLangPattern)) { // country pattern matched
-                      // check for eventual negative look-behinds
-                      var negative = false;
-                      loop8:
-                      for (var q = 0; q < negativeLookbehinds.length; q++) {
-                        var negativeLookbehindObj = negativeLookbehinds[q];
-                        loop9:
-                        for (var lang in negativeLookbehindObj) {
-                          if (lang === language) {
-                            var negativeLookbehindPatterns = negativeLookbehindObj[lang];
-                            loop10:
-                            for (var r = 0; r < negativeLookbehindPatterns.length; r++) {
-                              var negativeLookbehind = negativeLookbehindPatterns[r];
-                              var regexNegativeLookbehind = new RegExp('\\b' + negativeLookbehind + '\\s+' + catPattern + '\\b', 'gi');
-                              if (field.match(regexNegativeLookbehind)) { // negative lookbehind pattern matched
-                                negative = true;
-                                break loop7;
-                              }
-                            }
-                          }
+  return parseNationalityPatterns();
+  
+  function parseNationalityPatterns() {
+    for (var i = 0; i < fields.length; i++) {
+      var field = fields[i];
+      for (var j = 0; j < nationalityPatterns.length; j++) {
+        var patternObj = nationalityPatterns[j];
+        for (var lang in patternObj) {
+          if (lang === language) {
+            var langPatterns = patternObj[lang];
+            for (var k = 0; k < langPatterns.length; k++) {
+              var langPatternObj = langPatterns[k];
+              for (var cat in langPatternObj) {
+                if (cat === category) {
+                  var catPatterns = langPatternObj[cat];
+                  for (var m = 0; m < catPatterns.length; m++) {
+                    var catPatternObj = catPatterns[m];
+                    for (var catPattern in catPatternObj) {
+                      country = catPatternObj[catPattern];
+                      var regexLangPattern = new RegExp('\\b' + catPattern + '\\b', 'gi');
+                      if (field.match(regexLangPattern)) { // country pattern matched
+                        // check for eventual negative look-behinds
+                        if (parseNegativeLookbehinds(field, catPattern)) {
+                          // negative lookbehind pattern found:
+                          // break category patterns loop
+                          // and go on with other patterns
+                          break;
+                        } else {
+                          // negative lookbehind pattern not found:
+                          // country really matched, result is found
+                          return country;
                         }
-                      }
-                      if (!negative) {
-                        result = country;
-                        break loop1; // country matched, negative is false: break first loop
                       }
                     }
                   }
@@ -568,8 +569,36 @@ internals.detectNationality = function(person, provider, config) {
         }
       }
     }
+    return undefined;
   }
-  return result;
+
+  function parseNegativeLookbehinds(field, catPattern) {
+    for (var i = 0; i < negativeLookbehinds.length; i++) {
+      var negativeLookbehindObj = negativeLookbehinds[i];
+      for (var lang in negativeLookbehindObj) {
+        if (lang === language) {
+          var negativeLookbehindPatterns = negativeLookbehindObj[lang];
+          for (var j = 0; j < negativeLookbehindPatterns.length; j++) {
+            var negativeLookbehindObj = negativeLookbehindPatterns[j];
+            for (var cat in negativeLookbehindObj) {
+              if (cat === category) {
+                var catPatterns = negativeLookbehindObj[cat];
+                for (var k = 0; k < catPatterns.length; k++) {
+                  var negativeLookbehind = catPatterns[k];
+                  var regexNegativeLookbehind = new RegExp('\\b' + negativeLookbehind + '\\s+' + catPattern + '\\b', 'gi');
+                  if (field.match(regexNegativeLookbehind)) {
+                    // negative lookbehind pattern matched
+                    return true;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }
 }
 
 module.exports = exports;
