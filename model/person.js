@@ -7,4 +7,22 @@ var personSchema = new mongoose.Schema({
   isloved: Boolean,
 });
 
-mongoose.model('Person', personSchema);
+var Person = mongoose.model('Person', personSchema);
+
+/*
+var person_data = {
+  first_name: req.params.first,
+  last_name: req.params.last,
+  username: req.params.username,
+};
+
+var person = new Person(person_data);
+
+person.save(function(err, data) {
+  if (err) {
+    res.json({ error: err });
+  } else {
+    res.json(data);
+  }
+});
+*/

@@ -2,11 +2,9 @@ var
   mongoose = require('mongoose'),
   config = require('../config') // global configuration
 ;
-var exports = {}; // ???
-var internals = {};
 
-//// use LOG() to log only when debugging
-//var LOG = config.debug ? console.log.bind(console) : function() {};
+// use LOG() to log only when debugging
+var LOG = config.debug ? console.log.bind(console) : function() {};
 
 var providerSchema = new mongoose.Schema({
   key: String,
@@ -19,30 +17,19 @@ var providerSchema = new mongoose.Schema({
   categories: Object,
 });
 
-//var objectId = mongoose.Types.ObjectId; // ???
-
-var Providers; // providers model; assign it in populateProviders method
+var objectId = mongoose.Types.ObjectId;
 
 mongoose.connection.on('open', function () {
   // populate providers (if not in production...)
-  internals.populateProviders(function(err, result) {
+  populateProviders(function(err, result) {
     if (err) {
       return console.error('Error populating providers:', err);
     }
-    // create model from schema
-    Provider = mongoose.model('Provider', result.schema);
-
-    // create providers
-    internals.createProviders(result.providers, function(err, result) {
-      if (err) {
-        return console.error('Error creating providers:', err);
-      }
-      console.log('Providers populated.');
-    });
+    console.log('Providers populated.');
   });
 });
 
-internals.populateProviders = function(callback) {
+var populateProviders = function(callback) {
   var providers = [
     {
       //'_id': new objectId,
@@ -110,17 +97,15 @@ internals.populateProviders = function(callback) {
       },
     },
     {
-      //'_id': new objectId,
+      '_id': new objectId,
       'key': 'GF',
       'type': 'comments',
       'mode': 'normal',
     },
   ];
 
-  var methods = {};
-
-  // define methods to be added to schema
-  methods.getList = function($) {
+  // add methods to provider schema
+  providerSchema.methods.getList = function($) {
     var val = [];
     if (this.key === 'SGI') {
       $('a[itemprop=url][href^="annuncio/"]').each(function(index, element) {
@@ -146,7 +131,7 @@ internals.populateProviders = function(callback) {
     return val;
   };
 
-  methods.getDetailsName = function($) {
+  providerSchema.methods.getDetailsName = function($) {
     var val = '';
     if (this.key === 'SGI') {
       var element = $('td[id="ctl00_content_CellaNome"]');
@@ -168,7 +153,7 @@ internals.populateProviders = function(callback) {
     return val;
   };
 
-  methods.getDetailsZone = function($) {
+  providerSchema.methods.getDetailsZone = function($) {
     var val = '';
     if (this.key === 'SGI') {
       var element = $('td[id="ctl00_content_CellaZona"]');
@@ -188,7 +173,7 @@ internals.populateProviders = function(callback) {
     return val;
   };
 
-  methods.getDetailsDescription = function($) {
+  providerSchema.methods.getDetailsDescription = function($) {
     var val = '';
     if (this.key === 'SGI') {
       var element = $('td[id="ctl00_content_CellaDescrizione"]');
@@ -209,7 +194,7 @@ internals.populateProviders = function(callback) {
     return val;
   };
 
-  methods.getDetailsPhone = function($) {
+  providerSchema.methods.getDetailsPhone = function($) {
     var val = '';
     if (this.key === 'SGI') {
       var element = $('td[id="ctl00_content_CellaTelefono"]');
@@ -229,7 +214,7 @@ internals.populateProviders = function(callback) {
     return val;
   };
 
-  methods.getDetailsPhotos = function($) {
+  providerSchema.methods.getDetailsPhotos = function($) {
     var val = [];
     if (this.key === 'SGI') {
       $('a[rel="group"][class="fancybox"]').each(function(index, element) {
@@ -246,48 +231,30 @@ internals.populateProviders = function(callback) {
     if (this.key === 'FORBES') {
       $('table[class="sinottico"]').find('tr').eq(1).find('a > img').each(function(index, element) {
         var src = $(element).attr('src');
+        //LOG('photo src:', src);
         val.push(src);
       });
     }
     return val;
   };
 
-  for (var method in methods) {
-    try {
-      if (typeof(methods[method]) == "function") {
-        providerSchema.methods[method] = methods[method];
-      }
-    } catch (err) {
-      console.error('method', method, "is inaccessible");
-    };
-  }
-
-/*
   // create model from schema
-  Provider = mongoose.model('Provider', providerSchema);
+  var Provider = mongoose.model('Provider', providerSchema);
 
-*/
-
-  var result = {};
-  result.providers = providers;
-  result.schema = providerSchema;
-  callback(null, result);
-};
-
-internals.createProviders = function(providers, callback) {
   // populate model (remove ad create)
   Provider.remove({}, function(err) {
     if (err) {
-      //console.error('Provider collection could not be dropped/created; err is:', err);
-      return callback(err);
+      console.error('Provider collection could not be dropped/created; err is:', err);
+      return;
     }
-  
+
     // Provider collection dropped
     Provider.create(providers, function(err, provider) {
       if (err) {
-        return callback(err);
+        console.error(err);
+        return;
       }
-      callback(null, provider);
+      callback(null, providers);
     });
   });
-}
+};

@@ -59,9 +59,9 @@ exports.syncPersons = function(req, res) { // sync persons
       async.each(
         providers, // 1st param in async.each() is the array of items
         function(provider, callbackOuter) { // 2nd param is the function that each item is passed to
-          LOG('*** provider:', provider.key);
+          LOG('===', 'provider:', provider.key);
           var url = internals.buildUrl(provider, config);
-LOG('url:', url);
+          //LOG('url:', url);
           network.sfetch(
             url,
             provider,
@@ -70,8 +70,7 @@ LOG('url:', url);
               res.json(err);
             },
             function(contents) { // success
-//LOG('url', url, 'contents:', contents);
-LOG('url', url, 'contents arrived, lenght is', contents.length);
+              //LOG('url', url, 'contents lenght is', contents.length);
               if (!contents) {
                 console.warn('Error syncing provider', provider.key + ':', 'empty contents', '-', 'skipping');
                 return callbackOuter(); // skip this outer loop
@@ -79,26 +78,32 @@ LOG('url', url, 'contents arrived, lenght is', contents.length);
               $ = cheerio.load(contents);
     
               // loop to get each element url (person url)
-              var list = internals.parseList($, provider);
-LOG('list of provider', provider.key, 'is long', list.length);
-return callbackOuter();
+              //var list = internals.parseList($, provider);
+              //var s = provider.selectors
+              var list = provider.getList($);
+              //LOG('list of provider', provider.key, 'is long', list.length);
+
               async.each(
                 list, // 1st param in async.each() is the array of items
                 function(element, callbackInner) { // 2nd param is the function that each item is passed to
                   var person = {};
-                  person.url = internals.parseUrl(element, provider, config);
+                  person.url = element.url;
                   if (!person.url) { // TODO: are we checking for undefined AND null?
-                    console.warn('Error syncing provider', provider.key + ',', 'person', person.key + ':', err, '-', 'skipping');
-                    return callbackInner(); // skip this iner loop
+                    console.warn('Error syncing provider', provider.key + ',', 'person with no url', ', skipping');
+                    return callbackInner(); // skip this inner loop
                   }
-                  LOG(provider.key, '-', 'person.url:', person.url);
-                  person.key = internals.parseKey(element, provider);
+                  //LOG(provider.key, '-', 'person.url full:', provider.url + person.url);
+                  person.key = element.key;
+                  if (!person.key) { // TODO: are we checking for undefined AND null?
+                    console.warn('Error syncing provider', provider.key + ',', 'person with no key', ', skipping');
+                    return callbackInner(); // skip this inner loop
+                  }
                   network.sfetch(
-                    person.url,
+                    provider.url + person.url,
                     provider,
                     function(err) { // error
                       console.warn('Error syncing provider', provider.key + ',', 'person', person.key + ':', err, '-', 'skipping');
-                      return callbackInner(); // skip this iner loop
+                      return callbackInner(); // skip this inner loop
                     },
                     function(contents) {
                       if (!contents) {
@@ -106,12 +111,15 @@ return callbackOuter();
                         return callbackInner(); // skip this inner loop
                       }
                       $ = cheerio.load(contents);
-                      person.name = internals.parseName($, provider);
-                      person.zone = internals.parseZone($, provider);
-                      person.description = internals.parseDescription($, provider);
-                      person.phone = internals.parsePhone($, provider);
-                      person.photos = internals.parsePhotos($, provider);
+                      person.name = provider.getDetailsName($);
+                      person.zone = provider.getDetailsZone($);
+                      person.description = provider.getDetailsDescription($);
+                      person.phone = provider.getDetailsPhone($);
+                      person.photos = provider.getDetailsPhotos($);
+
                       person.nationality = internals.detectNationality(person, provider, config);
+
+                      LOG('person:', person, '\n------------------');
                       persons.push(person); // add this person to persons list
 
                       // TODO: save this person to database
@@ -144,7 +152,7 @@ return callbackOuter();
             return res.json(-1);
           }
           // all tasks are successfully done now
-          LOG('---------------\n', persons, '\n---------------')
+          //LOG('===\n', persons, '\n===')
           res.json(persons.length);
         }
       );
@@ -178,13 +186,13 @@ exports.testDetectNationality = function(req, res) { // test detect nationality
       var person = {};  
       person.url = 'http://www.example.com';
       person.key = 'test-key';
-      person.name = 'Isabel Russa';
+      person.name = undefined; //'Isabel Russa';
       person.zone = 'Corso Francia';
       person.description = 'Viene dalla Argentina, ha 32 anni, è ricercatrice biologica';
       person.phone = '3333333333';
 
       res.json(
-        internals.detectNationality(person, providers[0], config)
+        internals.detectNationality(person, providers[1], config)
       );
     }
   });
@@ -199,17 +207,14 @@ internals.getAll = function(filter, result) { // get all providers
 internals.buildUrl = function(provider, config) {
   var val;
   if (provider.key === 'SGI') {
-    //val = (config.mode ==='fake' ? provider.urlFake : provider.url) + provider.listCategories[config.category].path + config.city;
     val = provider.url + provider.categories[config.category].path + config.city;
   }
   if (provider.key === 'TOE') {
-    //val = (config.mode === 'fake' ? provider.urlFake : provider.url) + provider.listCategories[config.category].path;
     val = provider.url + provider.categories[config.category].path;
   }
   if (provider.key === 'FORBES') {
     val = provider.url + provider.categories[config.category].path;
   }
-  LOG('buildUrl()', '-', provider.key, '-', 'provider url:', val);
   return val;
 }
 
@@ -226,26 +231,15 @@ internals.parseList = function($, provider) {
     });
     LOG('parseList()', '-', provider.key, '-', 'details list:', val);
   }
-  if (provider.key === 'FORBES') {
-    console.log("£££");
-    //console.log("AAA", $('h2 > span[id="2015"]').next().find('ol').find('li'));
-    console.log('AAA:', $('h2 > span[id="2015"]').parent().next('div').find('ol > li > a'));
-    //$('h2 > span[id="2015"]').next().find('ol').find('li').each(function(index, element) {
+  if (provider.key === 'NOOOFORBES') {
     $('h2 > span[id="2015"]').parent().next('div').find('ol > li > a').each(function(index, element) {
-      console.log('*************** element:', element);
-      console.log('*************** href:', element.attribs.href);
-      //console.log('*************** title:', element.attr('title'), 'href:', element.attr('href'));
+      if (!$(element).attr('class')) {
+        var key = $(element).attr('title');
+        var url = $(element).attr('href');
+        val.push({ key: key, url: url });
+      }
     });
-
-/*
-//LOG('parseList()', '-', provider.key, '-', 'elements:', $(provider.selectors.elements));
-    val = $(provider.selectors.listElements).find(provider.selectors.listElements2);
-    LOG('parseList()', '-', provider.key, '-', 'elements list:', val);
-    //val = $(provider.selectors.elements).each(function (index, element) {
-    //  val.push($(element).attr('href'));
-    //});
-    //LOG('parseList()', '-', provider.key, '-', 'elements list:', val);
-*/
+    LOG(provider.key, 'list:', val);
   }
   return val;
 }
@@ -448,7 +442,7 @@ internals.detectNationality = function(person, provider, config) {
             { 'turc(hia|a)': 'tr' },
             { 'u[kc]raina': 'ua' },
             { 'urugua([yi])|(gia)|([yi]ana)': 'uy' },
-            { 'america(na)?': 'us' },
+            { '(america(na)?|statunitense)': 'us' },
             { 'venezuela(na)?': 've' },
             { 'vietnam(ita)?': 'vn' },
             { 'asia(tica)?': 'asia' },
@@ -551,6 +545,7 @@ internals.detectNationality = function(person, provider, config) {
   function parseNationalityPatterns() {
     for (var i = 0; i < fields.length; i++) {
       var field = fields[i];
+      if (!field) { continue }
       for (var j = 0; j < nationalityPatterns.length; j++) {
         var patternObj = nationalityPatterns[j];
         for (var lang in patternObj) {
@@ -588,7 +583,7 @@ internals.detectNationality = function(person, provider, config) {
         }
       }
     }
-    return undefined;
+    return '';
   }
 
   function parseNegativeLookbehinds(field, catPattern) {

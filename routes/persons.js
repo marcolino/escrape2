@@ -108,13 +108,6 @@ router.route('/:id/edit').get(function(req, res) { // get person by ID
 });
 
 router.route('/:id/edit').put(function(req, res) { // update a person by id
-/*
-  var name = req.body.name;
-  var vote = req.body.vote;
-  var dateofcreation = req.body.dateofcreation;
-  var company = req.body.company;
-  var isloved = req.body.isloved;
-*/
   var record = {
     name: req.body.name,
     vote: req.body.vote,

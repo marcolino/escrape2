@@ -11,15 +11,9 @@ var exports = {};
  * fetches url contents, stubbornly and securely
  */
 exports.sfetch = function(url, provider, error, success) {
-  /*
-  const retriesMax = 3; // maximum number of retries
-  const retriesTimeout = 45 * 1000; // time to sleep between retries (milliseconds)
-  */
   var options = {
     url: url,
-/*
-    requestretry puts these as 3rd and 4th params of request() call...
-*/
+    // requestretry puts these as 3rd and 4th params of request() call...
     maxAttempts: 3, // retry for 3 attempts
     retryDelay: 5 * 1000, // wait for 10 seconds before trying again
     retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
@@ -33,11 +27,6 @@ exports.sfetch = function(url, provider, error, success) {
       socksHost: config.tor.host,
       socksPort: config.tor.port,
     };
-/*
-    options.headers = { // use random UA
-      'User-Agent': randomUseragent.getRandom(),
-    };
-*/
   }
 
   request(
@@ -53,7 +42,7 @@ exports.sfetch = function(url, provider, error, success) {
     options.retryDelay
   );
 
-  // request retry strategies ///////////////////////////////////////////////////////////
+  // request retry strategies
 
   /**
    * @param  {Null | Object} err
@@ -61,14 +50,15 @@ exports.sfetch = function(url, provider, error, success) {
    * @return {Boolean} true if the request should be retried
    */
   function retryStrategyForbidden(err, response, retry) {
-    // retry the request if the response was a 403 one (forbidden),
-    //  or if response was 200 (success), but content contain a forbidden message
-    //var forbidden = response && 400 <= response.statusCode && response.statusCode < 500;
     var providerForbiddenRegexp = new RegExp(
       provider.forbiddenRegexp.body,
       provider.forbiddenRegexp.flags
     );
-//console.info('RESPONSE.statusCode:', response.statusCode);
+    //console.log('RESPONSE.statusCode:', response.statusCode);
+    /*
+     * retry the request if the response was a 403 one (forbidden),
+     * or if response was 200 (success), but content contain a forbidden message
+     */
     var forbidden =
       response && (
         (response.statusCode == 403) || // 403 status code (forbidden)
