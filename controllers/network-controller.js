@@ -13,9 +13,8 @@ var exports = {};
 exports.sfetch = function(url, provider, error, success) {
   var options = {
     url: url,
-    // requestretry puts these as 3rd and 4th params of request() call...
-    maxAttempts: 3, // retry for 3 attempts
-    retryDelay: 5 * 1000, // wait for 10 seconds before trying again
+    maxAttempts: 2, // retry for 3 attempts
+    retryDelay: 15 * 1000, // wait for 10 seconds before trying again
     retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
     headers: {
      'User-Agent': randomUseragent.getRandom(), // use random UA
@@ -33,11 +32,12 @@ exports.sfetch = function(url, provider, error, success) {
   	options,
   	function (err, response, contents) {
       if (err) {
-        console.error('error in sfetch( request() ) callback:', err);
+        console.error('error in sfetch(request()) callback:', err);
         return error(err);
       }
       success(contents);
     },
+    // requestretry wants these as 3rd and 4th params of request() call...
     options.maxAttempts,
     options.retryDelay
   );
@@ -54,7 +54,8 @@ exports.sfetch = function(url, provider, error, success) {
       provider.forbiddenRegexp.body,
       provider.forbiddenRegexp.flags
     );
-    //console.log('RESPONSE.statusCode:', response.statusCode);
+//console.log('RESPONSE:', response);
+//console.log('RESPONSE.statusCode:', response.statusCode);
     /*
      * retry the request if the response was a 403 one (forbidden),
      * or if response was 200 (success), but content contain a forbidden message
@@ -62,7 +63,7 @@ exports.sfetch = function(url, provider, error, success) {
     var forbidden =
       response && (
         (response.statusCode == 403) || // 403 status code (forbidden)
-        (
+        ( // probably 'providerForbiddenRegexp' arrives with statusCode = 403, so this is not useful...
           (response.statusCode == 200) && // 200 status code (success)
           (response.body.match(providerForbiddenRegexp)) // body matches 'forbidden' warning
         )

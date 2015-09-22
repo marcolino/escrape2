@@ -73,17 +73,17 @@ internals.populateProviders = function(callback) {
       'url': 'http://www.sexyguidaitalia.com',
       'language': 'it',
       'dateOfLastSync': new Date(0),
-      'forbiddenRegexp': { // TODO: verify this re...
-        'body': 'forbidden, please complete captcha...',
+      'forbiddenRegexp': { // TODO: verify this re... - TODO: WE DON'T NEED THIS...
+        'body': 'fXXXorbidden, please complete captcha...',
         'flags': 'gim',
       },
       'categories': {
         'women': {
           'path': '/escort/', // TODO: which path? list path or details path? differentiate?
-          //'selectors': {
-          //  'category': 'li[id="ctl00_escort"]',
-          //  'listCities': 'li',
-          //},
+          'selectors': {
+            'category': 'li[id="ctl00_escort"]',
+            'listCities': 'li',
+          },
         },
       },
     },
@@ -123,23 +123,23 @@ internals.populateProviders = function(callback) {
   methods.getList = function($) {
     var val = [];
     if (this.key === 'SGI') {
-      $('a[itemprop=url][href^="annuncio/"]').each(function(index, element) {
-        var key = '...';
+      $('a[itemprop="url"]').each(function(index, element) {
         var url = $(element).attr('href');
+        var key = url; // TODO: parse 'adv2787' from 'annuncio/adv2787' ...
         val.push({ key: key, url: url });
       });
     }
     if (this.key === 'TOE') {
       $('div[id="row-viewmode"] > div > div[class~="/pi-img-shadow"]').each(function(index, element) {
-        var key = '...';
         var url = $(element).attr('href');
+        var key = '...';
         val.push({ key: key, url: url });
       });      
     }
     if (this.key === 'FORBES') {
       $('h2 > span[id="2015"]').parent().next('div').find('ol > li > a:not([class])').each(function(index, element) {
-        var key = $(element).attr('title');
         var url = $(element).attr('href');
+        var key = $(element).attr('title');
         val.push({ key: key, url: url });
       });
     }

@@ -44,7 +44,7 @@ exports.syncPlaces = function(req, res) { // sync persons
 exports.syncPersons = function(req, res) { // sync persons
   var persons = [];
 
-  internals.getAll({ type: 'persons', mode: (config.mode ? 'fake' : 'normal'), /*key: 'SGI'*/ }, function(err, providers) { // GET all providers
+  internals.getAll({ type: 'persons', mode: config.mode, key: 'SGI' }, function(err, providers) { // GET all providers
     if (err) {
       console.error('Error retrieving providers:', err);
       res.json({ error: err });
@@ -60,17 +60,17 @@ exports.syncPersons = function(req, res) { // sync persons
         providers, // 1st param in async.each() is the array of items
         function(provider, callbackOuter) { // 2nd param is the function that each item is passed to
           LOG('===', 'provider:', provider.key);
-          var url = internals.buildUrl(provider, config);
-          //LOG('url:', url);
+          var url = internals.buildUrl(provider, config); // TODO: => buildListUrl()
+          LOG('url:', url);
           network.sfetch(
             url,
             provider,
             function(err) { // error
               console.error('Error syncing provider', provider.key + ':', err);
-              res.json(err);
+              res.json({ error: err }); // TODO: res.json(err)  >> res.json{ error: err }) GLOBALY...
             },
             function(contents) { // success
-              //LOG('url', url, 'contents lenght is', contents.length);
+              LOG('url', url, 'contents lenght is', contents.length);
               if (!contents) {
                 console.warn('Error syncing provider', provider.key + ':', 'empty contents', '-', 'skipping');
                 return callbackOuter(); // skip this outer loop
@@ -81,7 +81,7 @@ exports.syncPersons = function(req, res) { // sync persons
               //var list = internals.parseList($, provider);
               //var s = provider.selectors
               var list = provider.getList($);
-              //LOG('list of provider', provider.key, 'is long', list.length);
+              LOG('list of provider', provider.key, 'is long', list.length);
 
               async.each(
                 list, // 1st param in async.each() is the array of items
@@ -98,6 +98,8 @@ exports.syncPersons = function(req, res) { // sync persons
                     console.warn('Error syncing provider', provider.key + ',', 'person with no key', ', skipping');
                     return callbackInner(); // skip this inner loop
                   }
+                  // TODO url = buildDeatilsUrl()
+                  LOG('sfetch details url:', provider.url + person.url);
                   network.sfetch(
                     provider.url + person.url,
                     provider,
