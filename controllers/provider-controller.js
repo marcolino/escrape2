@@ -68,7 +68,7 @@ exports.syncPersons = function(req, res) { // sync persons
               async.each(
                 list, // 1st param is the array of items
                 function(element, callbackInner) { // 2nd param is the function that each item is passed to
-                  var person = {};
+                  var person = {}; // TODO: var person = new Person();
                   person.url = element.url;
                   if (!person.url) {
                     console.warn('Error syncing provider', provider.key + ',', 'person with no url', ', skipping');

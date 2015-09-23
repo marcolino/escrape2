@@ -1,4 +1,6 @@
-var mongoose = require('mongoose');
+var mongoose = require('mongoose')
+  , config = require('./config'); // application configuration
+
 
 var providerSchema = new mongoose.Schema({
   key: String,
@@ -9,6 +11,15 @@ var providerSchema = new mongoose.Schema({
   dateOfLastSync: { type: Date },
   forbiddenRegexp: Object, // TODO: remove this, forbidder answers a 403 statusCode, no need to parse regexp...
   categories: Object,
+}, {
+  autoIndex: config.debug,
 });
+
+/*
+// virtual method example
+providerSchema.virtual('mode.type').get(function () {
+  return this.mode + ' ' + this.type;
+});
+*/
 
 module.exports = mongoose.model('Provider', providerSchema);
