@@ -1,14 +1,12 @@
-var express = require('express'),
-    providerController = require("../controllers/provider-controller");
-;
+var express = require('express')
+  , providerController = require("../controllers/provider-controller");
 
-var router = express.Router();
+var router = module.exports = express.Router();
 
 router.get('/', providerController.getAll);
 router.get('/syncPlaces', providerController.syncPlaces);
 router.get('/syncPersons', providerController.syncPersons);
 router.get('/syncComments', providerController.syncComments);
-router.get('/testDetectNationality', providerController.testDetectNationality);
-//router.get('/status', providerController.status);
 
-module.exports = router;
+router.get('/testDetectNationality', providerController.testDetectNationality); // TODO: learn testing as a pro... :-)
+//router.get('/status', providerController.status);

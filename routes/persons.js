@@ -6,7 +6,7 @@ var express = require('express'), // express
 
 var router = express.Router(); // express router
 
-router.use(bodyParser.urlencoded({ extended: true }))
+//router.use(bodyParser.urlencoded({ extended: true })); // already in app.js (is it sufficient???)
 
 router.use(methodOverride(function(req, res) { // method verride for clients supporting only POST method
   if (req.body && typeof req.body === 'object' && '_method' in req.body) {
@@ -47,7 +47,7 @@ router.route('/').post(function(req, res) { // post a new person
       console.log('POST person: ' + person);
       res.json(person);
     }
-  })
+  });
 });
 
 /*
@@ -64,10 +64,10 @@ router.param('id', function(req, res, next, id) {
   mongoose.model('Person').findById(id, function(err, person) {
     if (err) { // if it isn't found, we are going to repond with 404
       console.error('Error retrieving person with id ' + id + ':', err);
-      var err = new Error('ID not found');
-      err.status = 404;
-      res.status(err.status);
-      res.json({ error: err });
+      var error = new Error('ID not found');
+      error.status = 404;
+      res.status(error.status);
+      res.json({ error: error });
     } else { // if it is found we continue on
       console.log('person of id', id, ':', person);
       // once validation is done save the new item in the req

@@ -1,50 +1,35 @@
-var
-  mongoose = require('mongoose'), // mongo abstraction
-  cheerio = require('cheerio'), // to parse fetched DOM data
-  async = require("async"), // to call many async functions in a loop
-  network = require('./network-controller'), // network handling
-  config = require('../config') // global configuration
-;
-var exports = {};
-var internals = {};
-        
-// use LOG() to log only when debugging
-var LOG = config.debug ? console.log.bind(console) : function() {};
+var mongoose = require('mongoose') // mongo abstraction
+  , cheerio = require('cheerio') // to parse fetched DOM data
+  , async = require("async") // to call many async functions in a loop
+  , network = require('./network-controller') // network handling
+  , config = require('../config'); // global configuration
+var Provider = require('../model/provider') // model of provider
+  , Person = require('../model/person'); // model of person
+
+mongoose.connection.on('open', function () {
+  // create providers
+  createProviders(config.providers, function(err, result) {
+    if (err) {
+      return console.error('Error creating providers:', err);
+    }
+  });
+});
 
 exports.getAll = function(req, res, next) { // GET all providers
-  internals.getAll(function(err, providers) {
+  getAll(function(err, providers) {
     if (err) {
       console.error('Error retrieving providers:', err);
       res.json({ error: err });
     } else {
-      LOG('providers.getAll: ' + providers);
       res.json(providers);
     }   
   });
-}
-
-exports.syncPlaces = function(req, res) { // sync persons
-  // ... parsePlaces($, provider, config);
-
-  function parsePlaces($, provider, config) {
-    var val = {};
-    if (provider.key === 'SGI') {
-      $(provider.listCategories[config.category].selectors.category + ' > ul > li > a').each(function() {
-        var region = $(this).text();
-        var city = $(this).next('ul').find('li a').map(function() {
-          return $(this).text();
-        }).get();
-        val[region] = city;
-      });
-    }
-    return val;
-  }
 };
 
 exports.syncPersons = function(req, res) { // sync persons
   var persons = [];
 
-  internals.getAll({ type: 'persons', mode: config.mode, key: 'SGI' }, function(err, providers) { // GET all providers
+  getAll({ type: 'persons', mode: config.mode, /*key: 'SGI'*/ }, function(err, providers) { // GET all providers
     if (err) {
       console.error('Error retrieving providers:', err);
       res.json({ error: err });
@@ -59,9 +44,9 @@ exports.syncPersons = function(req, res) { // sync persons
       async.each(
         providers, // 1st param in async.each() is the array of items
         function(provider, callbackOuter) { // 2nd param is the function that each item is passed to
-          LOG('===', 'provider:', provider.key);
-          var url = internals.buildUrl(provider, config); // TODO: => buildListUrl()
-          LOG('url:', url);
+          console.log('===', 'provider:', provider.key);
+          var url = buildUrl(provider, config); // TODO: => buildListUrl()
+          console.log('url:', url);
           network.sfetch(
             url,
             provider,
@@ -70,40 +55,36 @@ exports.syncPersons = function(req, res) { // sync persons
               res.json({ error: err }); // TODO: res.json(err)  >> res.json{ error: err }) GLOBALY...
             },
             function(contents) { // success
-              LOG('url', url, 'contents lenght is', contents.length);
+              console.log('url', url, 'contents lenght is', contents.length);
               if (!contents) {
                 console.warn('Error syncing provider', provider.key + ':', 'empty contents', '-', 'skipping');
                 return callbackOuter(); // skip this outer loop
               }
               $ = cheerio.load(contents);
     
-              // loop to get each element url (person url)
-              //var list = internals.parseList($, provider);
-              //var s = provider.selectors
-              var list = provider.getList($);
-              LOG('list of provider', provider.key, 'is long', list.length);
+              var list = getList(provider, $);
+              console.log('list of provider', provider.key, 'is long', list.length);
 
               async.each(
-                list, // 1st param in async.each() is the array of items
+                list, // 1st param is the array of items
                 function(element, callbackInner) { // 2nd param is the function that each item is passed to
                   var person = {};
                   person.url = element.url;
-                  if (!person.url) { // TODO: are we checking for undefined AND null?
+                  if (!person.url) {
                     console.warn('Error syncing provider', provider.key + ',', 'person with no url', ', skipping');
                     return callbackInner(); // skip this inner loop
                   }
-                  //LOG(provider.key, '-', 'person.url full:', provider.url + person.url);
                   person.key = element.key;
-                  if (!person.key) { // TODO: are we checking for undefined AND null?
+                  if (!person.key) {
                     console.warn('Error syncing provider', provider.key + ',', 'person with no key', ', skipping');
                     return callbackInner(); // skip this inner loop
                   }
-                  // TODO url = buildDeatilsUrl()
-                  LOG('sfetch details url:', provider.url + person.url);
+                  var detailsUrl = buildDetailsUrl(provider, person, config);
+                  console.log('details url:', detailsUrl);
                   network.sfetch(
-                    provider.url + person.url,
+                    detailsUrl,
                     provider,
-                    function(err) { // error
+                    function(err) {
                       console.warn('Error syncing provider', provider.key + ',', 'person', person.key + ':', err, '-', 'skipping');
                       return callbackInner(); // skip this inner loop
                     },
@@ -113,18 +94,28 @@ exports.syncPersons = function(req, res) { // sync persons
                         return callbackInner(); // skip this inner loop
                       }
                       $ = cheerio.load(contents);
-                      person.name = provider.getDetailsName($);
-                      person.zone = provider.getDetailsZone($);
-                      person.description = provider.getDetailsDescription($);
-                      person.phone = provider.getDetailsPhone($);
-                      person.photos = provider.getDetailsPhotos($);
+                      person.name = getDetailsName($, provider);
+                      person.zone = getDetailsZone($, provider);
+                      person.description = getDetailsDescription($, provider);
+                      person.phone = getDetailsPhone($, provider);
+                      person.photos = getDetailsPhotos($, provider);
+                      person.nationality = detectNationality(person, provider, config);
 
-                      person.nationality = internals.detectNationality(person, provider, config);
+                      console.log('person:', person, '\n------------------');
 
-                      LOG('person:', person, '\n------------------');
+                      // TODO: we don't need persons, just their count (possibly...)
                       persons.push(person); // add this person to persons list
 
-                      // TODO: save this person to database
+                      // TODO: save this person to database /////////////////////////////////
+                      var p = new Person({ name: person.name });
+                      p.save(function (err) {
+                        if (err) {
+                          console.warn('Error saving person', person.name + ':', err, '-', 'skipping');
+                        }
+                        // person saved
+                        console.log('person', person.name, 'saved');
+                      })
+                      ///////////////////////////////////////////////////////////////////////
 
                       callbackInner();
                     }
@@ -154,7 +145,7 @@ exports.syncPersons = function(req, res) { // sync persons
             return res.json(-1);
           }
           // all tasks are successfully done now
-          //LOG('===\n', persons, '\n===')
+          //console.log('===\n', persons, '\n===')
           res.json(persons.length);
         }
       );
@@ -166,21 +157,39 @@ exports.syncComments = function(req, res) { // sync comments
   // TODO
 };
 
+exports.syncPlaces = function(req, res) { // sync persons
+  // ... parsePlaces($, provider, config);
+
+  function parsePlaces($, provider, config) {
+    var val = {};
+    if (provider.key === 'SGI') {
+      $(provider.listCategories[config.category].selectors.category + ' > ul > li > a').each(function() {
+        var region = $(this).text();
+        var city = $(this).next('ul').find('li a').map(function() {
+          return $(this).text();
+        }).get();
+        val[region] = city;
+      });
+    }
+    return val;
+  }
+};
+
 // TODO: in a different module ('globals') ?
 exports.status = function(req, res) { // get providers status
-  mongoose.model('Globals').find({ 'key': 'status-current' }, function(err, currentStatus) {
+  Provider('Globals').find({ 'key': 'status-current' }, function(err, currentStatus) {
     if (err) {
       console.error('Error retrieving current status:', err);
       res.json({ error: err });
     } else {
-      console.log('current status: ' + currentStatus);
+      console.console.log('current status: ' + currentStatus);
       res.json(currentStatus);
     }   
   });
 };
 
 exports.testDetectNationality = function(req, res) { // test detect nationality
-  internals.getAll({ type: 'persons', }, function(err, providers) { // get all providers
+  getAll({ type: 'persons', }, function(err, providers) { // get all providers
     if (err) {
       console.error('Error retrieving providers:', err);
       res.json({ error: err });
@@ -194,19 +203,202 @@ exports.testDetectNationality = function(req, res) { // test detect nationality
       person.phone = '3333333333';
 
       res.json(
-        internals.detectNationality(person, providers[1], config)
+        detectNationality(person, providers[1], config)
       );
     }
   });
-}
+};
 
-internals.getAll = function(filter, result) { // get all providers
-  mongoose.model('Provider').find(filter, function(err, providers) {
+var collectionExists = function(collectionName, callback) {
+  getAll(function(err, providers) {
+    if (err) {
+      return callback(false);
+    } else {
+      callback(providers.length > 0);
+    }   
+  });
+};
+
+var createProviders = function(providers, callback) {
+  // populate model (remove ad create)
+  collectionExists('Provider', function(exists) {
+    if (exists) {
+      if (config.env === 'development') {
+        console.log('Provider collection exists, environment is development, re-creating providers');
+        remove(function(err) {
+          create(providers, function(err) {
+            callback(err);
+          });
+        });
+      }
+    } else {
+      console.log('Provider collection does not exist, creating providers');
+      create(providers, function(err) {
+        callback(err);
+      });
+    }
+  });
+
+  // remove Provider collection
+  function remove(callback) {
+    Provider.remove({}, function(err) {
+      if (err) {
+        return callback(err);
+      }
+      callback(null);
+    });
+  }
+
+  // create Provider collection
+  function create(providers, callback) {
+    Provider.create(providers, function(err, provider) {
+      if (err) {
+        return callback(err);
+      }
+      callback(null, provider);
+    });
+  }
+};
+
+var getAll = function(filter, result) { // get all providers
+  Provider.find(filter, function(err, providers) {
     result(err, providers);
   });
-}
+};
 
-internals.buildUrl = function(provider, config) {
+var getList = function(provider, $) {
+  var val = [];
+  if (provider.key === 'SGI') {
+    $('a[itemprop="url"]').each(function(index, element) {
+      var url = $(element).attr('href');
+      var key = url; // TODO: parse 'adv2787' from 'annuncio/adv2787' ...
+      val.push({ key: key, url: url });
+    });
+  }
+  if (provider.key === 'TOE') {
+    $('div[id="row-viewmode"] > div > div[class~="/pi-img-shadow"]').each(function(index, element) {
+      var url = $(element).attr('href');
+      var key = '...';
+      val.push({ key: key, url: url });
+    });      
+  }
+  if (provider.key === 'FORBES') {
+    $('h2 > span[id="2015"]').parent().next('div').find('ol > li > a:not([class])').each(function(index, element) {
+      var url = $(element).attr('href');
+      var key = $(element).attr('title');
+      val.push({ key: key, url: url });
+    });
+  }
+  return val;
+};
+
+var getDetailsName = function($, provider) {
+  var val = '', element;
+  if (provider.key === 'SGI') {
+    element = $('td[id="ctl00_content_CellaNome"]');
+    if (element) {
+      val = $(element).text();
+    }
+  }
+  if (provider.key === 'TOE') {
+    element = $('h1[class~="titolo"]');
+    if (element) {
+      val = $(element).text();
+    }
+  }
+  if (provider.key === 'FORBES') {
+    element = $('h1[id="firstHeading"]').each(function(index, element) {
+      val = $(element).text();
+    });
+  }
+  return val;
+};
+
+var getDetailsZone = function($, provider) {
+  var val = '', element;
+  if (provider.key === 'SGI') {
+    element = $('td[id="ctl00_content_CellaZona"]');
+    if (element) {
+      val = $(element).text();
+    }
+  }
+  if (provider.key === 'TOE') {
+    element = $('a > span > i[class="icon-location"]');
+    if (element) {
+      val = $(element).text();
+    }
+  }
+  if (provider.key === 'FORBES') {
+    val = '';
+  }
+  return val;
+};
+
+var getDetailsDescription = function($, provider) {
+  var val = '', element;
+  if (provider.key === 'SGI') {
+    element = $('td[id="ctl00_content_CellaDescrizione"]');
+    if (element) {
+      val = $(element).text();
+    }
+  }
+  if (provider.key === 'TOE') {
+    element = $('p[class="annuncio"]');
+    if (element) {
+      val = $(element).text();
+    }      
+  }
+  if (provider.key === 'FORBES') {
+    element = $('table[class="sinottico"]').next('p');
+    val = $(element).text();
+  }
+  return val;
+};
+
+var getDetailsPhone = function($, provider) {
+  var val = '', element;
+  if (provider.key === 'SGI') {
+    element = $('td[id="ctl00_content_CellaTelefono"]');
+    if (element) {
+      val = $(element).text();
+    }
+  }
+  if (provider.key === 'TOE') {
+    element = $('span[title^="Telefono"]');
+    if (element) {
+      val = $(element).text();
+    }
+  }
+  if (provider.key === 'FORBES') {
+    val = '333.33333333';
+  }
+  return val;
+};
+
+var getDetailsPhotos = function($, provider) {
+  var val = [], src;
+  if (provider.key === 'SGI') {
+    $('a[rel="group"][class="fancybox"]').each(function(index, element) {
+      src = $(element).attr('src');
+      val.push(src);
+    });
+  }
+  if (provider.key === 'TOE') {
+    $('div[id="links"] > a').each(function(index, element) {
+      src = $(element).attr('src');
+      val.push(src);
+    });
+  }
+  if (provider.key === 'FORBES') {
+    $('table[class="sinottico"]').find('tr').eq(1).find('a > img').each(function(index, element) {
+      src = $(element).attr('src');
+      val.push(src);
+    });
+  }
+  return val;
+};
+
+var buildUrl = function(provider, config) {
   var val;
   if (provider.key === 'SGI') {
     val = provider.url + provider.categories[config.category].path + config.city;
@@ -218,9 +410,23 @@ internals.buildUrl = function(provider, config) {
     val = provider.url + provider.categories[config.category].path;
   }
   return val;
-}
+};
 
-internals.parseList = function($, provider) {
+var buildDetailsUrl = function(provider, person, config) {
+  var val;
+  if (provider.key === 'SGI') {
+    val = provider.url + person.url;
+  }
+  if (provider.key === 'TOE') {
+    val = provider.url + person.url;
+  }
+  if (provider.key === 'FORBES') {
+    val = provider.url + person.url;
+  }
+  return val;
+};
+
+var parseList = function($, provider) {
   var val = [];
   if (provider.key === 'SGI') {
     val = $(provider.selectors.listElements).each(function(index, element) {
@@ -231,7 +437,7 @@ internals.parseList = function($, provider) {
     val = $(provider.selectors.listElements).each(function(index, element) {
       val.push($(element).attr('href'));
     });
-    LOG('parseList()', '-', provider.key, '-', 'details list:', val);
+    console.log('parseList()', '-', provider.key, '-', 'details list:', val);
   }
   if (provider.key === 'NOOOFORBES') {
     $('h2 > span[id="2015"]').parent().next('div').find('ol > li > a').each(function(index, element) {
@@ -241,12 +447,12 @@ internals.parseList = function($, provider) {
         val.push({ key: key, url: url });
       }
     });
-    LOG(provider.key, 'list:', val);
+    console.log(provider.key, 'list:', val);
   }
   return val;
-}
+};
 
-internals.parseKey = function($, provider) {
+var parseKey = function($, provider) {
   var val;
   if (provider.key === 'SGI') {
     val = $.attribs.href.substr($.attribs.href.lastIndexOf('/') + 1);
@@ -254,29 +460,29 @@ internals.parseKey = function($, provider) {
   if (provider.key === 'TOE') {
     val = $.match(/id=(.*)$/)[1]; // TODO: split, to avoid error in case of non-match...
   }
-  LOG('parseKey()', '-', provider.key, '-', 'key:', val);
+  console.log('parseKey()', '-', provider.key, '-', 'key:', val);
   return val;
-}
+};
 
-internals.parseUrl = function($, provider, config) {
-  var val;
+var parseUrl = function($, provider, config) {
+  var val, key;
   if (provider.key === 'SGI') {
-    var key = $.attribs.href;
+    key = $.attribs.href;
     val = (config.mode === 'fake' ? provider.urlFake : provider.url) + provider.listCategories[config.category].path + key;
   }
   if (provider.key === 'TOE') {
-    var key = $.match(/id=(.*)$/);
+    key = $.match(/id=(.*)$/);
     if (key) {
       val = (config.mode === 'fake' ? provider.urlFake : provider.url) + '/annuncio?id=' + key[1];
 } else { // TODO: DEBUGGING...
 console.error('parseUrl()', '-', provider.key, '-', 'EMPTY DETAILS URL: $ does not match /id=(.*)$/ pattern !!!!!', '$:', $);
     }
   }
-  LOG('parseUrl()', '-', provider.key, '-', 'url:', val);
+  console.log('parseUrl()', '-', provider.key, '-', 'url:', val);
   return val;
-}
+};
 
-internals.parseName = function($, provider) {
+var parseName = function($, provider) {
   var val;
   if (provider.key === 'SGI') {
     val = $(provider.selectors.element.name).text();
@@ -287,56 +493,56 @@ internals.parseName = function($, provider) {
   //val = val.match(/^([^a-z]+)/)[1].trim(); // keep only leading not lower case
     val = val.match(/^([\w]+)/)[1].trim(); // keep only word character from start to first non word character
   }
-  LOG('parseName()', '-', provider.key, '-', 'name:', val);
+  console.log('parseName()', '-', provider.key, '-', 'name:', val);
   return val;
-}
+};
 
-internals.parseZone = function($, provider) {
+var parseZone = function($, provider) {
   var val;
   val = $(provider.selectors.element.zone).text();
-  LOG('parseZone()', '-', provider.key, '-', 'zone:', val);
+  console.log('parseZone()', '-', provider.key, '-', 'zone:', val);
   return val;
-}
+};
 
-internals.parseDescription = function($, provider) { 
+var parseDescription = function($, provider) { 
   var val = $(provider.selectors.element.description).text();
   if (val) {
-    val.
-      replace(/<br>.*$/, ''). // remove trailing fixed part
-      replace(/\r+/, ''). // remove CRs
-      replace(/\n+/, '\n') // remove multiple LFs
+    val
+      .replace(/<br>.*$/, '') // remove trailing fixed part
+      .replace(/\r+/, '') // remove CRs
+      .replace(/\n+/, '\n'); // remove multiple LFs
   }
-  LOG('parseDescription()', '-', provider.key, '-', 'description:', val ? val.substr(0, 32) : null);
+  console.log('parseDescription()', '-', provider.key, '-', 'description:', val ? val.substr(0, 32) : null);
   return val;
-}
+};
 
-internals.parsePhone = function($, provider) {
+var parsePhone = function($, provider) {
   var val = $(provider.selectors.element.phone).text();
   if (val) {
-    val.
-      replace(/[^\d]/, '')
+    val
+      .replace(/[^\d]/, '');
   }
-  LOG('parsePhone()', '-', provider.key, '-', 'phone:', val);
+  console.log('parsePhone()', '-', provider.key, '-', 'phone:', val);
   return val;
-}
+};
 
-internals.parsePhotos = function($, provider) {
+var parsePhotos = function($, provider) {
   var val = [];
   // loop to get each photo
   $(provider.selectors.element.photos).each(function(i, elem) {
     var href = elem.attribs.href;
     if (href) {
-      href.
-        replace(/(\.\.\/)+/, ''). // remove relative paths
-        replace(/\?.*$/, '') // remove query string
+      href
+        .replace(/(\.\.\/)+/, '') // remove relative paths
+        .replace(/\?.*$/, ''); // remove query string
       val.push(href);
     }
   });
-  //LOG('parsePhotos()', '-', provider.key, '-', 'photos:', val);
+  //console.log('parsePhotos()', '-', provider.key, '-', 'photos:', val);
   return val;
-}
+};
 
-internals.detectNationality = function(person, provider, config) {
+var detectNationality = function(person, provider, config) {
   var fields = [
     person.name,
     person.description,
@@ -547,7 +753,7 @@ internals.detectNationality = function(person, provider, config) {
   function parseNationalityPatterns() {
     for (var i = 0; i < fields.length; i++) {
       var field = fields[i];
-      if (!field) { continue }
+      if (!field) { continue; }
       for (var j = 0; j < nationalityPatterns.length; j++) {
         var patternObj = nationalityPatterns[j];
         for (var lang in patternObj) {
@@ -595,10 +801,10 @@ internals.detectNationality = function(person, provider, config) {
         if (lang === language) {
           var negativeLookbehindPatterns = negativeLookbehindObj[lang];
           for (var j = 0; j < negativeLookbehindPatterns.length; j++) {
-            var negativeLookbehindObj = negativeLookbehindPatterns[j];
-            for (var cat in negativeLookbehindObj) {
+            var negativeLookbehindPatternObj = negativeLookbehindPatterns[j];
+            for (var cat in negativeLookbehindPatternObj) {
               if (cat === category) {
-                var catPatterns = negativeLookbehindObj[cat];
+                var catPatterns = negativeLookbehindPatternObj[cat];
                 for (var k = 0; k < catPatterns.length; k++) {
                   var negativeLookbehind = catPatterns[k];
                   var regexNegativeLookbehind = new RegExp('\\b' + negativeLookbehind + '\\s+' + catPattern + '\\b', 'gi');
@@ -615,6 +821,6 @@ internals.detectNationality = function(person, provider, config) {
     }
     return false;
   }
-}
+};
 
 module.exports = exports;

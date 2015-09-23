@@ -1,9 +1,12 @@
-var mongoose = require('mongoose');
-mongoose.connect('mongodb://localhost/escrapeXXX');
-/*
-	mongoose.connect('mongodb://localhost/escrapeXXX', function(err) {
-  if (err) {
-  	throw err; // TODO: how to handle connection errors to app / res.json() ?
-  }
+var mongoose = require('mongoose')
+  , config = require('../config');
+
+mongoose.connect(config.db.type + '://' + config.db.host + '/' + config.db.name);
+
+mongoose.connection.on('open', function () {
+  //console.log('Database connection opened.');
 });
-*/
+
+mongoose.connection.on('error', function(err) {
+  console.error('Error connecting to database:', err);
+});

@@ -7,7 +7,7 @@ var personSchema = new mongoose.Schema({
   isloved: Boolean,
 });
 
-var Person = mongoose.model('Person', personSchema);
+module.exports = mongoose.model('Person', personSchema);
 
 /*
 var person_data = {

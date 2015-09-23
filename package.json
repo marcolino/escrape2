@@ -3,7 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "nodemon ./bin/www"
+    "start": "nodemon ./bin/www",
+    "lint": "jshint **/*.js",
+    "lint:report": "jshint */*.js --reporter checkstyle > checkstyle.xml"
   },
   "dependencies": {
     "async": "^1.4.2",
@@ -22,5 +24,11 @@
     "requestretry": "^1.4.0",
     "serve-favicon": "~2.3.0",
     "socks5-http-client": "^1.0.1"
+  },
+  "devDependencies": {
+    "jshint": "latest"
+  },
+  "jshintConfig": {
+    "laxcomma": true
   }
 }

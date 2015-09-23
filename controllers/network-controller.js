@@ -1,11 +1,7 @@
-var
-  request = require('requestretry'); // to place http requests and retry if needed
-  //request = require('request'), // to place http requests
-  randomUseragent = require('random-useragent'), // to use a random user-agent
-  agent = require('socks5-http-client/lib/Agent'), // to be able to proxy requests
-  config = require('../config') // global configuration
-;
-var exports = {};
+var request = require('requestretry') // to place http requests and retry if needed
+  , randomUseragent = require('random-useragent') // to use a random user-agent
+  , agent = require('socks5-http-client/lib/Agent') // to be able to proxy requests
+  , config = require('../config'); // global configuration
 
 /**
  * fetches url contents, stubbornly and securely
@@ -75,6 +71,6 @@ exports.sfetch = function(url, provider, error, success) {
     return forbidden;
   }
 
-}
+};
 
 module.exports = exports;
