@@ -42,6 +42,10 @@ mongoose.connection.on('open', function () {
   });
 });
 
+mongoose.connection.on('error', function(err) {
+  console.error('MONGOOSE CONNECTION ERROR:', err);
+});
+
 internals.populateProviders = function(callback) {
   var providers = [
     {
@@ -74,7 +78,7 @@ internals.populateProviders = function(callback) {
       'language': 'it',
       'dateOfLastSync': new Date(0),
       'forbiddenRegexp': { // TODO: verify this re... - TODO: WE DON'T NEED THIS...
-        'body': 'fXXXorbidden, please complete captcha...',
+        'body': 'forbidden, please complete captcha...',
         'flags': 'gim',
       },
       'categories': {
