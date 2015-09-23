@@ -29,7 +29,7 @@ exports.getAll = function(req, res, next) { // GET all providers
 exports.syncPersons = function(req, res) { // sync persons
   var persons = [];
 
-  getAll({ type: 'persons', mode: config.mode, /*key: 'SGI'*/ }, function(err, providers) { // GET all providers
+  getAll({ type: 'persons', mode: config.mode, key: 'SGI' }, function(err, providers) { // GET all providers
     if (err) {
       console.error('Error retrieving providers:', err);
       res.json({ error: err });
@@ -61,7 +61,7 @@ exports.syncPersons = function(req, res) { // sync persons
                 return callbackOuter(); // skip this outer loop
               }
               $ = cheerio.load(contents);
-    
+
               var list = getList(provider, $);
               console.log('list of provider', provider.key, 'is long', list.length);
 
@@ -269,7 +269,8 @@ var getAll = function(filter, result) { // get all providers
 var getList = function(provider, $) {
   var val = [];
   if (provider.key === 'SGI') {
-    $('a[itemprop="url"]').each(function(index, element) {
+console.log('SGI getList');
+    $('a[OnClick="get_position();"]').each(function(index, element) {
       var url = $(element).attr('href');
       var key = url; // TODO: parse 'adv2787' from 'annuncio/adv2787' ...
       val.push({ key: key, url: url });
@@ -415,7 +416,7 @@ var buildUrl = function(provider, config) {
 var buildDetailsUrl = function(provider, person, config) {
   var val;
   if (provider.key === 'SGI') {
-    val = provider.url + person.url;
+    val = provider.url + '/escort' + person.url; // TODO: '/esc...' => provider.path[config.category] ...
   }
   if (provider.key === 'TOE') {
     val = provider.url + person.url;
@@ -423,6 +424,7 @@ var buildDetailsUrl = function(provider, person, config) {
   if (provider.key === 'FORBES') {
     val = provider.url + person.url;
   }
+console.log('DETAILS URL:', val);
   return val;
 };
 
