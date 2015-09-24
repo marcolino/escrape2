@@ -6,19 +6,28 @@ var request = require('requestretry') // to place http requests and retry if nee
 var start = Date.now(); // date of process start
 
 /**
- * fetches url contents throttling, stubbornly, retrying, securely
+ * fetches url contents limited, stubbornly, retrying, securely
  */
 /*
-exports.fetchThrottlingStubbornlyRetryingSecurely = rateLimit(1, 3 * 1000, function(url, provider, error, success) { // limit to 12 executions per 60s
+exports.fetchLimitedStubbornlyRetryingSecurely = rateLimit(1, 3 * 1000, function(url, provider, error, success) { // limit to 12 executions per 60s
   console.log('throttle: limiting requests %s at %s seconds after start', url, (Date.now() - start) / 1000);
   exports.fetchStubbornlyRetryingSecurely(url, provider, error, success);
 });
 */
 
+var fetchLimited = {};
+function providerRequest(provider) {
+  return rateLimit(1/*provider.limitCount*/, 1/*provider.limitInterval*/, exports.fetchLimitedStubbornlyRetryingSecurely);
+}
+exports.myRequestLimited = function (url, provider, error, success) {
+  var requestLimited = fetchLimited[provider.name] = fetchLimited[provider.name] || providerRequest(provider);
+  requestLimited(url, provider, error, success);
+}
+
 /**
- * fetches url contents throttling, stubbornly, retrying, securely
+ * fetches url contents limited (throttled), stubbornly, retrying, securely
  */
-exports.fetchThrottlingStubbornlyRetryingSecurely = function (url, provider, error, success) {
+exports.fetchLimitedStubbornlyRetryingSecurely = function (url, provider, error, success) {
   console.log('throttle: limiting requests %s at %s seconds after start', url, (Date.now() - start) / 1000);
   rateLimit(
     1/*provider.limitCount*/, 50 * 1000/*provider.limitInterval*/, exports.fetchStubbornlyRetryingSecurely

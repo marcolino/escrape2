@@ -29,7 +29,7 @@ exports.getAll = function(req, res, next) { // GET all providers
 exports.syncPersons = function(req, res) { // sync persons
   var persons = [];
 
-  getAll({ type: 'persons', mode: config.mode, /*key: 'SGI'*/ }, function(err, providers) { // GET all providers
+  getAll({ type: 'persons', mode: config.mode, key: 'TOE' }, function(err, providers) { // GET all providers
     if (err) {
       console.error('Error retrieving providers:', err);
       res.json({ error: err });
@@ -47,7 +47,7 @@ exports.syncPersons = function(req, res) { // sync persons
           console.log('===', 'provider:', provider.key);
           var url = buildUrl(provider, config); // TODO: => buildListUrl()
           console.log('url:', url);
-          network.fetchThrottlingStubbornlyRetryingSecurely(
+          network.fetchLimitedStubbornlyRetryingSecurely(
             url,
             provider,
             function(err) { // error
@@ -83,7 +83,7 @@ exports.syncPersons = function(req, res) { // sync persons
                   }
                   var detailsUrl = buildDetailsUrl(provider, person, config);
                   console.log('details url:', detailsUrl);
-                  network.fetchThrottlingStubbornlyRetryingSecurely(
+                  network.fetchLimitedStubbornlyRetryingSecurely(
                     detailsUrl,
                     provider,
                     function(err) {
@@ -279,8 +279,11 @@ console.log('SGI getList');
     });
   }
   if (provider.key === 'TOE') {
-    $('div[id="row-viewmode"] > div > div[class~="/pi-img-shadow"]').each(function(index, element) {
+console.log('TOE getList');
+    //$('div[id="row-viewmode"] > div > div[class~="/pi-img-shadow"]').each(function(index, element) {
+    $('div[id="row-viewmode"]').find('div[class^="esclist-item"] > div > a').each(function(index, element) {
       var url = $(element).attr('href');
+console.log('TOE getList url:', url);
       var key = '...';
       val.push({ key: key, url: url });
     });      
@@ -404,7 +407,7 @@ var getDetailsPhotos = function($, provider) {
 var buildUrl = function(provider, config) {
   var val;
   if (provider.key === 'SGI') {
-    val = provider.url + provider.categories[config.category].path + config.city;
+    val = provider.url + provider.categories[config.category].path + '/' + config.city;
   }
   if (provider.key === 'TOE') {
     val = provider.url + provider.categories[config.category].path;
@@ -418,7 +421,7 @@ var buildUrl = function(provider, config) {
 var buildDetailsUrl = function(provider, person, config) {
   var val;
   if (provider.key === 'SGI') {
-    val = provider.url + provider[config.category].path + person.url;
+    val = provider.url + provider.categories[config.category].path + '/' + person.url;
   }
   if (provider.key === 'TOE') {
     val = provider.url + person.url;
