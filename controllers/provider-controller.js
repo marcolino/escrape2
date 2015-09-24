@@ -3,8 +3,8 @@ var mongoose = require('mongoose') // mongo abstraction
   , async = require("async") // to call many async functions in a loop
   , network = require('./network-controller') // network handling
   , config = require('../config'); // global configuration
-var Provider = require('../model/provider') // model of provider
-  , Person = require('../model/person'); // model of person
+var Provider = require('../models/provider') // model of provider
+  , Person = require('../models/person'); // model of person
 
 mongoose.connection.on('open', function () {
   // create providers
@@ -29,7 +29,7 @@ exports.getAll = function(req, res, next) { // GET all providers
 exports.syncPersons = function(req, res) { // sync persons
   var persons = [];
 
-  getAll({ type: 'persons', mode: config.mode, key: 'SGI' }, function(err, providers) { // GET all providers
+  getAll({ type: 'persons', mode: config.mode, /*key: 'SGI'*/ }, function(err, providers) { // GET all providers
     if (err) {
       console.error('Error retrieving providers:', err);
       res.json({ error: err });
@@ -47,7 +47,7 @@ exports.syncPersons = function(req, res) { // sync persons
           console.log('===', 'provider:', provider.key);
           var url = buildUrl(provider, config); // TODO: => buildListUrl()
           console.log('url:', url);
-          network.sfetch(
+          network.fetchThrottlingStubbornlyRetryingSecurely(
             url,
             provider,
             function(err) { // error
@@ -68,7 +68,9 @@ exports.syncPersons = function(req, res) { // sync persons
               async.each(
                 list, // 1st param is the array of items
                 function(element, callbackInner) { // 2nd param is the function that each item is passed to
-                  var person = {}; // TODO: var person = new Person();
+                  //var person = {};
+                  var person = new Person();
+
                   person.url = element.url;
                   if (!person.url) {
                     console.warn('Error syncing provider', provider.key + ',', 'person with no url', ', skipping');
@@ -81,7 +83,7 @@ exports.syncPersons = function(req, res) { // sync persons
                   }
                   var detailsUrl = buildDetailsUrl(provider, person, config);
                   console.log('details url:', detailsUrl);
-                  network.sfetch(
+                  network.fetchThrottlingStubbornlyRetryingSecurely(
                     detailsUrl,
                     provider,
                     function(err) {
@@ -106,16 +108,16 @@ exports.syncPersons = function(req, res) { // sync persons
                       // TODO: we don't need persons, just their count (possibly...)
                       persons.push(person); // add this person to persons list
 
-                      // TODO: save this person to database /////////////////////////////////
-                      var p = new Person({ name: person.name });
-                      p.save(function (err) {
+                      // save this person to database //
+                      //var p = new Person({ name: person.name });
+                      person.save(function (err) {
                         if (err) {
                           console.warn('Error saving person', person.name + ':', err, '-', 'skipping');
                         }
                         // person saved
                         console.log('person', person.name, 'saved');
                       })
-                      ///////////////////////////////////////////////////////////////////////
+                      //////////////////////////////////
 
                       callbackInner();
                     }
@@ -416,7 +418,7 @@ var buildUrl = function(provider, config) {
 var buildDetailsUrl = function(provider, person, config) {
   var val;
   if (provider.key === 'SGI') {
-    val = provider.url + '/escort' + person.url; // TODO: '/esc...' => provider.path[config.category] ...
+    val = provider.url + provider[config.category].path + person.url;
   }
   if (provider.key === 'TOE') {
     val = provider.url + person.url;
@@ -424,7 +426,7 @@ var buildDetailsUrl = function(provider, person, config) {
   if (provider.key === 'FORBES') {
     val = provider.url + person.url;
   }
-console.log('DETAILS URL:', val);
+//console.log('DETAILS URL:', val);
   return val;
 };
 

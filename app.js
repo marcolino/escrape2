@@ -5,10 +5,10 @@ var methodOverride = require('method-override'); // method overryde for clients 
 var config = require('./config'); // application configuration
  
 // required models
-var db = require('./model/db');
-var provider = require('./model/provider');
-var user = require('./model/user');
-var person = require('./model/person');
+var db = require('./models/db');
+var provider = require('./models/provider');
+var user = require('./models/user');
+var person = require('./models/person');
 
 // required routes
 var providers = require('./routes/providers');

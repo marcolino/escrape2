@@ -1,12 +1,36 @@
 var request = require('requestretry') // to place http requests and retry if needed
   , randomUseragent = require('random-useragent') // to use a random user-agent
   , agent = require('socks5-http-client/lib/Agent') // to be able to proxy requests
+  , rateLimit = require('function-rate-limit') // limit rate of function calls
   , config = require('../config'); // global configuration
+var start = Date.now(); // date of process start
 
 /**
- * fetches url contents, stubbornly and securely
+ * fetches url contents throttling, stubbornly, retrying, securely
  */
-exports.sfetch = function(url, provider, error, success) {
+/*
+exports.fetchThrottlingStubbornlyRetryingSecurely = rateLimit(1, 3 * 1000, function(url, provider, error, success) { // limit to 12 executions per 60s
+  console.log('throttle: limiting requests %s at %s seconds after start', url, (Date.now() - start) / 1000);
+  exports.fetchStubbornlyRetryingSecurely(url, provider, error, success);
+});
+*/
+
+/**
+ * fetches url contents throttling, stubbornly, retrying, securely
+ */
+exports.fetchThrottlingStubbornlyRetryingSecurely = function (url, provider, error, success) {
+  console.log('throttle: limiting requests %s at %s seconds after start', url, (Date.now() - start) / 1000);
+  rateLimit(
+    1/*provider.limitCount*/, 50 * 1000/*provider.limitInterval*/, exports.fetchStubbornlyRetryingSecurely
+  )(
+    url, provider, error, success
+  );
+}
+
+/**
+ * fetches url contents, stubbornly, retrying, securely
+ */
+exports.fetchStubbornlyRetryingSecurely = function(url, provider, error, success) {
   var options = {
     url: url,
     maxAttempts: 2, // retry for 3 attempts

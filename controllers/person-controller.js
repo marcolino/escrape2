@@ -15,7 +15,7 @@ exports.getAll = function(req, res) { // get all persons
   });
 };
 
-exports.getPersonById = function(req, res) { // get person
+exports.getById = function(req, res) { // get person
   getPerson({ _id: req._id }, function(err, persons) {
     if (err) {
       console.error('Error retrieving persons by id:', err);
@@ -27,7 +27,7 @@ exports.getPersonById = function(req, res) { // get person
   });
 };
 
-exports.getPersonByPhone = function(req, res) { // get person
+exports.getByPhone = function(req, res) { // get person
   getPerson({ phone: req.phone }, function(err, persons) {
     if (err) {
       console.error('Error retrieving persons by phone:', err);
@@ -39,16 +39,29 @@ exports.getPersonByPhone = function(req, res) { // get person
   });
 };
 
-exports.assertPersonsActivity = function(result) {
+exports.assertActivity = function(result) { // for each person (?)
   // TODO...
 };
 
-exports.savePerson = function(personData, result) {
+exports.syncPhotos = function(person, result) {
   var person = new Person(personData);
   person.save(function(err, data) {
     if (err) {
       result(err, data);
     } else {
+      
+      res.json(data);
+    }
+  });
+};
+
+exports.save = function(person, result) {
+  var person = new Person(personData);
+  person.save(function(err, data) {
+    if (err) {
+      result(err, data);
+    } else {
+
       res.json(data);
     }
   });

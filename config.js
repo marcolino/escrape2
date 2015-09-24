@@ -52,7 +52,7 @@ config.providers = [
     },
     'categories': {
       'women': {
-        'path': '/escort/', // TODO: which path? list path or details path? differentiate?
+        'path': '/escort', // TODO: which path? list path or details path? differentiate?
         'selectors': {
           'category': 'li[id="ctl00_escort"]',
           'listCities': 'li',
@@ -74,7 +74,7 @@ config.providers = [
     },
     'categories': {
       'women': {
-        'path': '/annunci-escort-donna/',
+        'path': '/annunci-escort-donna', // TODO: which path? list path or details path? differentiate?
         'selectors': {
           'category': 'li[id="ctl00_escort"]',
           'listCities': 'li',
