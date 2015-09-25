@@ -15,9 +15,10 @@ exports.fetchLimitedStubbornlyRetryingSecurely = rateLimit(1, 3 * 1000, function
 });
 */
 
+/**
 var fetchLimited = {};
 function providerRequest(provider) {
-  return rateLimit(1/*provider.limitCount*/, 1/*provider.limitInterval*/, exports.fetchLimitedStubbornlyRetryingSecurely);
+  return rateLimit(1/*provider.limitCount* /, 1/*provider.limitInterval* /, exports.fetchLimitedStubbornlyRetryingSecurely);
 }
 exports.myRequestLimited = function (url, provider, error, success) {
   var requestLimited = fetchLimited[provider.name] = fetchLimited[provider.name] || providerRequest(provider);
@@ -26,15 +27,16 @@ exports.myRequestLimited = function (url, provider, error, success) {
 
 /**
  * fetches url contents limited (throttled), stubbornly, retrying, securely
- */
+ * /
 exports.fetchLimitedStubbornlyRetryingSecurely = function (url, provider, error, success) {
   console.log('throttle: limiting requests %s at %s seconds after start', url, (Date.now() - start) / 1000);
   rateLimit(
-    1/*provider.limitCount*/, 50 * 1000/*provider.limitInterval*/, exports.fetchStubbornlyRetryingSecurely
+    1/*provider.limitCount* /, 50 * 1000/*provider.limitInterval* /, exports.fetchStubbornlyRetryingSecurely
   )(
     url, provider, error, success
   );
 }
+*/
 
 /**
  * fetches url contents, stubbornly, retrying, securely
@@ -105,5 +107,6 @@ exports.fetchStubbornlyRetryingSecurely = function(url, provider, error, success
   }
 
 };
+exports.fetchLimitedStubbornlyRetryingSecurely = exports.fetchStubbornlyRetryingSecurely;
 
 module.exports = exports;

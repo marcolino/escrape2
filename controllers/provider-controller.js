@@ -29,7 +29,7 @@ exports.getAll = function(req, res, next) { // GET all providers
 exports.syncPersons = function(req, res) { // sync persons
   var persons = [];
 
-  getAll({ type: 'persons', mode: config.mode, key: 'TOE' }, function(err, providers) { // GET all providers
+  getAll({ type: 'persons', mode: config.mode, /*key: 'TOE'*/ }, function(err, providers) { // GET all providers
     if (err) {
       console.error('Error retrieving providers:', err);
       res.json({ error: err });

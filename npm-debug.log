@@ -1,0 +1,101 @@
+0 info it worked if it ends with ok
+1 verbose cli [ '/usr/bin/node',
+1 verbose cli   '/usr/bin/npm',
+1 verbose cli   '--save',
+1 verbose cli   'install',
+1 verbose cli   'delayed-request' ]
+2 info using npm@1.4.28
+3 info using node@v0.10.40
+4 verbose readDependencies using package.json deps
+5 verbose cache add [ 'delayed-request', null ]
+6 verbose cache add name=undefined spec="delayed-request" args=["delayed-request",null]
+7 verbose parsed url { protocol: null,
+7 verbose parsed url   slashes: null,
+7 verbose parsed url   auth: null,
+7 verbose parsed url   host: null,
+7 verbose parsed url   port: null,
+7 verbose parsed url   hostname: null,
+7 verbose parsed url   hash: null,
+7 verbose parsed url   search: null,
+7 verbose parsed url   query: null,
+7 verbose parsed url   pathname: 'delayed-request',
+7 verbose parsed url   path: 'delayed-request',
+7 verbose parsed url   href: 'delayed-request' }
+8 silly lockFile 3180fccb-delayed-request delayed-request
+9 verbose lock delayed-request /home/msolari/.npm/3180fccb-delayed-request.lock
+10 silly lockFile 3180fccb-delayed-request delayed-request
+11 silly lockFile 3180fccb-delayed-request delayed-request
+12 verbose addNamed [ 'delayed-request', '' ]
+13 verbose addNamed [ null, '*' ]
+14 silly lockFile ef4dc856-delayed-request delayed-request@
+15 verbose lock delayed-request@ /home/msolari/.npm/ef4dc856-delayed-request.lock
+16 silly addNameRange { name: 'delayed-request', range: '*', hasData: false }
+17 verbose request where is /delayed-request
+18 verbose request registry https://registry.npmjs.org/
+19 verbose request id 14dc1a34ffc182bb
+20 verbose url raw /delayed-request
+21 verbose url resolving [ 'https://registry.npmjs.org/', './delayed-request' ]
+22 verbose url resolved https://registry.npmjs.org/delayed-request
+23 verbose request where is https://registry.npmjs.org/delayed-request
+24 info trying registry request attempt 1 at 15:41:18
+25 verbose etag "9W0FMYLUG42114Y525OAKM9I1"
+26 http GET https://registry.npmjs.org/delayed-request
+27 http 304 https://registry.npmjs.org/delayed-request
+28 silly registry.get cb [ 304,
+28 silly registry.get   { date: 'Fri, 25 Sep 2015 13:40:57 GMT',
+28 silly registry.get     via: '1.1 varnish',
+28 silly registry.get     'cache-control': 'max-age=60',
+28 silly registry.get     etag: '"9W0FMYLUG42114Y525OAKM9I1"',
+28 silly registry.get     age: '19',
+28 silly registry.get     connection: 'keep-alive',
+28 silly registry.get     'x-served-by': 'cache-ams4147-AMS',
+28 silly registry.get     'x-cache': 'HIT',
+28 silly registry.get     'x-cache-hits': '1',
+28 silly registry.get     'x-timer': 'S1443188457.900688,VS0,VE0',
+28 silly registry.get     vary: 'Accept' } ]
+29 verbose etag https://registry.npmjs.org/delayed-request from cache
+30 silly addNameRange number 2 { name: 'delayed-request', range: '*', hasData: true }
+31 silly addNameRange versions [ 'delayed-request', [ '0.0.1', '0.0.2', '0.0.3' ] ]
+32 verbose addNamed [ 'delayed-request', '0.0.3' ]
+33 verbose addNamed [ '0.0.3', '0.0.3' ]
+34 silly lockFile ab890959-delayed-request-0-0-3 delayed-request@0.0.3
+35 verbose lock delayed-request@0.0.3 /home/msolari/.npm/ab890959-delayed-request-0-0-3.lock
+36 silly lockFile ab890959-delayed-request-0-0-3 delayed-request@0.0.3
+37 silly lockFile ab890959-delayed-request-0-0-3 delayed-request@0.0.3
+38 silly lockFile ef4dc856-delayed-request delayed-request@
+39 silly lockFile ef4dc856-delayed-request delayed-request@
+40 silly resolved [ { name: 'delayed-request',
+40 silly resolved     version: '0.0.3',
+40 silly resolved     description: 'Simple module wrapping the "request-retry" module to add some random delay between requests, other than retrying in case of request errors.',
+40 silly resolved     main: 'lib/Request.js',
+40 silly resolved     scripts: { test: 'echo "Error: no test specified" && exit 1' },
+40 silly resolved     repository:
+40 silly resolved      { type: 'git',
+40 silly resolved        url: 'git://github.com/leeroybrun/node-delayed-request.git' },
+40 silly resolved     keywords: [ 'request', 'delay', 'delayed', 'retry', 'http' ],
+40 silly resolved     dependencies: { requestretry: '~1.5.0' },
+40 silly resolved     browserDependencies: { requestretry: '~1.5.0' },
+40 silly resolved     author: { name: 'Marco Solari', email: 'marcosolari@gmail.com' },
+40 silly resolved     license: 'MIT',
+40 silly resolved     bugs: { url: 'https://github.com/marcolino/node-delayed-request/issues' },
+40 silly resolved     readme: 'delayed-request\n===============\n\nSimple module wrapping the "request" module to add some random delay between requests.\n\n## Example\n\n```javascript\nvar Request = require(\'delayed-request\');\n\nvar request = new Request({\n\tdebug: true, // Optional, output delay to console\n\tdelayMin: 1000,\n\tdelayMax: 3000\n});\n\nconsole.log(\'Run first request\');\n\nrequest.run(\'http://www.google.com\', function(err, response) {\n\tconsole.log(\'First request response received\');\n});\n\nconsole.log(\'Run second request\');\n\nrequest.run(\'http://www.google.com\', function(err, response) {\n\tconsole.log(\'Second request response received\');\n});\n```\n\n## TODO\n\n- Add a stack for requests to run, then launch them in order with delay between them\n\nLicence\n======================\n(The MIT License)\n\nCopyright (C) 2013 Leeroy Brun, www.leeroy.me\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n',
+40 silly resolved     readmeFilename: 'README.md',
+40 silly resolved     gitHead: 'cf988b34fe9b6f1edbac056edb28d000633c57de',
+40 silly resolved     homepage: 'https://github.com/leeroybrun/node-delayed-request',
+40 silly resolved     _id: 'delayed-request@0.0.3',
+40 silly resolved     _shasum: '4ed993737df5b46a3867195e16c8c0f6a5c43a90',
+40 silly resolved     _from: 'delayed-request@' } ]
+41 info install delayed-request@0.0.3 into /home/msolari/apps/escrape2
+42 info installOne delayed-request@0.0.3
+43 error git Appears to be a git repo or submodule.
+43 error git     /home/msolari/apps/escrape2/node_modules/delayed-request
+43 error git Refusing to remove it. Update manually,
+43 error git or move it out of the way first.
+44 error System Linux 2.6.32-504.12.2.el6.x86_64
+45 error command "/usr/bin/node" "/usr/bin/npm" "--save" "install" "delayed-request"
+46 error cwd /home/msolari/apps/escrape2
+47 error node -v v0.10.40
+48 error npm -v 1.4.28
+49 error path /home/msolari/apps/escrape2/node_modules/delayed-request
+50 error code EISGIT
+51 verbose exit [ 1, true ]
