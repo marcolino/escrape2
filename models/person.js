@@ -38,7 +38,7 @@ var personSchema = new mongoose.Schema({
 });
 personSchema.index({ name: 1, type: -1 });
 
-personSchema.methods.save = function(callback) {
+personSchema.methods.xSave = function(callback) {
   return this.model('Person').savefind({ type: this.type }, cb);
 }
 module.exports = mongoose.model('Person', personSchema);

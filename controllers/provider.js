@@ -1,10 +1,11 @@
 var mongoose = require('mongoose') // mongo abstraction
   , cheerio = require('cheerio') // to parse fetched DOM data
   , async = require("async") // to call many async functions in a loop
-  , network = require('./network-controller') // network handling
+  , network = require('./network') // network handling
   , config = require('../config'); // global configuration
 var Provider = require('../models/provider') // model of provider
-  , Person = require('../models/person'); // model of person
+  , Person = require('../models/person') // model of person
+  , status = require('./status') // controller of provider logging
 
 mongoose.connection.on('open', function () {
   // create providers
@@ -27,47 +28,55 @@ exports.getAll = function(req, res, next) { // GET all providers
 };
 
 exports.syncPersons = function(req, res) { // sync persons
-  var persons = [];
+  //var persons = [];
+  var providersPersonsCount = 0;
+  var retrievedPersonsCount = 0;
+  var syncStartDate = new Date(); // start of this sync date
+
+  // return immedately, log progress to db
+  res.json('persons sync started');
+  status.log('persons sync started');
 
   getAll({ type: 'persons', mode: config.mode, /*key: 'TOE'*/ }, function(err, providers) { // GET all providers
     if (err) {
       console.error('Error retrieving providers:', err);
       res.json({ error: err });
     } else {
-
       /*
        * providers are expected to publish a main page containing
        * a list with each person link, pointing to each person detail page
        */
-    
+
+      //console.log('number of providers is:', providers.length);
       // loop to get list page from all providers
       async.each(
         providers, // 1st param in async.each() is the array of items
         function(provider, callbackOuter) { // 2nd param is the function that each item is passed to
-          console.log('===', 'provider:', provider.key);
+          //console.log('===', 'provider:', provider.key);
           var url = buildUrl(provider, config); // TODO: => buildListUrl()
           console.log('url:', url);
-          network.fetchLimitedStubbornlyRetryingSecurely(
+          network.requestRetryAnonymous(
             url,
             provider,
             function(err) { // error
               console.error('Error syncing provider', provider.key + ':', err);
-              res.json({ error: err }); // TODO: res.json(err)  >> res.json{ error: err }) GLOBALY...
+              //res.json({ error: err }); // TODO: res.json(err)  >> res.json{ error: err }) GLOBALY...
+              return callbackOuter(); // skip this outer loop
             },
             function(contents) { // success
               console.log('url', url, 'contents lenght is', contents.length);
+              if (contents.length < 10000) { console.error('!!!!!!!!!!!! SHORT LIST:', contents); }
               if (!contents) {
                 console.warn('Error syncing provider', provider.key + ':', 'empty contents', '-', 'skipping');
                 return callbackOuter(); // skip this outer loop
               }
               $ = cheerio.load(contents);
-
               var list = getList(provider, $);
-              console.log('list of provider', provider.key, 'is long', list.length);
-
-              async.each(
+              providersPersonsCount += list.length;
+              async.eachLimit(
                 list, // 1st param is the array of items
-                function(element, callbackInner) { // 2nd param is the function that each item is passed to
+                provider.limit, // 2nd param is a limit (ms) to throttle requests rate
+                function(element, callbackInner) { // 3nd param is the function that each item is passed to
                   //var person = {};
                   var person = new Person();
 
@@ -83,7 +92,7 @@ exports.syncPersons = function(req, res) { // sync persons
                   }
                   var detailsUrl = buildDetailsUrl(provider, person, config);
                   console.log('details url:', detailsUrl);
-                  network.fetchLimitedStubbornlyRetryingSecurely(
+                  network.requestRetryAnonymous(
                     detailsUrl,
                     provider,
                     function(err) {
@@ -91,39 +100,58 @@ exports.syncPersons = function(req, res) { // sync persons
                       return callbackInner(); // skip this inner loop
                     },
                     function(contents) {
+//console.log('content of page of person', person.key, 'is long', contents.length);
                       if (!contents) {
                         console.warn('Error syncing provider', provider.key + ',', 'person', person.key + ':', 'empty contents', '-', 'skipping');
                         return callbackInner(); // skip this inner loop
                       }
                       $ = cheerio.load(contents);
                       person.name = getDetailsName($, provider);
+//if (!person.name) { console.log('person', person.key, 'name is EMPTY!!! contents:', contents); callbackOuter(); return; }
                       person.zone = getDetailsZone($, provider);
                       person.description = getDetailsDescription($, provider);
                       person.phone = getDetailsPhone($, provider);
                       person.photos = getDetailsPhotos($, provider);
                       person.nationality = detectNationality(person, provider, config);
+                      person.providerKey = provider.key;
 
-                      console.log('person:', person, '\n------------------');
-
-                      // TODO: we don't need persons, just their count (possibly...)
-                      persons.push(person); // add this person to persons list
-
-                      // save this person to database //
-                      //var p = new Person({ name: person.name });
-                      person.save(function (err) {
-                        if (err) {
-                          console.warn('Error saving person', person.name + ':', err, '-', 'skipping');
+                      // save this person to database
+                      Person.find({ providerKey: provider.key, key: person.key }, function (err, docs) {
+                        var isNew = (docs.length > 0);
+                        var now = new Date();
+                        person.dateOfLastSync = now;
+                        if (isNew) { // person did not exist before
+                          person.dateOfFirstSync = now;
+                          //console.log('provider key:', provider.key, person.key, 'name:', person.name, 'is new');
+                        } else { // person did exist already
+                          //console.log('provider key:', provider.key, person.key, 'name:', person.name, 'is old');
                         }
-                        // person saved
-                        console.log('person', person.name, 'saved');
-                      })
-                      //////////////////////////////////
+                        person.save(function (err) {
+                          if (err) {
+                            console.warn('Error saving person', person.name + ':', err, '-', 'skipping');
+                          } else {
+                            //console.warn('person', person.name, 'saved.');
+                          }
 
-                      callbackInner();
+                          retrievedPersonsCount++;
+                          console.log(retrievedPersonsCount + ' / ' + providersPersonsCount);
+                          console.log(person.providerKey, person.key, '[' + person.name + ']');
+                          //console.log('---');
+
+                          callbackInner();
+                          /*
+                          // NON SERVE PIU' ???!!!???
+                          // wait some time to avoid overloading provider
+                          setTimeout(function () {
+                            callbackInner();
+                          }, 0/*provider.limit* /); // ??? it works, with 0!!!
+                          */
+                        });
+                      });
                     }
                   );
                 },
-                function(err) { // 3rd param is the function to call when everything's done (inner callback)
+                function(err) { // 4th param is the function to call when everything's done (inner callback)
                   if (err) {
                     console.error('Error in the final internal async callback:', err, '\n',
                       'One of the iterations produced an error.\n',
@@ -144,15 +172,66 @@ exports.syncPersons = function(req, res) { // sync persons
               'One of the iterations produced an error.\n',
               'All processing will now stop.'
             );
-            return res.json(-1);
+            // TODO: set error status to DB
+            //return res.json(-1);
           }
-          // all tasks are successfully done now
-          //console.log('===\n', persons, '\n===')
-          res.json(persons.length);
+
+          // set activity status
+          setActivityStatus(syncStartDate, function(err) {
+            if (err) {
+              return console.error('Error setting activity status:', err);
+            }
+            // all tasks are successfully done now
+            console.log('Finished persons sync:', retrievedPersonsCount, 'persons found')
+            status.log('stopped sync');
+          });
+
         }
       );
     }
   });
+
+  setActivityStatus = function(syncStartDate, callback) {
+    Person.find({}, function (err, docs) {
+      if (err) {
+        return callback(err);
+      }
+      if (!docs) {
+        var err = new Error(); // ...
+        return callback(err);
+      }
+      //console.log('docs:', docs);
+      for (var i = 0; i < docs.length; i++) {
+        var doc = docs[i];
+        console.log('doc:', doc);
+
+        var isPresent = (doc.dateOfLastSync >= syncStartDate);
+        doc.isPresent = isPresent;
+  
+        // TODO: choose the right method...
+  
+        // save person's isPresent field...
+        doc.save(function (err) {
+          if (err) {
+            return console.warn('Error saving person', doc.key, doc.name);
+          }
+          console.log('person', doc.key, doc.name, 'isPresent field saved');
+        });
+        ///////////////////////////////////////////////////////////////////////////////////////////////////
+  
+        // just update.$set person's isPresent field...
+        Person.update({ _id: doc._id }, { $set: { isPresent: isPresent } }, {}, function(err, numAffected) {
+          if (err) {
+            return console.warn('Error updating person', doc.key, doc.name);
+          }
+          console.log('person', doc.key, doc.name, 'isPresent field updated');
+        });
+        ///////////////////////////////////////////////////////////////////////////////////////////////////
+  
+      }
+    });
+  };
+
 };
 
 exports.syncComments = function(req, res) { // sync comments
@@ -164,7 +243,8 @@ exports.syncPlaces = function(req, res) { // sync persons
 
   function parsePlaces($, provider, config) {
     var val = {};
-    if (provider.key === 'SGI') {
+/*
+    if (provider.key === 'SGI') { 
       $(provider.listCategories[config.category].selectors.category + ' > ul > li > a').each(function() {
         var region = $(this).text();
         var city = $(this).next('ul').find('li a').map(function() {
@@ -173,6 +253,7 @@ exports.syncPlaces = function(req, res) { // sync persons
         val[region] = city;
       });
     }
+*/
     return val;
   }
 };
@@ -271,21 +352,21 @@ var getAll = function(filter, result) { // get all providers
 var getList = function(provider, $) {
   var val = [];
   if (provider.key === 'SGI') {
-console.log('SGI getList');
     $('a[OnClick="get_position();"]').each(function(index, element) {
       var url = $(element).attr('href');
-      var key = url; // TODO: parse 'adv2787' from 'annuncio/adv2787' ...
-      val.push({ key: key, url: url });
+      if (url.match(/annuncio\//)) {
+        var key = url.replace(/annuncio\/(.*?)/, '$1');
+        val.push({ key: key, url: url });
+      }
     });
   }
   if (provider.key === 'TOE') {
-console.log('TOE getList');
-    //$('div[id="row-viewmode"] > div > div[class~="/pi-img-shadow"]').each(function(index, element) {
     $('div[id="row-viewmode"]').find('div[class^="esclist-item"] > div > a').each(function(index, element) {
       var url = $(element).attr('href');
-console.log('TOE getList url:', url);
-      var key = '...';
-      val.push({ key: key, url: url });
+      if (url.match(/annuncio/)) {
+        var key = url.replace(/\.\/annuncio\?id=(.*)/, '$1');
+        val.push({ key: key, url: url });
+      }
     });      
   }
   if (provider.key === 'FORBES') {
@@ -298,8 +379,36 @@ console.log('TOE getList url:', url);
   return val;
 };
 
+var buildUrl = function(provider, config) {
+  var val;
+  if (provider.key === 'SGI') {
+    val = provider.url + provider.categories[config.category].path + '/' + config.city;
+  }
+  if (provider.key === 'TOE') {
+    val = provider.url + provider.categories[config.category].path;
+  }
+  if (provider.key === 'FORBES') {
+    val = provider.url + provider.categories[config.category].path;
+  }
+  return val;
+};
+
+var buildDetailsUrl = function(provider, person, config) {
+  var val;
+  if (provider.key === 'SGI') {
+    val = provider.url + provider.categories[config.category].path + '/' + person.url;
+  }
+  if (provider.key === 'TOE') {
+    val = provider.url + '/' + person.url;
+  }
+  if (provider.key === 'FORBES') {
+    val = provider.url + person.url;
+  }
+  return val;
+};
+
 var getDetailsName = function($, provider) {
-  var val = '', element;
+  var val, element;
   if (provider.key === 'SGI') {
     element = $('td[id="ctl00_content_CellaNome"]');
     if (element) {
@@ -307,15 +416,25 @@ var getDetailsName = function($, provider) {
     }
   }
   if (provider.key === 'TOE') {
-    element = $('h1[class~="titolo"]');
+    //element = $('h1[class~="titolo"]');
+    element = $('span[class~="lead-20"] > span');
     if (element) {
-      val = $(element).text();
+      val = $(element).attr('title');
+      if (val) {
+        val = val.replace(/^Telefono Escort (.*?):.*$/, '$1');
+      }
     }
   }
   if (provider.key === 'FORBES') {
     element = $('h1[id="firstHeading"]').each(function(index, element) {
       val = $(element).text();
     });
+  }
+  if (val) {
+    val = val
+      .replace(/\s+/g, ' ') // squeeze duplicated spaces
+      .replace(/^\s+/, '') // remove leading spaces
+      .replace(/\s+$/, ''); // remove trailing spaces
   }
   return val;
 };
@@ -346,6 +465,12 @@ var getDetailsDescription = function($, provider) {
     element = $('td[id="ctl00_content_CellaDescrizione"]');
     if (element) {
       val = $(element).text();
+      if (val) {
+        val
+          .replace(/<br>.*$/, '') // remove trailing fixed part
+          .replace(/\r+/, '') // remove CRs
+          .replace(/\n+/, '\n'); // remove multiple LFs
+      }
     }
   }
   if (provider.key === 'TOE') {
@@ -362,11 +487,18 @@ var getDetailsDescription = function($, provider) {
 };
 
 var getDetailsPhone = function($, provider) {
-  var val = '', element;
+  var val = null, element;
   if (provider.key === 'SGI') {
     element = $('td[id="ctl00_content_CellaTelefono"]');
     if (element) {
       val = $(element).text();
+    }
+    if (val === 'In arrivo dopo le vacanze !!') {
+      //person.unavailable = true; // TODO: set person's 'unavailble' field to true...
+      val = null;
+    }
+    if (val) {
+      val = val.replace(/[^\d]/, '');
     }
   }
   if (provider.key === 'TOE') {
@@ -374,9 +506,19 @@ var getDetailsPhone = function($, provider) {
     if (element) {
       val = $(element).text();
     }
+    if (val === 'In arrivo dopo le vacanze !!') { // TODO: set it from TOE source...
+      //person.unavailable = true; // TODO: set person's 'unavailble' field to true...
+      val = null;
+    }
+    if (val) {
+      val = val.replace(/[^\d]/, '');
+    }
   }
   if (provider.key === 'FORBES') {
     val = '333.33333333';
+    if (val) {
+      val = val.replace(/[^\d]/, '');
+    }
   }
   return val;
 };
@@ -404,161 +546,11 @@ var getDetailsPhotos = function($, provider) {
   return val;
 };
 
-var buildUrl = function(provider, config) {
-  var val;
-  if (provider.key === 'SGI') {
-    val = provider.url + provider.categories[config.category].path + '/' + config.city;
-  }
-  if (provider.key === 'TOE') {
-    val = provider.url + provider.categories[config.category].path;
-  }
-  if (provider.key === 'FORBES') {
-    val = provider.url + provider.categories[config.category].path;
-  }
-  return val;
-};
-
-var buildDetailsUrl = function(provider, person, config) {
-  var val;
-  if (provider.key === 'SGI') {
-    val = provider.url + provider.categories[config.category].path + '/' + person.url;
-  }
-  if (provider.key === 'TOE') {
-    val = provider.url + person.url;
-  }
-  if (provider.key === 'FORBES') {
-    val = provider.url + person.url;
-  }
-//console.log('DETAILS URL:', val);
-  return val;
-};
-
-var parseList = function($, provider) {
-  var val = [];
-  if (provider.key === 'SGI') {
-    val = $(provider.selectors.listElements).each(function(index, element) {
-      val.push($(element).attr('href'));
-    });
-  }
-  if (provider.key === 'TOE') {
-    val = $(provider.selectors.listElements).each(function(index, element) {
-      val.push($(element).attr('href'));
-    });
-    console.log('parseList()', '-', provider.key, '-', 'details list:', val);
-  }
-  if (provider.key === 'NOOOFORBES') {
-    $('h2 > span[id="2015"]').parent().next('div').find('ol > li > a').each(function(index, element) {
-      if (!$(element).attr('class')) {
-        var key = $(element).attr('title');
-        var url = $(element).attr('href');
-        val.push({ key: key, url: url });
-      }
-    });
-    console.log(provider.key, 'list:', val);
-  }
-  return val;
-};
-
-var parseKey = function($, provider) {
-  var val;
-  if (provider.key === 'SGI') {
-    val = $.attribs.href.substr($.attribs.href.lastIndexOf('/') + 1);
-  }
-  if (provider.key === 'TOE') {
-    val = $.match(/id=(.*)$/)[1]; // TODO: split, to avoid error in case of non-match...
-  }
-  console.log('parseKey()', '-', provider.key, '-', 'key:', val);
-  return val;
-};
-
-var parseUrl = function($, provider, config) {
-  var val, key;
-  if (provider.key === 'SGI') {
-    key = $.attribs.href;
-    val = (config.mode === 'fake' ? provider.urlFake : provider.url) + provider.listCategories[config.category].path + key;
-  }
-  if (provider.key === 'TOE') {
-    key = $.match(/id=(.*)$/);
-    if (key) {
-      val = (config.mode === 'fake' ? provider.urlFake : provider.url) + '/annuncio?id=' + key[1];
-} else { // TODO: DEBUGGING...
-console.error('parseUrl()', '-', provider.key, '-', 'EMPTY DETAILS URL: $ does not match /id=(.*)$/ pattern !!!!!', '$:', $);
-    }
-  }
-  console.log('parseUrl()', '-', provider.key, '-', 'url:', val);
-  return val;
-};
-
-var parseName = function($, provider) {
-  var val;
-  if (provider.key === 'SGI') {
-    val = $(provider.selectors.element.name).text();
-    val = val.trim();
-  }
-  if (provider.key === 'TOE') {
-    val = $(provider.selectors.element.name).text();
-  //val = val.match(/^([^a-z]+)/)[1].trim(); // keep only leading not lower case
-    val = val.match(/^([\w]+)/)[1].trim(); // keep only word character from start to first non word character
-  }
-  console.log('parseName()', '-', provider.key, '-', 'name:', val);
-  return val;
-};
-
-var parseZone = function($, provider) {
-  var val;
-  val = $(provider.selectors.element.zone).text();
-  console.log('parseZone()', '-', provider.key, '-', 'zone:', val);
-  return val;
-};
-
-var parseDescription = function($, provider) { 
-  var val = $(provider.selectors.element.description).text();
-  if (val) {
-    val
-      .replace(/<br>.*$/, '') // remove trailing fixed part
-      .replace(/\r+/, '') // remove CRs
-      .replace(/\n+/, '\n'); // remove multiple LFs
-  }
-  console.log('parseDescription()', '-', provider.key, '-', 'description:', val ? val.substr(0, 32) : null);
-  return val;
-};
-
-var parsePhone = function($, provider) {
-  var val = $(provider.selectors.element.phone).text();
-  if (val) {
-    val
-      .replace(/[^\d]/, '');
-  }
-  console.log('parsePhone()', '-', provider.key, '-', 'phone:', val);
-  return val;
-};
-
-var parsePhotos = function($, provider) {
-  var val = [];
-  // loop to get each photo
-  $(provider.selectors.element.photos).each(function(i, elem) {
-    var href = elem.attribs.href;
-    if (href) {
-      href
-        .replace(/(\.\.\/)+/, '') // remove relative paths
-        .replace(/\?.*$/, ''); // remove query string
-      val.push(href);
-    }
-  });
-  //console.log('parsePhotos()', '-', provider.key, '-', 'photos:', val);
-  return val;
-};
-
 var detectNationality = function(person, provider, config) {
   var fields = [
     person.name,
     person.description,
   ];
-  var
-    language = provider.language,
-    category = config.category
-  ;
-
   var nationalityPatterns = [
     {
       'it': [
@@ -764,12 +756,12 @@ var detectNationality = function(person, provider, config) {
       for (var j = 0; j < nationalityPatterns.length; j++) {
         var patternObj = nationalityPatterns[j];
         for (var lang in patternObj) {
-          if (lang === language) {
+          if (lang === provider.language) {
             var langPatterns = patternObj[lang];
             for (var k = 0; k < langPatterns.length; k++) {
               var langPatternObj = langPatterns[k];
               for (var cat in langPatternObj) {
-                if (cat === category) {
+                if (cat === config.category) {
                   var catPatterns = langPatternObj[cat];
                   for (var m = 0; m < catPatterns.length; m++) {
                     var catPatternObj = catPatterns[m];
@@ -805,12 +797,12 @@ var detectNationality = function(person, provider, config) {
     for (var i = 0; i < negativeLookbehinds.length; i++) {
       var negativeLookbehindObj = negativeLookbehinds[i];
       for (var lang in negativeLookbehindObj) {
-        if (lang === language) {
+        if (lang === provider.language) {
           var negativeLookbehindPatterns = negativeLookbehindObj[lang];
           for (var j = 0; j < negativeLookbehindPatterns.length; j++) {
             var negativeLookbehindPatternObj = negativeLookbehindPatterns[j];
             for (var cat in negativeLookbehindPatternObj) {
-              if (cat === category) {
+              if (cat === config.category) {
                 var catPatterns = negativeLookbehindPatternObj[cat];
                 for (var k = 0; k < catPatterns.length; k++) {
                   var negativeLookbehind = catPatterns[k];

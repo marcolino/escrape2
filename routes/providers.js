@@ -1,5 +1,5 @@
 var express = require('express')
-  , providerController = require("../controllers/provider-controller");
+  , providerController = require("../controllers/provider");
 
 var router = module.exports = express.Router();
 

@@ -7,8 +7,7 @@ var providerSchema = new mongoose.Schema({
   type: String,
   url: String,
   language: String,
-  dateOfLastSync: { type: Date },
-  forbiddenRegexp: Object, // TODO: remove this, forbidder answers a 403 statusCode, no need to parse regexp...
+  limit: Number,
   categories: Object,
 }, {
   autoIndex: config.debug,

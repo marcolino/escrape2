@@ -18,76 +18,54 @@ config.tor.port = 9050;
 
 config.providers = [
   {
-    //'_id': new objectId,
-    'key': 'FORBES',
-    'mode': 'fake',
-    'type': 'persons',
-    'url': 'http://it.wikipedia.org',
-    'language': 'it',
-    'dateOfLastSync': new Date(0),
-    'forbiddenRegexp': { // TODO: REMOVE THIS FIELD...
-      'body': 'forbidden, please complete captcha...',
-      'flags': 'gim',
-    },
-    'categories': {
-      'overall': {
-        'path': '/wiki/Lista_delle_persone_pi%C3%B9_potenti_del_mondo_secondo_Forbes#2015', // TODO: which path? list path or details path? differentiate?
-      },
-      'women': {  
-        'path': '/wiki/Lista_delle_100_donne_pi%C3%B9_potenti_del_mondo_secondo_Forbes#2015', // TODO: which path? list path or details path? differentiate?
+    key: 'SGI',
+    mode: 'normal',
+    type: 'persons',
+    url: 'http://www.sexyguidaitalia.com',
+    language: 'it',
+    limit: 5 * 1000,
+    categories: {
+      women: {
+        path: '/escort', // list path (TODO: use a better name...)
       },
     },
   },
   {
-    //'_id': new objectId,
-    'key': 'SGI',
-    'mode': 'normal',
-    'type': 'persons',
-    'url': 'http://www.sexyguidaitalia.com',
-    'language': 'it',
-    'dateOfLastSync': new Date(0),
-    'forbiddenRegexp': { // TODO: verify this re... - TODO: WE DON'T NEED THIS...
-      'body': 'forbidden, please complete captcha...',
-      'flags': 'gim',
-    },
-    'categories': {
-      'women': {
-        'path': '/escort', // TODO: which path? list path or details path? differentiate?
-        'selectors': {
-          'category': 'li[id="ctl00_escort"]',
-          'listCities': 'li',
-        },
+    key: 'TOE',
+    mode: 'normal',
+    type: 'persons',
+    url: 'http://www.torinoerotica.com',
+    language: 'it',
+    limit: 5 * 1000,
+    categories: {
+      women: {
+        path: '/annunci-escort-donna', // list path (TODO: use a better name...)
       },
     },
   },
   {
-    //'_id': new objectId,
-    'key': 'TOE',
-    'mode': 'normal',
-    'type': 'persons',
-    'url': 'http://www.torinoerotica.com',
-    'language': 'it',
-    'dateOfLastSync': new Date(0),
-    'forbiddenRegexp': { // TODO: verify this re...
-      'body': 'forbidden, please complete captcha...',
-      'flags': 'gim',
-    },
-    'categories': {
-      'women': {
-        'path': '/annunci-escort-donna', // TODO: which path? list path or details path? differentiate?
-        'selectors': {
-          'category': 'li[id="ctl00_escort"]',
-          'listCities': 'li',
-        },
+    key: 'FORBES',
+    mode: 'fake',
+    type: 'persons',
+    url: 'http://it.wikipedia.org',
+    language: 'it',
+    limit: 0,
+    categories: {
+      overall: {
+        path: '/wiki/Lista_delle_persone_pi%C3%B9_potenti_del_mondo_secondo_Forbes#2015', // list path (TODO: use a better name...)
+      },
+      women: {  
+        path: '/wiki/Lista_delle_100_donne_pi%C3%B9_potenti_del_mondo_secondo_Forbes#2015', // list path (TODO: use a better name...)
       },
     },
   },
   {
-    //'_id': new objectId,
-    'key': 'GF',
-    'type': 'comments',
-    'mode': 'normal',
+    key: 'GF',
+    mode: 'normal',
+    type: 'comments',
+    // ...
   },
+
 ];
 
 module.exports = config;
