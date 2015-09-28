@@ -38,7 +38,7 @@ exports.syncPersons = function(req, res) { // sync persons
   res.json('persons sync started');
   status.log('persons sync started');
 
-  getAll({ type: 'persons', mode: config.mode, /*key: 'TOE'*/ }, function(err, providers) { // GET all providers
+  getAll({ type: 'persons', mode: config.mode, key: 'SGI' }, function(err, providers) { // GET all providers
     if (err) {
       console.error('Error retrieving providers:', err);
       res.json({ error: err });
@@ -111,17 +111,14 @@ exports.syncPersons = function(req, res) { // sync persons
                       person.description = getDetailsDescription($, provider);
                       person.phone = getDetailsPhone($, provider);
                       person.photos = getDetailsPhotos($, provider);
-console.log('\nPERSON.PHOTOS:', person.photos, "@@@\n");
                       person.nationality = detectNationality(person, provider, config);;
                       person.providerKey = provider.key;
-//if (person.key === 'Taylor Swift') {
                       syncPersonPhotos(provider, person, function(err, result) {
                         if (err) {
                           return console.error('Error retrieving photos for person', provider.key, person.key, ':', err);
                         }   
                         console.log('person photos sync\'d', '***********************');
                       });
-//}
                       // save this person to database
                       Person.find({ providerKey: provider.key, key: person.key }, function (err, docs) {
                         var isNew = (docs.length === 0);
@@ -145,7 +142,12 @@ console.log('\nPERSON.PHOTOS:', person.photos, "@@@\n");
                               console.log(retrievedPersonsCount + ' / ' + providersPersonsCount);
                               console.log(person.providerKey, person.key, '[' + person.name + ']');
                             }
-                            callbackInner();
+
+                            // wait some time to avoid overloading provider
+                            setTimeout(function () {
+                              callbackInner();
+                            }, 7 * 1000/*provider.limit*/);
+                            //callbackInner();
                           }
                         );
                       });
@@ -202,7 +204,7 @@ console.log('\nPERSON.PHOTOS:', person.photos, "@@@\n");
       person.photos, // 1st param is the array of items
       function(element, callbackInner) { // 2nd param is the function that each item is passed to
         var photo = {};
-        photo.url = 'http:' + element;
+        photo.url = element;
         if (!photo.url) {
           console.warn('$$$$$$$$$ Error syncing photo for person', personTag + ',', 'photo with no url', '-', 'skipping');
           return callbackInner(); // skip this inner loop
@@ -542,10 +544,11 @@ var getDetailsDescription = function($, provider) {
     if (element) {
       val = $(element).text();
       if (val) {
-        val
+        val = val
           .replace(/<br>.*$/, '') // remove trailing fixed part
           .replace(/\r+/, '') // remove CRs
-          .replace(/\n+/, '\n'); // remove multiple LFs
+          .replace(/\n+/, '\n') // remove multiple LFs
+        ;
       }
     }
   }
@@ -603,20 +606,27 @@ var getDetailsPhotos = function($, provider) {
   var val = [], src;
   if (provider.key === 'SGI') {
     $('a[rel="group"][class="fancybox"]').each(function(index, element) {
-      src = $(element).attr('src');
-      val.push(src);
+      href = $(element).attr('href');
+      if (href) {
+        href = href
+          .replace(/\.\.\//g, '')
+          .replace(/\?t=.*/, '')
+        ;
+      }
+      href = provider.url + '/' + href;
+      val.push(href);
     });
   }
   if (provider.key === 'TOE') {
     $('div[id="links"] > a').each(function(index, element) {
-      src = $(element).attr('src');
-      val.push(src);
+      href = $(element).attr('hef');
+      val.push(href);
     });
   }
   if (provider.key === 'FORBES') {
     $('table[class="sinottico"]').find('tr').eq(1).find('a > img').each(function(index, element) {
-      src = $(element).attr('src');
-      val.push(src);
+      href = 'http:' + $(element).attr('src'); // TODO: do not add 'http', make network.request work without schema...
+      val.push(href);
     });
 //console.log('++++++++++++', val, val.length);
   }
