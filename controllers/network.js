@@ -6,7 +6,8 @@ var request = require('requestretry') // to place http requests and retry if nee
 /**
  * requests url contents, retrying and anonymously
  */
-exports.requestRetryAnonymous = function(url, provider, error, success) {
+exports.requestRetryAnonymous = function(url, provider, type, error, success) {
+  // TODO: handle type (html / image / ...) ...
   var options = {
     url: url,
     maxAttempts: 2, // retry for 2 attempts more after the first one

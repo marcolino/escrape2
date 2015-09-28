@@ -28,7 +28,7 @@ var personSchema = new mongoose.Schema({
   thruthful: Boolean,
   dateOfFirstSync: { type: Date, default: Date.now /*(?)*/ },
   dateOfLastSync: { type: Date, default: Date.now },
-  active: Boolean,
+  isPresent: Boolean,
   aliasPrev: String, // ObjectId reference
   aliasNext: String, // ObjectId reference
 },
@@ -36,9 +36,15 @@ var personSchema = new mongoose.Schema({
   autoIndex: config.debug,
   collection: "persons",
 });
-personSchema.index({ name: 1, type: -1 });
+personSchema.index({ providerKey: 1, key: 1 }, { unique: true });
 
 personSchema.methods.xSave = function(callback) {
   return this.model('Person').savefind({ type: this.type }, cb);
 }
+
+// expose collection methods
+personSchema.statics.findAndModify = function(query, sort, doc, options, callback) {
+  return this.collection.findAndModify(query, sort, doc, options, callback);
+};
+
 module.exports = mongoose.model('Person', personSchema);

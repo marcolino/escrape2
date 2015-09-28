@@ -7,7 +7,7 @@ var providerSchema = new mongoose.Schema({
   type: String,
   url: String,
   language: String,
-  limit: Number,
+  //limit: Number,
   categories: Object,
 }, {
   autoIndex: config.debug,
