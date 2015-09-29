@@ -1,22 +1,29 @@
 var request = require('requestretry') // to place http requests and retry if needed
   , randomUseragent = require('random-useragent') // to use a random user-agent
   , agent = require('socks5-http-client/lib/Agent') // to be able to proxy requests
+  , fs = require('fs') // to be able to use filesystem
   , config = require('../config'); // global configuration
 
 /**
  * requests url contents, retrying and anonymously
  */
-exports.requestRetryAnonymous = function(url, provider, type, error, success) {
-  // TODO: handle type (html / image / ...) ...
+exports.requestRetryAnonymous = function(url, type, error, success) {
+  // TODO: handle type (text / image / ...) ...
+  var encoding =
+    (type === 'text') ? null : 
+    (type === 'image') ? 'binary' : 
+    null
+  ;
   var options = {
     url: url,
     maxAttempts: 2, // retry for 2 attempts more after the first one
-    retryDelay: 10 * 1000, // wait for 1' 30" before trying again
+    retryDelay: 10 * 1000, // wait for 10" before trying again
     retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
     headers: {
      //'User-Agent': randomUseragent.getRandom(), // use random UA
      'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1'
     },
+    encoding: encoding,
   };
   if (config.mode !== 'fake') { // not fake, use TOR
     options.agentClass = agent;
@@ -49,23 +56,26 @@ exports.requestRetryAnonymous = function(url, provider, type, error, success) {
    */
   function retryStrategyForbidden(err, response, retry) {
 
-if (response &&
-    response.statusCode !== 200 &&
-    response.statusCode !== 403 &&
-    response.statusCode !== 524
-  ) {
-  console.warn('^^^^^^^^^^^ unforeseen response.statusCode:', response.statusCode, '^^^^^^^^^^^');
-}
+    // TODO: debug only
+    if (response &&
+        response.statusCode !== 200 &&
+        response.statusCode !== 403 &&
+        response.statusCode !== 524
+      ) {
+      console.warn('^^^', 'retryStrategyForbiddwn()', 'unforeseen response.statusCode:', response.statusCode, '^^^');
+    }
+
     /*
      * retry the request if the response was a 403 one (forbidden),
      * or if response was 200 (success), but content contain a forbidden message
      */
+//console.log('response.body:', response.body.toString());
     var forbidden = (
       response && (
         (response.statusCode === 403) || // 403 status code (forbidden)
         (response.statusCode === 524) || ( // 524 status code (cloudfare timeout)
           (response.statusCode === 200) &&
-          (response.body.match(/<title>.*?A timeout occurred.*?<\/title>/)) // SGI provider timeout signature
+          (response.body && response.body.toString().match(/<title>.*?A timeout occurred.*?<\/title>/)) // SGI provider timeout signature
         )
       )
     );
@@ -76,6 +86,5 @@ if (response &&
   }
 
 };
-exports.fetchLimitedStubbornlyRetryingSecurely = exports.fetchStubbornlyRetryingSecurely;
 
 module.exports = exports;

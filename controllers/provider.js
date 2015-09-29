@@ -1,12 +1,13 @@
 var mongoose = require('mongoose') // mongo abstraction
   , cheerio = require('cheerio') // to parse fetched DOM data
   , async = require("async") // to call many async functions in a loop
-  , network = require('./network') // network handling
   , fs = require('fs') // file-system handling
-  , config = require('../config'); // global configuration
-var Provider = require('../models/provider') // model of provider
+  , network = require('./network') // network handling
+  , image = require('./image') // network handling
+  , config = require('../config') // global configuration
+  , Provider = require('../models/provider') // model of provider
   , Person = require('../models/person') // model of person
-  , status = require('./status') // controller of provider logging
+  , Status = require('./status') // controller of provider logging
 
 mongoose.connection.on('open', function () {
   // create providers
@@ -16,6 +17,24 @@ mongoose.connection.on('open', function () {
     }
   });
 });
+
+// TEST TESTING //////////////////////////////////////////
+exports.rgbToHex = function(red, green, blue) {
+  var redHex   = red.toString(16);
+  var greenHex = green.toString(16);
+  var blueHex  = blue.toString(16);
+  return pad(redHex) + pad(greenHex) + pad(blueHex);
+};
+exports.hexToRgb = function(hex) {
+  var red   = parseInt(hex.substring(0, 2), 16);
+  var green = parseInt(hex.substring(2, 4), 16);
+  var blue  = parseInt(hex.substring(4, 6), 16);
+  return [red, green, blue];
+};
+function pad(hex) {
+  return (hex.length === 1 ? "0" + hex : hex);
+}
+//////////////////////////////////////////////////////////
 
 exports.getAll = function(req, res, next) { // GET all providers
   getAll(function(err, providers) {
@@ -36,9 +55,9 @@ exports.syncPersons = function(req, res) { // sync persons
 
   // return immedately, log progress to db
   res.json('persons sync started');
-  status.log('persons sync started');
+  Status.log('persons sync started');
 
-  getAll({ type: 'persons', mode: config.mode, key: 'SGI' }, function(err, providers) { // GET all providers
+  getAll({ type: 'persons', mode: config.mode, /*key: 'SGI'*/ }, function(err, providers) { // GET all providers
     if (err) {
       console.error('Error retrieving providers:', err);
       res.json({ error: err });
@@ -56,8 +75,7 @@ exports.syncPersons = function(req, res) { // sync persons
           console.log('url:', url);
           network.requestRetryAnonymous(
             url,
-            provider,
-            'html', // TODO...
+            'text',
             function(err) { // error
               console.error('Error syncing provider', provider.key + ':', err);
               return callbackOuter(); // skip this outer loop
@@ -92,8 +110,7 @@ exports.syncPersons = function(req, res) { // sync persons
                   console.log('details url:', detailsUrl);
                   network.requestRetryAnonymous(
                     detailsUrl,
-                    provider,
-                    'html', // TODO...
+                    'text',
                     function(err) {
                       console.warn('Error syncing provider', provider.key + ',', 'person', person.key + ':', err, '-', 'skipping');
                       return callbackInner(); // skip this inner loop
@@ -115,9 +132,9 @@ exports.syncPersons = function(req, res) { // sync persons
                       person.providerKey = provider.key;
                       syncPersonPhotos(provider, person, function(err, result) {
                         if (err) {
-                          return console.error('Error retrieving photos for person', provider.key, person.key, ':', err);
+                          return console.error('Error retrieving photos for person', provider.key, person.key + ':', err);
                         }   
-                        console.log('person photos sync\'d', '***********************');
+                        //console.log('person photos sync\'d');
                       });
                       // save this person to database
                       Person.find({ providerKey: provider.key, key: person.key }, function (err, docs) {
@@ -185,7 +202,7 @@ exports.syncPersons = function(req, res) { // sync persons
             }
             // all tasks are successfully done now
             console.log('Finished persons sync:', retrievedPersonsCount, 'persons found')
-            status.log('stopped sync');
+            Status.log('stopped sync');
           });
 
         }
@@ -194,10 +211,9 @@ exports.syncPersons = function(req, res) { // sync persons
   });
 
   syncPersonPhotos = function(provider, person, callback) {
-    //callback(err);
     var personTag = person.providerKey + '/' + person.key;
+    var destination = config.photosPath + '/' + person.providerKey + '/' + person.key;
     if (!(person && person.photos && person.photos.length > 0)) {
-      console.error('no photo for person', personTag);
       callback('no photo for person' + ' ' + personTag);
     }
     async.each(
@@ -206,34 +222,15 @@ exports.syncPersons = function(req, res) { // sync persons
         var photo = {};
         photo.url = element;
         if (!photo.url) {
-          console.warn('$$$$$$$$$ Error syncing photo for person', personTag + ',', 'photo with no url', '-', 'skipping');
+          console.warn('Error syncing photo for person', personTag + ',', 'photo with no url', '-', 'skipping');
           return callbackInner(); // skip this inner loop
         }
-        //var photoUrl = buildPhotosUrl(provider, person, config);
-        //console.log('photo url:', photoUrl);
-        console.log('££££££££££££££££ photo url:', photo.url);
-        network.requestRetryAnonymous(
-          photo.url,
-          provider,
-          'image', // TODO...
-          function(err) {
-            console.warn('Error syncing photo for person', personTag + ':', err, '-', 'skipping');
-            return callbackInner(); // skip this inner loop
-          },
-          function(contents) {
-            if (!contents) {
-              console.warn('Error syncing photo for person', personTag + ':', 'empty contents', '-', 'skipping');
-              return callbackInner(); // skip this inner loop
-            }
-            fs.writeFile('/tmp/image.jpg', contents, 'binary', function (err) {
-              if (err) {
-                console.warn('Error saving photo to file system for person', personTag + ':', err, '-', 'skipping');
-                return callbackInner(); // skip this inner loop
-              }
-              console.log('!!!!!!!!!!! Saved photo to file system for person', personTag);
-            });
+        image.download(photo.url, destination, function(err) {
+          if (err)  {
+            console.error('image', photo.url, 'download error:', err);
           }
-        );
+          //console.log('image', photo.url, 'downloaded to', destination);
+        });
       },
       function(err) { // 3rd param is the function to call when everything's done (inner callback)
         if (err) {
