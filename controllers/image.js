@@ -4,6 +4,7 @@ var fs = require('fs') // file-system handling
   , path = require('path') // path handling
   , config = require('../config'); // global configuration
 
+/*
 fs.mkdirParent = function(dirPath, mode, callback) {
   // call the standard fs.mkdir
   fs.mkdir(dirPath, mode, function(error) {
@@ -18,13 +19,14 @@ fs.mkdirParent = function(dirPath, mode, callback) {
     callback && callback(error);
   });
 };
+*/
 
 exports.download = function(url, destination, callback) {
   network.requestRetryAnonymous(
     url,
     'image',
     function(err) {
-      error(err);
+      callback(err);
     },
     function(contents) {
       var urlBasename;

@@ -17,11 +17,11 @@ exports.requestRetryAnonymous = function(url, type, error, success) {
   var options = {
     url: url,
     maxAttempts: 2, // retry for 2 attempts more after the first one
-    retryDelay: 10 * 1000, // wait for 10" before trying again
+    retryDelay: 600 * 1000, // wait for 10" before trying again
     retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
     headers: {
-     //'User-Agent': randomUseragent.getRandom(), // use random UA
-     'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1'
+     'User-Agent': randomUseragent.getRandom(), // use random UA
+     //'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1'
     },
     encoding: encoding,
   };
@@ -75,7 +75,10 @@ exports.requestRetryAnonymous = function(url, type, error, success) {
         (response.statusCode === 403) || // 403 status code (forbidden)
         (response.statusCode === 524) || ( // 524 status code (cloudfare timeout)
           (response.statusCode === 200) &&
-          (response.body && response.body.toString().match(/<title>.*?A timeout occurred.*?<\/title>/)) // SGI provider timeout signature
+          (response.body && (
+            response.body.toString().match(/<title>.*?A timeout occurred.*?<\/title>/) || // SGI provider timeout signature
+            response.body.toString().match(/<title>Attention Required!\s*\|\s*CloudFlare<\/title>/) // SGI provider cloud warning
+          ))
         )
       )
     );

@@ -18,6 +18,37 @@ mongoose.connection.on('open', function () {
   });
 });
 
+    var request = require('request');
+    var myResource = {
+      'url': 'http://www.example.com/image1.jpg',
+      'last-modified': 'Mon, 28 Sep 2015 08:44:06 GMT'
+    };
+
+    request(
+      myResource.url,
+      { method: 'HEAD'},
+      function (err, res, body) {
+        if (err) {
+          return console.error('error requesting header:', err);
+        }
+        var lastModifiedDate = res.headers['last-modified'];
+        console.log('last modified date:', lastModifiedDate);
+        //console.log('etag:', res.headers['etag']);
+        if (lastModifiedDate > myResource['last-modified']) { // image is changed
+          request(
+            myResource.url,
+            function (err, response, contents) {
+              if (err) {
+                return console.error('error requesting content:', err);
+              }
+              myResource['last-modified'] = lastModifiedDate;
+              storeContents(contents);
+            }
+          );
+        }
+      }
+    );
+
 // TEST TESTING //////////////////////////////////////////
 exports.rgbToHex = function(red, green, blue) {
   var redHex   = red.toString(16);
@@ -57,7 +88,7 @@ exports.syncPersons = function(req, res) { // sync persons
   res.json('persons sync started');
   Status.log('persons sync started');
 
-  getAll({ type: 'persons', mode: config.mode, /*key: 'SGI'*/ }, function(err, providers) { // GET all providers
+  getAll({ type: 'persons', mode: config.mode, key: 'TOE' }, function(err, providers) { // GET all providers
     if (err) {
       console.error('Error retrieving providers:', err);
       res.json({ error: err });
@@ -82,7 +113,7 @@ exports.syncPersons = function(req, res) { // sync persons
             },
             function(contents) { // success
               console.log('url', url, 'contents lenght is', contents.length);
-              if (contents.length < 10000) { console.error('!!!!!!!!!!!! SHORT LIST (SHOULD NOT HAPPEN ANYMORE...):', contents); }
+              if (contents.length < 10000) { console.error('!!!!!!!!!!!! SHORT LIST (SHOULD NOT HAPPEN ANYMORE...):', contents.toString()); }
               if (!contents) {
                 console.warn('Error syncing provider', provider.key + ':', 'empty contents', '-', 'skipping');
                 return callbackOuter(); // skip this outer loop
@@ -130,6 +161,7 @@ exports.syncPersons = function(req, res) { // sync persons
                       person.photos = getDetailsPhotos($, provider);
                       person.nationality = detectNationality(person, provider, config);;
                       person.providerKey = provider.key;
+                      // TODO: why we get here when requestRetryAnonymous() is retrying (and person.name is empty)???
                       syncPersonPhotos(provider, person, function(err, result) {
                         if (err) {
                           return console.error('Error retrieving photos for person', provider.key, person.key + ':', err);
@@ -202,7 +234,7 @@ exports.syncPersons = function(req, res) { // sync persons
             }
             // all tasks are successfully done now
             console.log('Finished persons sync:', retrievedPersonsCount, 'persons found')
-            Status.log('stopped sync');
+            Status.log('persons sync stopped');
           });
 
         }
@@ -615,8 +647,9 @@ var getDetailsPhotos = function($, provider) {
     });
   }
   if (provider.key === 'TOE') {
-    $('div[id="links"] > a').each(function(index, element) {
-      href = $(element).attr('hef');
+    $('div[id="links"]').find('a').each(function(index, element) {
+      href = $(element).attr('href');
+      href = provider.url + '/' + href;
       val.push(href);
     });
   }
@@ -625,7 +658,6 @@ var getDetailsPhotos = function($, provider) {
       href = 'http:' + $(element).attr('src'); // TODO: do not add 'http', make network.request work without schema...
       val.push(href);
     });
-//console.log('++++++++++++', val, val.length);
   }
   return val;
 };
