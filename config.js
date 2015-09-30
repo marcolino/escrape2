@@ -6,7 +6,7 @@ config.debug = true;
 config.mode = ((os.hostname() === 'linux-backup') ? 'fake' : 'normal');
 config.category = 'women'; // TODO: will get it from req, this will be a default value (?)
 config.city = 'torino'; // TODO: will get it from req, this will be a default value (?)
-config.photosPath = './data/images';
+config.imagesPath = './data/images';
 config.db = {};
 config.db.type = 'mongodb';
 config.db.host = 'localhost';

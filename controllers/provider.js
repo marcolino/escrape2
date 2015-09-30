@@ -18,55 +18,6 @@ mongoose.connection.on('open', function () {
   });
 });
 
-    var request = require('request');
-    var myResource = {
-      'url': 'http://www.example.com/image1.jpg',
-      'last-modified': 'Mon, 28 Sep 2015 08:44:06 GMT'
-    };
-
-    request(
-      myResource.url,
-      { method: 'HEAD'},
-      function (err, res, body) {
-        if (err) {
-          return console.error('error requesting header:', err);
-        }
-        var lastModifiedDate = res.headers['last-modified'];
-        console.log('last modified date:', lastModifiedDate);
-        //console.log('etag:', res.headers['etag']);
-        if (lastModifiedDate > myResource['last-modified']) { // image is changed
-          request(
-            myResource.url,
-            function (err, response, contents) {
-              if (err) {
-                return console.error('error requesting content:', err);
-              }
-              myResource['last-modified'] = lastModifiedDate;
-              storeContents(contents);
-            }
-          );
-        }
-      }
-    );
-
-// TEST TESTING //////////////////////////////////////////
-exports.rgbToHex = function(red, green, blue) {
-  var redHex   = red.toString(16);
-  var greenHex = green.toString(16);
-  var blueHex  = blue.toString(16);
-  return pad(redHex) + pad(greenHex) + pad(blueHex);
-};
-exports.hexToRgb = function(hex) {
-  var red   = parseInt(hex.substring(0, 2), 16);
-  var green = parseInt(hex.substring(2, 4), 16);
-  var blue  = parseInt(hex.substring(4, 6), 16);
-  return [red, green, blue];
-};
-function pad(hex) {
-  return (hex.length === 1 ? "0" + hex : hex);
-}
-//////////////////////////////////////////////////////////
-
 exports.getAll = function(req, res, next) { // GET all providers
   getAll(function(err, providers) {
     if (err) {
@@ -83,12 +34,13 @@ exports.syncPersons = function(req, res) { // sync persons
   var providersPersonsCount = 0;
   var retrievedPersonsCount = 0;
   var syncStartDate = new Date(); // start of this sync date
-
+  var resource;
+ 
   // return immedately, log progress to db
   res.json('persons sync started');
   Status.log('persons sync started');
 
-  getAll({ type: 'persons', mode: config.mode, key: 'TOE' }, function(err, providers) { // GET all providers
+  getAll({ type: 'persons', mode: config.mode, key: 'FORBES' }, function(err, providers) { // GET all providers
     if (err) {
       console.error('Error retrieving providers:', err);
       res.json({ error: err });
@@ -102,17 +54,20 @@ exports.syncPersons = function(req, res) { // sync persons
         providers, // 1st param in async.each() is the array of items
         function(provider, callbackOuter) { // 2nd param is the function that each item is passed to
           //console.log('provider:', provider.key);
-          var url = buildListUrl(provider, config);
-          console.log('url:', url);
+          resource = {
+            url: buildListUrl(provider, config),
+            type: 'text',
+            etag: null,
+          };
+          console.log('list resource.url:', resource.url);
           network.requestRetryAnonymous(
-            url,
-            'text',
+            resource,
             function(err) { // error
               console.error('Error syncing provider', provider.key + ':', err);
               return callbackOuter(); // skip this outer loop
             },
             function(contents) { // success
-              console.log('url', url, 'contents lenght is', contents.length);
+              console.log('url', resource.url, 'contents lenght is', contents.length);
               if (contents.length < 10000) { console.error('!!!!!!!!!!!! SHORT LIST (SHOULD NOT HAPPEN ANYMORE...):', contents.toString()); }
               if (!contents) {
                 console.warn('Error syncing provider', provider.key + ':', 'empty contents', '-', 'skipping');
@@ -137,16 +92,20 @@ exports.syncPersons = function(req, res) { // sync persons
                     console.warn('Error syncing provider', provider.key + ',', 'person with no key', ', skipping');
                     return callbackInner(); // skip this inner loop
                   }
-                  var detailsUrl = buildDetailsUrl(provider, person, config);
-                  console.log('details url:', detailsUrl);
+                  resource = {
+                    url: buildDetailsUrl(provider, person, config),
+                    type: 'text',
+                    //etag: null,
+                  };
+                  console.log('details resource.url:', resource.url);
                   network.requestRetryAnonymous(
-                    detailsUrl,
-                    'text',
+                    resource,
                     function(err) {
                       console.warn('Error syncing provider', provider.key + ',', 'person', person.key + ':', err, '-', 'skipping');
                       return callbackInner(); // skip this inner loop
                     },
                     function(contents) {
+
                       //console.log('content of page of person', person.key, 'is long', contents.length);
                       if (!contents) {
                         console.warn('Error syncing provider', provider.key + ',', 'person', person.key + ':', 'empty contents', '-', 'skipping');
@@ -158,48 +117,43 @@ exports.syncPersons = function(req, res) { // sync persons
                       person.zone = getDetailsZone($, provider);
                       person.description = getDetailsDescription($, provider);
                       person.phone = getDetailsPhone($, provider);
-                      person.photos = getDetailsPhotos($, provider);
-                      person.nationality = detectNationality(person, provider, config);;
+                      person.imageUrls = getDetailsImageUrls($, provider);
+                      person.nationality = exports.detectNationality(person, provider, config);;
                       person.providerKey = provider.key;
+                      person.dateOfLastSync = new Date();
                       // TODO: why we get here when requestRetryAnonymous() is retrying (and person.name is empty)???
-                      syncPersonPhotos(provider, person, function(err, result) {
-                        if (err) {
-                          return console.error('Error retrieving photos for person', provider.key, person.key + ':', err);
-                        }   
-                        //console.log('person photos sync\'d');
-                      });
-                      // save this person to database
-                      Person.find({ providerKey: provider.key, key: person.key }, function (err, docs) {
-                        var isNew = (docs.length === 0);
-                        var now = new Date();
-                        person.dateOfLastSync = now;
-                        if (isNew) { // person did not exist before
-                          person.dateOfFirstSync = now;
-                          //console.log('provider key:', provider.key, person.key, 'name:', person.name, 'is new');
-                        } else { // person did exist already
-                          //console.log('provider key:', provider.key, person.key, 'name:', person.name, 'is old');
-                        }
-                        Person.findOneAndUpdate(
-                          { providerKey: provider.key, key: person.key }, // query
-                          person,
-                          { upsert: true }, // options
-                          function(err, doc) {
-                            if (err) {
-                              console.warn('Error saving person', person.name + ':', err, '-', 'skipping');
-                            } else {
-                              retrievedPersonsCount++;
-                              console.log(retrievedPersonsCount + ' / ' + providersPersonsCount);
-                              console.log(person.providerKey, person.key, '[' + person.name + ']');
-                            }
 
-                            // wait some time to avoid overloading provider
-                            setTimeout(function () {
-                              callbackInner();
-                            }, 7 * 1000/*provider.limit*/);
-                            //callbackInner();
+                      // save this person to database
+                      Person.findOneAndUpdate(
+                        { providerKey: provider.key, key: person.key }, // query
+                        person,
+                        { upsert: true },
+                        //{ $setOnInsert: { dateOfFirstSync: new Date() } }, // if inserting, set dateOfFirstSync to now
+                        function(err, doc) {
+                          if (err) {
+                            console.warn('Error saving person', person.name + ':', err, '-', 'skipping');
+                          } else {
+                            person.id = doc.id; // get upserted object id
+                            retrievedPersonsCount++;
+                            console.log(retrievedPersonsCount + ' / ' + providersPersonsCount);
+                            console.log(person.providerKey, person.key, (person.name ? '[' + person.name + ']' : ''));
+
+                            // sync this person images, too
+                            image.syncPersonImages(person, function(err, result) {
+                              if (err) {
+                                return console.error('Error retrieving images for person', provider.key, person.key + ':', err);
+                              }
+                              //console.log('person images sync\'d');
+                            });
                           }
-                        );
-                      });
+
+                          // wait some time to avoid overloading provider - TODO: DO WE NEED THIS?
+                          //setTimeout(function () {
+                            callbackInner();
+                          //}, 7 * 1000/*provider.limit*/);
+                          //callbackInner();
+                        }
+                      );
                     }
                   );
                 },
@@ -211,7 +165,6 @@ exports.syncPersons = function(req, res) { // sync persons
                     )
                   }
                   // all tasks are successfully done now
-                  callbackOuter();
                 }
               );
             }
@@ -241,41 +194,6 @@ exports.syncPersons = function(req, res) { // sync persons
       );
     }
   });
-
-  syncPersonPhotos = function(provider, person, callback) {
-    var personTag = person.providerKey + '/' + person.key;
-    var destination = config.photosPath + '/' + person.providerKey + '/' + person.key;
-    if (!(person && person.photos && person.photos.length > 0)) {
-      callback('no photo for person' + ' ' + personTag);
-    }
-    async.each(
-      person.photos, // 1st param is the array of items
-      function(element, callbackInner) { // 2nd param is the function that each item is passed to
-        var photo = {};
-        photo.url = element;
-        if (!photo.url) {
-          console.warn('Error syncing photo for person', personTag + ',', 'photo with no url', '-', 'skipping');
-          return callbackInner(); // skip this inner loop
-        }
-        image.download(photo.url, destination, function(err) {
-          if (err)  {
-            console.error('image', photo.url, 'download error:', err);
-          }
-          //console.log('image', photo.url, 'downloaded to', destination);
-        });
-      },
-      function(err) { // 3rd param is the function to call when everything's done (inner callback)
-        if (err) {
-          return console.error('Error in the final internal async callback:', err, '\n',
-            'One of the iterations produced an error.\n',
-            'Skipping this iteration.'
-          );
-        }
-        // all tasks are successfully done now
-        callback();
-      }
-    );
-  };
 
   setActivityStatus = function(syncStartDate, callback) {
     presenceReset(function(err) {
@@ -371,13 +289,13 @@ exports.testDetectNationality = function(req, res) { // test detect nationality
       var person = {};  
       person.url = 'http://www.example.com';
       person.key = 'test-key';
-      person.name = undefined; //'Isabel Russa';
+      person.name = 'Marina Italiana';
       person.zone = 'Corso Francia';
       person.description = 'Viene dalla Argentina, ha 32 anni, è ricercatrice biologica';
       person.phone = '3333333333';
 
       res.json(
-        detectNationality(person, providers[1], config)
+        exports.detectNationality(person, providers[1], config)
       );
     }
   });
@@ -499,7 +417,7 @@ var buildDetailsUrl = function(provider, person, config) {
 };
 
 /* TODO: do we need this method?
-var buildPhotoUrl = function(provider, person, config) {
+var buildImageUrl = function(provider, person, config) {
   var val;
   if (provider.key === 'SGI') {
     val = provider.url + provider.categories[config.category].path + '/' + person.url;
@@ -631,8 +549,8 @@ var getDetailsPhone = function($, provider) {
   return val;
 };
 
-var getDetailsPhotos = function($, provider) {
-  var val = [], src;
+var getDetailsImageUrls = function($, provider) {
+  var val = [];
   if (provider.key === 'SGI') {
     $('a[rel="group"][class="fancybox"]').each(function(index, element) {
       href = $(element).attr('href');
@@ -662,7 +580,7 @@ var getDetailsPhotos = function($, provider) {
   return val;
 };
 
-var detectNationality = function(person, provider, config) {
+exports.detectNationality = function(person, provider, config) {
   var fields = [
     person.name,
     person.description,
@@ -906,7 +824,7 @@ var detectNationality = function(person, provider, config) {
         }
       }
     }
-    return '';
+    return null;
   }
 
   function parseNegativeLookbehinds(field, catPattern) {

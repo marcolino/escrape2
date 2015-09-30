@@ -43,7 +43,7 @@ exports.assertActivity = function(result) { // for each person (?)
   // TODO...
 };
 
-exports.syncPhotos = function(person, result) {
+exports.syncImages = function(person, result) {
   var person = new Person(personData);
   person.save(function(err, data) {
     if (err) {

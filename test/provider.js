@@ -1,28 +1,42 @@
-var expect    = require("chai").expect;
-var provider = require("../controllers/provider");
+var expect = require('chai').expect;
+var config = require('../config');
+var Provider = require('../controllers/provider');
 
-describe("Color Code Converter", function() {
-  describe("RGB to Hex conversion", function() {
-    it("converts the basic colors", function() {
-      var redHex   = provider.rgbToHex(255, 0, 0);
-      var greenHex = provider.rgbToHex(0, 255, 0);
-      var blueHex  = provider.rgbToHex(0, 0, 255);
+describe('Provider', function() {
 
-      expect(redHex).to.equal("ff0000");
-      expect(greenHex).to.equal("00ff00");
-      expect(blueHex).to.equal("0000ff");
+  describe('Detect Nationality', function() {
+/*
+    it('null result from field with no hint', function() {
+      var person = {
+        name: 'Marina',
+        description: 'Ricercatrice apolide.',
+      };
+      var nationality = provider.detectNationality(person, provider, config);
+      expect(nationality).to.equal(null);
+    });
+*/
+
+/*
+        providers, // 1st param in async.each() is the array of items
+         getAll({ type: 'persons', mode: config.mode, key: 'FORBES' }, function(err, providers) { // GET all providers
+    if (err) {
+      console.error('Error retrieving providers:', err);
+      res.json({ error: err });
+    } else {
+      // loop to get list page from all providers
+      async.each(
+        providers, // 1st param
+*/
+
+
+    it('valid result from name field with "Italiana"', function() {
+      var person = {
+        name: 'Marina Italiana',
+        description: 'Ricercatrice di Roma.',
+      };
+      var nationality = provider.detectNationality(person, provider, config);
+      expect(nationality).to.equal('it');
     });
   });
 
-  describe("Hex to RGB conversion", function() {
-    it("converts the basic colors", function() {
-      var red   = provider.hexToRgb("ff0000");
-      var green = provider.hexToRgb("00ff00");
-      var blue  = provider.hexToRgb("0000ff");
-
-      expect(red).to.deep.equal([255, 0, 0]);
-      expect(green).to.deep.equal([0, 255, 0]);
-      expect(blue).to.deep.equal([0, 0, 255]);
-    });
-  });
 });

@@ -39,12 +39,14 @@ var personSchema = new mongoose.Schema({
 personSchema.index({ providerKey: 1, key: 1 }, { unique: true });
 
 personSchema.methods.xSave = function(callback) {
-  return this.model('Person').savefind({ type: this.type }, cb);
+  return this.model('Person').savefind({ type: this.type }, callback);
 }
 
+/*
 // expose collection methods
 personSchema.statics.findAndModify = function(query, sort, doc, options, callback) {
   return this.collection.findAndModify(query, sort, doc, options, callback);
 };
+*/
 
 module.exports = mongoose.model('Person', personSchema);

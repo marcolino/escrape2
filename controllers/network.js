@@ -7,24 +7,33 @@ var request = require('requestretry') // to place http requests and retry if nee
 /**
  * requests url contents, retrying and anonymously
  */
-exports.requestRetryAnonymous = function(url, type, error, success) {
+exports.requestRetryAnonymous = function(resource, error, success) {
   // TODO: handle type (text / image / ...) ...
   var encoding =
-    (type === 'text') ? null : 
-    (type === 'image') ? 'binary' : 
+    (resource.type === 'text') ? null : 
+    (resource.type === 'image') ? 'binary' : 
     null
   ;
+//console.log('!!!!! setting header If-Modified-Since to', resource.lastModified);
   var options = {
-    url: url,
+    url: resource.url,
     maxAttempts: 2, // retry for 2 attempts more after the first one
-    retryDelay: 600 * 1000, // wait for 10" before trying again
+    retryDelay: 600 * 1000, // wait for 10' before trying again
     retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
     headers: {
-     'User-Agent': randomUseragent.getRandom(), // use random UA
-     //'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1'
+      'User-Agent': randomUseragent.getRandom(), // use random UA
+      //'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1'
     },
     encoding: encoding,
   };
+  // TODO: before setting cache fields in request header, check we have image on fs, it could have been deleted...
+  if (resource.etag) { // set header's If-None-Match tag if we have an etag
+    options.headers['If-None-Match'] = resource.etag;
+  } else {
+    if (resource.lastModified) { // set header's If-Modified-Since tag if we have a lastModified
+      options.headers['If-Modified-Since'] = resource.lastModified;
+    }
+  }
   if (config.mode !== 'fake') { // not fake, use TOR
     options.agentClass = agent;
     options.agentOptions = { // TOR socks host/port
@@ -37,14 +46,21 @@ exports.requestRetryAnonymous = function(url, type, error, success) {
   	options,
   	function (err, response, contents) {
       if (err) {
-        console.error('error in sfetch(request()) callback:', err);
+        console.error('error in request to', url + ':', err);
         return error(err);
       }
-      success(contents);
-    },
-    // requestretry wants these as 3rd and 4th params of request() call... TODO: with new requestretry versions we can remove these parameters...
-    options.maxAttempts,
-    options.retryDelay
+      if (response.statusCode < 300) { // 2xx, success, download effected
+        resource.etag = response.headers['etag'];
+        resource.lastModified = response.headers['last-modified'];
+      }
+      success(contents, resource);
+    }
+    // requestretry wants these as 3rd and 4th params of request() call...
+    // TODO: with new requestretry versions we can remove these parameters...
+    // TEST THIS !!!!!!!!!!!!!!!!!!!!
+    //,
+    //options.maxAttempts,
+    //options.retryDelay
   );
 
   // request retry strategies
@@ -55,10 +71,10 @@ exports.requestRetryAnonymous = function(url, type, error, success) {
    * @return {Boolean} true if the request should be retried
    */
   function retryStrategyForbidden(err, response, retry) {
-
     // TODO: debug only
     if (response &&
         response.statusCode !== 200 &&
+        response.statusCode !== 304 &&
         response.statusCode !== 403 &&
         response.statusCode !== 524
       ) {
@@ -69,7 +85,7 @@ exports.requestRetryAnonymous = function(url, type, error, success) {
      * retry the request if the response was a 403 one (forbidden),
      * or if response was 200 (success), but content contain a forbidden message
      */
-//console.log('response.body:', response.body.toString());
+    //console.log('response.body:', response.body.toString());
     var forbidden = (
       response && (
         (response.statusCode === 403) || // 403 status code (forbidden)
@@ -83,7 +99,7 @@ exports.requestRetryAnonymous = function(url, type, error, success) {
       )
     );
     if (forbidden) {
-    	console.warn('request for url [', url, '] was forbidden; will retry...');
+    	console.warn('request for url', url, 'was forbidden; will retry in', options.retryDelay, 'ms...');
     }
     return forbidden;
   }
