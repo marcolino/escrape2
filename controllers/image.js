@@ -6,6 +6,21 @@ var fs = require('fs') // file-system handling
   , Image = require('../models/image') // images handling
   , config = require('../config'); // global configuration
 
+/*
+var dhash = require('dhash-image');
+exports.dhash = function(fileimage) {
+  dhash(fileimage, function(err, hash) {
+    if (err) {
+      return console.error('error:', err);
+    }
+    console.log('hash for image', fileimage + ':', hash);
+  });
+};
+exports.dhash('./a1.jpg');
+exports.dhash('./a2.jpg');
+exports.dhash('./b1.jpg');
+*/
+
 // syncronize all images for person
 exports.syncPersonImages = function(person, callback) {
   var personTag = person.providerKey + '/' + person.key;

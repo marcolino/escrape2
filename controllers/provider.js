@@ -30,7 +30,6 @@ exports.getAll = function(req, res, next) { // GET all providers
 };
 
 exports.syncPersons = function(req, res) { // sync persons
-  //var persons = [];
   var providersPersonsCount = 0;
   var retrievedPersonsCount = 0;
   var syncStartDate = new Date(); // start of this sync date
