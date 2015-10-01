@@ -25,36 +25,36 @@ describe('Provider', function() {
 
   describe('_getList', function() {
 
-    var mockProvidersContents = [
-      {
-        key: 'SGI',
-        contents: '        <a OnClick="get_position();" href="1">        <a OnClick="get_position();" href="2">        <a OnClick="get_position();" href="3">        ',
+    var mockProviders = {
+      'SGI': {
+        contents: '\
+          <a OnClick="get_position();" href="annuncio/1">\
+          <a OnClick="get_position();" href="annuncio/2">\
+          <a OnClick="get_position();" href="annuncio/3">\
+        ',
         count: 3,
       },
-      {
-        key: 'TOE',
+      'TOE': {
         contents: '...',
-        count: 4,
+        count: 0,
       },
-      {
-        key: 'FORBES',
+      'FORBES': {
         contents: '...',
-        count: 2,
+        count: 0,
       },
-    ];
+    };
 
     providers.forEach(function(p) {
 
       if (p.type !== 'persons') { return true; }
 
-      var contents = mockProvidersContents[0].contents;
-      $ = cheerio.load(contents);
+      var contents = mockProviders[p.key].contents;
 
-      it('error must be null, result must be list, its length should be correct', function() {
+      it('result must be object, its length should be correct', function() {
+        $ = cheerio.load(contents);
         var result = Provider._getList(p, $);
-        console.log('result:', result);
         expect(typeof result).to.eql('object');
-        expect(result.length).to.eql(p.count);
+        expect(result.length).to.eql(mockProviders[p.key].count);
       });
 
     });
