@@ -93,7 +93,7 @@ exports.download = function(resource, destination, callback) {
       callback(err);
     },
     function(contents, resource) {
-console.error('NETWORK REQUEST SUCCESS: resource is long', contents.length);
+//console.error('NETWORK REQUEST SUCCESS: resource is long', contents.length);
 //console.log('$$$$$$$$$$$$$$$$$$$ image resource from network.request...():', resource)
       /*
       var urlBasename;

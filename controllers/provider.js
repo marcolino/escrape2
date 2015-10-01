@@ -9,9 +9,11 @@ var mongoose = require('mongoose') // mongo abstraction
   , Person = require('../models/person') // model of person
   , Status = require('./status') // controller of provider logging
 
+var private = {};
+
 mongoose.connection.on('open', function () {
   // create providers
-  createProviders(config.providers, function(err, result) {
+  private.createProviders(config.providers, function(err, result) {
     if (err) {
       return console.error('Error creating providers:', err);
     }
@@ -19,7 +21,7 @@ mongoose.connection.on('open', function () {
 });
 
 exports.getAll = function(req, res, next) { // GET all providers
-  getAll(function(err, providers) {
+  private.getAll(function(err, providers) {
     if (err) {
       console.error('Error retrieving providers:', err);
       res.json({ error: err });
@@ -39,10 +41,11 @@ exports.syncPersons = function(req, res) { // sync persons
   res.json('persons sync started');
   Status.log('persons sync started');
 
-  getAll({ type: 'persons', mode: config.mode, key: 'FORBES' }, function(err, providers) { // GET all providers
+  private.getAll({ type: 'persons', mode: config.mode, key: 'FORBES' }, function(err, providers) { // GET all providers
     if (err) {
-      console.error('Error retrieving providers:', err);
-      res.json({ error: err });
+      console.error('error syncing providers:', err);
+      //res.json({ error: err });
+      Status.log('error syncing providers:', err);
     } else {
       /*
        * providers are expected to publish a main page containing
@@ -54,7 +57,7 @@ exports.syncPersons = function(req, res) { // sync persons
         function(provider, callbackOuter) { // 2nd param is the function that each item is passed to
           //console.log('provider:', provider.key);
           resource = {
-            url: buildListUrl(provider, config),
+            url: private.buildListUrl(provider, config),
             type: 'text',
             etag: null,
           };
@@ -73,7 +76,7 @@ exports.syncPersons = function(req, res) { // sync persons
                 return callbackOuter(); // skip this outer loop
               }
               $ = cheerio.load(contents);
-              var list = getList(provider, $);
+              var list = private.getList(provider, $);
               providersPersonsCount += list.length;
               //async.eachLimit(
               async.each(
@@ -92,7 +95,7 @@ exports.syncPersons = function(req, res) { // sync persons
                     return callbackInner(); // skip this inner loop
                   }
                   resource = {
-                    url: buildDetailsUrl(provider, person, config),
+                    url: private.buildDetailsUrl(provider, person, config),
                     type: 'text',
                     //etag: null,
                   };
@@ -111,13 +114,13 @@ exports.syncPersons = function(req, res) { // sync persons
                         return callbackInner(); // skip this inner loop
                       }
                       $ = cheerio.load(contents);
-                      person.name = getDetailsName($, provider);
+                      person.name = private.getDetailsName($, provider);
                       //if (!person.name) { console.log('person', person.key, 'name is EMPTY!!! contents:', contents); callbackOuter(); return; }
-                      person.zone = getDetailsZone($, provider);
-                      person.description = getDetailsDescription($, provider);
-                      person.phone = getDetailsPhone($, provider);
-                      person.imageUrls = getDetailsImageUrls($, provider);
-                      person.nationality = exports.detectNationality(person, provider, config);;
+                      person.zone = private.getDetailsZone($, provider);
+                      person.description = private.getDetailsDescription($, provider);
+                      person.phone = private.getDetailsPhone($, provider);
+                      person.imageUrls = private.getDetailsImageUrls($, provider);
+                      person.nationality = private.detectNationality(person, provider, config);;
                       person.providerKey = provider.key;
                       person.dateOfLastSync = new Date();
                       // TODO: why we get here when requestRetryAnonymous() is retrying (and person.name is empty)???
@@ -180,7 +183,7 @@ exports.syncPersons = function(req, res) { // sync persons
           }
 
           // set activity status
-          setActivityStatus(syncStartDate, function(err) {
+          private.setActivityStatus(syncStartDate, function(err) {
             if (err) {
               return console.error('Error setting activity status:', err);
             }
@@ -194,50 +197,51 @@ exports.syncPersons = function(req, res) { // sync persons
     }
   });
 
-  setActivityStatus = function(syncStartDate, callback) {
-    presenceReset(function(err) {
-      presenceSet(syncStartDate, callback);
-    });
+};
 
-    // set persons present flag to false
-    function presenceReset(callback) {
-      Person
-        .update({}, { $set: { isPresent: false } }, { multi: true }, function (err, count) {
-          if (err) {
-            console.warn('Error resetting persons activity status:', err);
-            return callback(err);
-          }
-          if (count.n <= 0) {
-            console.warn('no person has been reset');
-          } else {
-            console.log(count.n + ' persons present flag reset');
-          }
-          callback(null);
-        })
-      ;
-    };
+private.setActivityStatus = function(syncStartDate, callback) {
+  private.presenceReset(function(err) {
+    private.presenceSet(syncStartDate, callback);
+  });
+};
 
-    // set persons present flag according to date of last sync
-    function presenceSet(syncStartDate,callback) {
-      // set just sync'd persons as present
-      Person
-        .where('dateOfLastSync').gte(syncStartDate)
-        .update({}, { $set: { isPresent: true } }, { multi: true }, function (err, count) {
-          if (err) {
-            console.warn('Error setting persons activity status:', err);
-            return callback(err);
-          }
-          if (count.n <= 0) {
-            console.warn('no person is present');
-          } else {
-            console.log(count.n + ' persons present flag asserted');
-          }
-          callback(null);
-        })
-      ;
-    };
-  };
+// set persons present flag to false
+private.presenceReset = function(callback) {
+  Person
+    .update({}, { $set: { isPresent: false } }, { multi: true }, function (err, count) {
+      if (err) {
+        console.warn('Error resetting persons activity status:', err);
+        return callback(err);
+      }
+      if (count.n <= 0) {
+        console.warn('no person has been reset');
+      } else {
+        console.log(count.n + ' persons present flag reset');
+      }
+      callback(null);
+    })
+  ;
+};
 
+
+// set persons present flag according to date of last sync
+private.presenceSet = function(syncStartDate, callback) {
+  // set just sync'd persons as present
+  Person
+    .where('dateOfLastSync').gte(syncStartDate)
+    .update({}, { $set: { isPresent: true } }, { multi: true }, function (err, count) {
+      if (err) {
+        console.warn('Error setting persons activity status:', err);
+        return callback(err);
+      }
+      if (count.n <= 0) {
+        console.warn('no person is present');
+      } else {
+        console.log(count.n + ' persons present flag asserted');
+      }
+      callback(null);
+    })
+  ;
 };
 
 exports.syncComments = function(req, res) { // sync comments
@@ -279,38 +283,7 @@ exports.status = function(req, res) { // get providers status
 };
 */
 
-exports.testDetectNationality = function(req, res) { // test detect nationality
-  getAll({ type: 'persons', }, function(err, providers) { // get all providers
-    if (err) {
-      console.error('Error retrieving providers:', err);
-      res.json({ error: err });
-    } else {
-      var person = {};  
-      person.url = 'http://www.example.com';
-      person.key = 'test-key';
-      person.name = 'Marina Italiana';
-      person.zone = 'Corso Francia';
-      person.description = 'Viene dalla Argentina, ha 32 anni, è ricercatrice biologica';
-      person.phone = '3333333333';
-
-      res.json(
-        exports.detectNationality(person, providers[1], config)
-      );
-    }
-  });
-};
-
-var collectionExists = function(collectionName, callback) {
-  getAll(function(err, providers) {
-    if (err) {
-      return callback(false);
-    } else {
-      callback(providers.length > 0);
-    }   
-  });
-};
-
-var createProviders = function(providers, callback) {
+private.createProviders = function(providers, callback) {
   // populate model (remove ad create)
   collectionExists('Provider', function(exists) {
     if (exists) {
@@ -349,15 +322,26 @@ var createProviders = function(providers, callback) {
       callback(null, provider);
     });
   }
+
+  function collectionExists(collectionName, callback) {
+    private.getAll(function(err, providers) {
+      if (err) {
+        return callback(false);
+      } else {
+        callback(providers.length > 0);
+      }   
+    });
+  };
+
 };
 
-var getAll = function(filter, result) { // get all providers
+private.getAll = function(filter, result) { // get all providers
   Provider.find(filter, function(err, providers) {
     result(err, providers);
   });
 };
 
-var getList = function(provider, $) {
+private.getList = function(provider, $) {
   var val = [];
   if (provider.key === 'SGI') {
     $('a[OnClick="get_position();"]').each(function(index, element) {
@@ -387,7 +371,7 @@ var getList = function(provider, $) {
   return val;
 };
 
-var buildListUrl = function(provider, config) {
+private.buildListUrl = function(provider, config) {
   var val;
   if (provider.key === 'SGI') {
     val = provider.url + provider.categories[config.category].path + '/' + config.city;
@@ -401,7 +385,7 @@ var buildListUrl = function(provider, config) {
   return val;
 };
 
-var buildDetailsUrl = function(provider, person, config) {
+private.buildDetailsUrl = function(provider, person, config) {
   var val;
   if (provider.key === 'SGI') {
     val = provider.url + provider.categories[config.category].path + '/' + person.url;
@@ -416,7 +400,7 @@ var buildDetailsUrl = function(provider, person, config) {
 };
 
 /* TODO: do we need this method?
-var buildImageUrl = function(provider, person, config) {
+var private.buildImageUrl = function(provider, person, config) {
   var val;
   if (provider.key === 'SGI') {
     val = provider.url + provider.categories[config.category].path + '/' + person.url;
@@ -431,7 +415,7 @@ var buildImageUrl = function(provider, person, config) {
 };
 */
 
-var getDetailsName = function($, provider) {
+private.getDetailsName = function($, provider) {
   var val, element;
   if (provider.key === 'SGI') {
     element = $('td[id="ctl00_content_CellaNome"]');
@@ -463,7 +447,7 @@ var getDetailsName = function($, provider) {
   return val;
 };
 
-var getDetailsZone = function($, provider) {
+private.getDetailsZone = function($, provider) {
   var val = '', element;
   if (provider.key === 'SGI') {
     element = $('td[id="ctl00_content_CellaZona"]');
@@ -483,7 +467,7 @@ var getDetailsZone = function($, provider) {
   return val;
 };
 
-var getDetailsDescription = function($, provider) {
+private.getDetailsDescription = function($, provider) {
   var val = '', element;
   if (provider.key === 'SGI') {
     element = $('td[id="ctl00_content_CellaDescrizione"]');
@@ -511,7 +495,7 @@ var getDetailsDescription = function($, provider) {
   return val;
 };
 
-var getDetailsPhone = function($, provider) {
+private.getDetailsPhone = function($, provider) {
   var val = null, element;
   if (provider.key === 'SGI') {
     element = $('td[id="ctl00_content_CellaTelefono"]');
@@ -548,7 +532,7 @@ var getDetailsPhone = function($, provider) {
   return val;
 };
 
-var getDetailsImageUrls = function($, provider) {
+private.getDetailsImageUrls = function($, provider) {
   var val = [];
   if (provider.key === 'SGI') {
     $('a[rel="group"][class="fancybox"]').each(function(index, element) {
@@ -579,7 +563,7 @@ var getDetailsImageUrls = function($, provider) {
   return val;
 };
 
-exports.detectNationality = function(person, provider, config) {
+private.detectNationality = function(person, provider, config) {
   var fields = [
     person.name,
     person.description,
@@ -854,5 +838,12 @@ exports.detectNationality = function(person, provider, config) {
     return false;
   }
 };
+
+// if developing, export also private functions, prefixed with '_' character
+if (config.env === 'development') {
+  for (var method in private) {
+    exports['_' + method] = private[method];
+  }
+}
 
 module.exports = exports;

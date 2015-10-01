@@ -2,6 +2,7 @@
     function inArray(arr, obj) {
       return (arr.indexOf(obj) != -1);
     }
+- user all lowercase for errors
 - adopt grunt
 - use grunt-remove-logging
 

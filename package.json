@@ -7,7 +7,7 @@
     "startdebug": "node debug ./bin/www",
     "lint": "jshint **/*.js",
     "lint:report": "jshint */*.js --reporter checkstyle > checkstyle.xml",
-    "test": "./node_modules/.bin/mocha --reporter spec"
+    "test": "mocha"
   },
   "dependencies": {
     "async": "^1.4.2",
@@ -34,7 +34,10 @@
     "socks5-http-client": "^1.0.1"
   },
   "devDependencies": {
-    "jshint": "latest"
+    "jshint": "latest",
+    "mocha": "^2.3.3",
+    "sinon": "^1.17.1",
+    "superagent": "^1.4.0"
   },
   "jshintConfig": {
     "laxcomma": true
