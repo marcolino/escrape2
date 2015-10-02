@@ -21,7 +21,7 @@ imageSchema.index({ url: 1 }, { unique: true });
 
 imageSchema.methods.xSave = function(callback) {
   return this.model('Image').savefind({ type: this.type }, callback);
-}
+};
 
 /*
 // expose collection methods

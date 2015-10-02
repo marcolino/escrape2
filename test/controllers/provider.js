@@ -3,18 +3,18 @@ var expect = require('chai').expect // assertion library
 //, sinon = require('sinon') // stubs and mocks
 //, mongoose = require('mongoose') // mongodb abstaction
   , cheerio = require('cheerio') // to parse fetched DOM data
-  , config = require('../config')
-  , Provider = require('../controllers/provider')
-  , ProviderModel = require('../models/provider');
+  , config = require('../../config')
+  , Provider = require('../../controllers/provider')
+  , ProviderModel = require('../../models/provider');
 
-describe('Provider', function() {
+describe('controllers - provider', function() {
 
-  // test exported methods /////////////////////////////////////
+  // test private methods /////////////////////////////////////
   var providers = config.providers;
 
-  describe('_getAll', function() {
+  describe('private.getAll', function() {
     it('error must be null, result must be object, its length 4', function() {
-      Provider._getAll(function(err, result) {
+      Provider.private.getAll(function(err, result) {
         expect(err).to.be.null;
         expect(typeof result).to.eql('array');
         expect(result.length).to.eql(4);
@@ -23,7 +23,7 @@ describe('Provider', function() {
     });
   });
 
-  describe('_getList', function() {
+  describe('private.getList', function() {
 
     var mockProviders = {
       'SGI': {
@@ -35,24 +35,48 @@ describe('Provider', function() {
         count: 3,
       },
       'TOE': {
-        contents: '...',
-        count: 0,
+        contents: '\
+          <div id="row-viewmode">\
+            <div class="esclist-item other-class">\
+              <div>\
+                <a href="annuncio?id=1">A</a>\
+                <a href="annuncio?id=2">B</a>\
+                <a href="annuncio?id=3">C</a>\
+                <a href="annuncio?id=4">D</a>\
+              </div>\
+            </div>\
+          </div>\
+        ',
+        count: 4,
       },
       'FORBES': {
-        contents: '...',
-        count: 0,
+        contents: '\
+          <h2>\
+            <span id="2015"></span>\
+          </h2>\
+          <div>\
+            <ol>\
+              <li><a href="1" title="Person A"></a></li>\
+              <li><a href="1bis" title="Person 1bis" class="ignore me"></a></li>\
+              <li><a href="2" title="Person B"></a></li>\
+              <li><a href="3" title="Person C"></a></li>\
+              <li><a href="4" title="Person D"></a></li>\
+              <li><a href="5" title="Person E"></a></li>\
+            </ol>\
+          </div>\
+        ',
+        count: 5,
       },
     };
 
     providers.forEach(function(p) {
 
       if (p.type !== 'persons') { return true; }
-
       var contents = mockProviders[p.key].contents;
 
-      it('result must be object, its length should be correct', function() {
+      it('result must be object, its length should be ' + mockProviders[p.key].count + ', for provider key "' + p.key + '"', function() {
         $ = cheerio.load(contents);
-        var result = Provider._getList(p, $);
+        var result = Provider.private.getList(p, $);
         expect(typeof result).to.eql('object');
         expect(result.length).to.eql(mockProviders[p.key].count);
       });
@@ -60,7 +84,7 @@ describe('Provider', function() {
     });
   });
 
-  describe('_detectNationality', function() {
+  describe('private.detectNationality', function() {
 
     providers.forEach(function(p) {
 
@@ -71,7 +95,7 @@ describe('Provider', function() {
           name: 'Nome Cognome',
           description: 'Ricercatrice apolide.',
         };
-        var nationality = Provider._detectNationality(person, p, config);
+        var nationality = Provider.private.detectNationality(person, p, config);
         expect(nationality).to.equal(null);
       });
   
@@ -80,7 +104,7 @@ describe('Provider', function() {
           name: 'Nome Cognome Italiana',
           description: 'Ricercatrice di Roma.',
         };
-        var nationality = Provider._detectNationality(person, p, config);
+        var nationality = Provider.private.detectNationality(person, p, config);
         expect(nationality).to.equal('it');
       });
 
@@ -89,7 +113,7 @@ describe('Provider', function() {
           name: 'Nome Cognome tedesca',
           description: 'Speleologa.',
         };
-        var nationality = Provider._detectNationality(person, p, config);
+        var nationality = Provider.private.detectNationality(person, p, config);
         expect(nationality).to.equal('de');
       });
 
@@ -98,7 +122,7 @@ describe('Provider', function() {
           name: 'Nome Cognome spagnola',
           description: 'Giornalista freelance.',
         };
-        var nationality = Provider._detectNationality(person, p, config);
+        var nationality = Provider.private.detectNationality(person, p, config);
         expect(nationality).to.equal(null);
       });
 
@@ -107,7 +131,7 @@ describe('Provider', function() {
           name: 'Nome Cognome',
           description: 'Geologa della corea del sud.',
         };
-        var nationality = Provider._detectNationality(person, p, config);
+        var nationality = Provider.private.detectNationality(person, p, config);
         expect(nationality).to.equal('kr');
       });
 
@@ -116,7 +140,7 @@ describe('Provider', function() {
           name: 'Nome Cognome',
           description: 'Biologa dalla Spagna del nord.',
         };
-        var nationality = Provider._detectNationality(person, p, config);
+        var nationality = Provider.private.detectNationality(person, p, config);
         expect(nationality).to.equal('es');
       });
 
@@ -125,7 +149,7 @@ describe('Provider', function() {
           name: 'Nome Cognome',
           description: 'Politica spagnola molto simpatica.',
         };
-        var nationality = Provider._detectNationality(person, p, config);
+        var nationality = Provider.private.detectNationality(person, p, config);
         expect(nationality).to.equal(null);
       });
 
@@ -134,7 +158,7 @@ describe('Provider', function() {
           name: 'Nome Cognome',
           description: 'Scrittrice noir sudamericana.',
         };
-        var nationality = Provider._detectNationality(person, p, config);
+        var nationality = Provider.private.detectNationality(person, p, config);
         expect(nationality).to.equal('south-america');
       });
 
@@ -143,7 +167,7 @@ describe('Provider', function() {
           name: 'Nome Cognome',
           description: 'Arredatrice dalla Francia del sud.',
         };
-        var nationality = Provider._detectNationality(person, p, config);
+        var nationality = Provider.private.detectNationality(person, p, config);
         expect(nationality).to.equal('fr');
       });
 
@@ -152,7 +176,7 @@ describe('Provider', function() {
           name: 'Nome Cognome',
           description: 'Cuoca - Sede in Corso Francia, 300.',
         };
-        var nationality = Provider._detectNationality(person, p, config);
+        var nationality = Provider.private.detectNationality(person, p, config);
         expect(nationality).to.equal(null);
       });
 
@@ -161,7 +185,7 @@ describe('Provider', function() {
           name: 'Nome Cognome',
           description: 'Fotografa - Sede in Piazza Ungheria, 1bis.',
         };
-        var nationality = Provider._detectNationality(person, p, config);
+        var nationality = Provider.private.detectNationality(person, p, config);
         expect(nationality).to.equal(null);
       });
 
@@ -185,33 +209,6 @@ describe('Provider', function() {
       });
     });
 
-  });
-*/
-
-/*
-
-  // test routing methods (service must be running) //////////
-
-  var URL = 'http://localhost:3000/';
-
-  describe('routing: getAll', function() {
-
-    it('routing: getAll', function(done) {
-      superagent.get(URL + 'providers/')
-      .end(function(e, res) {
-        //console.log(res.body);
-        expect(e).to.eql(null);
-        expect(typeof res.body).to.eql('object');
-        var n = 0;
-        res.body.forEach(function(p) {
-          expect(p._id.length).to.eql(24);
-          n++;
-        });
-        expect(n).to.eql(4);
-        done();
-      });
-    });
-  
   });
 */
 });

@@ -15,6 +15,7 @@ config.tor = {};
 config.tor.host = 'localhost';
 config.tor.port = 9050;
 
+// only for development
 config.providers = [
   {
     key: 'SGI',

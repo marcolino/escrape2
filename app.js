@@ -3,7 +3,7 @@ var logger = require('morgan'); // clients requests logger
 var bodyParser = require('body-parser'); // body parser
 var methodOverride = require('method-override'); // method overryde for clients not supporting all REST verbs
 var config = require('./config'); // application configuration
- 
+
 // required models
 var db = require('./models/db');
 var provider = require('./models/provider');

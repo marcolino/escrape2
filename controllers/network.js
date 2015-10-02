@@ -50,7 +50,7 @@ exports.requestRetryAnonymous = function(resource, error, success) {
         return error(err);
       }
       if (response.statusCode < 300) { // 2xx, success, download effected
-        resource.etag = response.headers['etag'];
+        resource.etag = response.headers.etag;
         resource.lastModified = response.headers['last-modified'];
       }
       success(contents, resource);

@@ -3,11 +3,24 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "info": "echo 'escrape2 - the ultimate contacts manager'",
+    "clean": "rm -r dist/*",
     "start": "nodemon ./bin/www",
-    "startdebug": "node debug ./bin/www",
+    "Xstart": "npm run lint & npm run test:quiet & node ./bin/www",
+    "Xstart:dev": "nodemon --exec 'npm run start'",
+    "Xstart:nodev": "nodemon ./bin/www",
+    "Ywatch": "echo 'node' & npm run lint & nodemon ./bin/www",
+    "Ystart": "npm run lint & npm run test:quiet & node ./bin/www",
+    "Ystart-dev": "npm run watch & npm start",
+    "debug": "node debug ./bin/www",
     "lint": "jshint **/*.js",
-    "lint:report": "jshint */*.js --reporter checkstyle > checkstyle.xml",
-    "test": "mocha"
+    "lint:report": "jshint */*.js --reporter checkstyle > .tmp/jshint.checkstyle.xml",
+    "test": "mocha --recursive",
+    "test:quiet": "mocha --recursive --reporter progress",
+    "build": "# TO BE REVIRWED...",
+    "prepublish": "npm run build # also runs npm run prebuild",
+    "prebuild": "npm run test # also runs npm run pretest",
+    "pretest": "npm run lint"
   },
   "dependencies": {
     "async": "^1.4.2",

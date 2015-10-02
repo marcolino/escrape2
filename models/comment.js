@@ -28,7 +28,7 @@ commentSchema
   })
 ;
 commentSchema
-  .index({ dateOfCreation: 1, topic: 1, author.nick: 1, contentMd5: 1 }, { unique: true }) // 1: ascending, -1: descending
+  .index({ dateOfCreation: 1, topic: 1, authorNick: 1, contentMd5: 1 }, { unique: true }) // 1: ascending, -1: descending
 ;
 
 module.exports = mongoose.model('Comment', commentSchema);

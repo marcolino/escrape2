@@ -40,7 +40,7 @@ personSchema.index({ providerKey: 1, key: 1 }, { unique: true });
 
 personSchema.methods.xSave = function(callback) {
   return this.model('Person').savefind({ type: this.type }, callback);
-}
+};
 
 /*
 // expose collection methods

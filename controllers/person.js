@@ -2,9 +2,15 @@ var
   mongoose = require('mongoose'), // mongo abstraction
   config = require('../config') // global configuration
 ;
+var private = {};
+
+exports.sync = function() {
+  // ... do the persons sync ...
+  return true;
+};
 
 exports.getAll = function(req, res) { // get all persons
-  getAll({}, function(err, persons) {
+  private.getPerson({}, function(err, persons) {
     if (err) {
       console.error('Error retrieving persons:', err);
       res.json({ error: err });
@@ -16,24 +22,24 @@ exports.getAll = function(req, res) { // get all persons
 };
 
 exports.getById = function(req, res) { // get person
-  getPerson({ _id: req._id }, function(err, persons) {
+  private.getPerson({ _id: req._id }, function(err, persons) {
     if (err) {
       console.error('Error retrieving persons by id:', err);
       res.json({ error: err });
     } else {
-      console.log('persons.getPersonById: ' + person);
+      console.log('persons.getById: ' + person);
       res.json(persons);
     }   
   });
 };
 
 exports.getByPhone = function(req, res) { // get person
-  getPerson({ phone: req.phone }, function(err, persons) {
+  private.getPerson({ phone: req.phone }, function(err, persons) {
     if (err) {
       console.error('Error retrieving persons by phone:', err);
       res.json({ error: err });
     } else {
-      console.log('persons.getPersonByPhone: ' + person);
+      console.log('persons.getByPhone: ' + person);
       res.json(persons);
     }   
   });
@@ -43,37 +49,7 @@ exports.assertActivity = function(result) { // for each person (?)
   // TODO...
 };
 
-exports.syncImages = function(person, result) {
-  var person = new Person(personData);
-  person.save(function(err, data) {
-    if (err) {
-      result(err, data);
-    } else {
-      
-      res.json(data);
-    }
-  });
-};
-
-exports.save = function(person, result) {
-  var person = new Person(personData);
-  person.save(function(err, data) {
-    if (err) {
-      result(err, data);
-    } else {
-
-      res.json(data);
-    }
-  });
-};
-
-var getAll = function(filter, result) { // get all persons
-  mongoose.model('Person').find(filter, function(err, persons) {
-    result(err, persons);
-  });
-};
-
-var getPerson = function(filter, result) { // get person
+private.getPerson = function(filter, result) { // get person
   mongoose.model('Person').find(filter, function(err, persons) {
     result(err, persons);
   });

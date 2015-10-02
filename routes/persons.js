@@ -8,7 +8,7 @@ var router = express.Router(); // express router
 
 //router.use(bodyParser.urlencoded({ extended: true })); // already in app.js (is it sufficient???)
 
-router.use(methodOverride(function(req, res) { // method verride for clients supporting only POST method
+router.use(methodOverride(function(req, res) { // method override for clients supporting only POST method
   if (req.body && typeof req.body === 'object' && '_method' in req.body) {
     // look in urlencoded POST bodies and delete it
     var method = req.body._method;
@@ -56,6 +56,12 @@ router.get('/new', function(req, res) {
   res.render('persons/new', { title: 'Add New Person' });
 });
 */
+
+router.get('/sync', sync);
+function sync(req, res) {
+  res.json('persons sync started');
+  personController.sync(); // do this in background. A status collection is handled to get sync process status.
+}
 
 // route middleware to validate :id
 router.param('id', function(req, res, next, id) {

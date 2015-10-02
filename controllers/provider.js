@@ -8,6 +8,7 @@ var mongoose = require('mongoose') // mongo abstraction
   , Provider = require('../models/provider') // model of provider
   , Person = require('../models/person') // model of person
   , Status = require('./status') // controller of provider logging
+;
 
 var private = {};
 
@@ -31,6 +32,7 @@ exports.getAll = function(req, res, next) { // GET all providers
   });
 };
 
+// TODO: move to persons controller...
 exports.syncPersons = function(req, res) { // sync persons
   var providersPersonsCount = 0;
   var retrievedPersonsCount = 0;
@@ -120,7 +122,7 @@ exports.syncPersons = function(req, res) { // sync persons
                       person.description = private.getDetailsDescription($, provider);
                       person.phone = private.getDetailsPhone($, provider);
                       person.imageUrls = private.getDetailsImageUrls($, provider);
-                      person.nationality = private.detectNationality(person, provider, config);;
+                      person.nationality = private.detectNationality(person, provider, config);
                       person.providerKey = provider.key;
                       person.dateOfLastSync = new Date();
                       // TODO: why we get here when requestRetryAnonymous() is retrying (and person.name is empty)???
@@ -164,7 +166,7 @@ exports.syncPersons = function(req, res) { // sync persons
                     return console.error('Error in the final internal async callback:', err, '\n',
                       'One of the iterations produced an error.\n',
                       'Skipping this iteration.'
-                    )
+                    );
                   }
                   // all tasks are successfully done now
                 }
@@ -188,7 +190,7 @@ exports.syncPersons = function(req, res) { // sync persons
               return console.error('Error setting activity status:', err);
             }
             // all tasks are successfully done now
-            console.log('Finished persons sync:', retrievedPersonsCount, 'persons found')
+            console.log('Finished persons sync:', retrievedPersonsCount, 'persons found');
             Status.log('persons sync stopped');
           });
 
@@ -331,7 +333,7 @@ private.createProviders = function(providers, callback) {
         callback(providers.length > 0);
       }   
     });
-  };
+  }
 
 };
 
@@ -355,7 +357,7 @@ private.getList = function(provider, $) {
   if (provider.key === 'TOE') {
     $('div[id="row-viewmode"]').find('div[class^="esclist-item"] > div > a').each(function(index, element) {
       var url = $(element).attr('href');
-      if (url.match(/annuncio/)) {
+      if (url.match(/annuncio\?id=/)) {
         var key = url.replace(/\.\/annuncio\?id=(.*)/, '$1');
         val.push({ key: key, url: url });
       }
@@ -839,10 +841,15 @@ private.detectNationality = function(person, provider, config) {
   }
 };
 
-// if developing, export also private functions, prefixed with '_' character
+/**
+ * when developing, export also private functions,
+ * prefixed with '_' character,
+ * to be able to unit test them
+ */
 if (config.env === 'development') {
+  exports.private = {};
   for (var method in private) {
-    exports['_' + method] = private[method];
+    exports.private[method] = private[method];
   }
 }
 
