@@ -5,22 +5,31 @@
   "scripts": {
     "info": "echo 'escrape2 - the ultimate contacts manager'",
     "clean": "rm -r dist/*",
-    "start": "nodemon ./bin/www",
+    "Zstart": "nodemon ./bin/www",
     "Xstart": "npm run lint & npm run test:quiet & node ./bin/www",
     "Xstart:dev": "nodemon --exec 'npm run start'",
     "Xstart:nodev": "nodemon ./bin/www",
     "Ywatch": "echo 'node' & npm run lint & nodemon ./bin/www",
     "Ystart": "npm run lint & npm run test:quiet & node ./bin/www",
     "Ystart-dev": "npm run watch & npm start",
-    "debug": "node debug ./bin/www",
+    "Zdebug": "node debug ./bin/www",
+    "Zlint": "jshint **/*.js",
+    "Zlint:report": "jshint */*.js --reporter checkstyle > .tmp/jshint.checkstyle.xml",
+    "Ztest": "mocha --recursive",
+    "Ztest:quiet": "mocha --recursive --reporter progress",
+    "Zbuild": "# TO BE REWIEWED...",
+    "Zprepublish": "npm run build # also runs npm run prebuild",
+    "Zprebuild": "npm run test # also runs npm run pretest",
+    "Zpretest": "npm run lint",
+    "start": "npm run watch-js",
+    "watch-js": "nodemon -e js -w . -x 'npm run test'",
+    "Awatch-sass": "nodemon -e scss -w public/sass -x 'npm run build-sass'",
+    "test": "npm run lint & npm run mocha:quiet",
+    "jscs": "jscs **/*.js",
     "lint": "jshint **/*.js",
     "lint:report": "jshint */*.js --reporter checkstyle > .tmp/jshint.checkstyle.xml",
-    "test": "mocha --recursive",
-    "test:quiet": "mocha --recursive --reporter progress",
-    "build": "# TO BE REVIRWED...",
-    "prepublish": "npm run build # also runs npm run prebuild",
-    "prebuild": "npm run test # also runs npm run pretest",
-    "pretest": "npm run lint"
+    "mocha": "mocha --recursive",
+    "mocha:quiet": "mocha --recursive --reporter progress"
   },
   "dependencies": {
     "async": "^1.4.2",
@@ -49,7 +58,8 @@
     "jshint": "latest",
     "mocha": "^2.3.3",
     "sinon": "^1.17.1",
-    "superagent": "^1.4.0"
+    "superagent": "^1.4.0",
+    "jscs": "~2.2.1"
   },
   "jshintConfig": {
     "laxcomma": true

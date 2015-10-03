@@ -38,7 +38,7 @@ app.use(function(req, res, next) {
 });
 
 // catch all errors
-app.use(function(err, req, res, next) {
+app.use(function(err, req, res) {
   var error = {};
   error.message = err.message;
   if (app.get('env') === 'development') {
