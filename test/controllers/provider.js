@@ -9,12 +9,12 @@ var expect = require('chai').expect // assertion library
 
 describe('controllers - provider', function() {
 
-  // test private methods /////////////////////////////////////
+  // test privat methods /////////////////////////////////////
   var providers = config.providers;
 
-  describe('private.getAll', function() {
+  describe('privat.getAll', function() {
     it('error must be null, result must be object, its length 4', function() {
-      Provider.private.getAll(function(err, result) {
+      Provider.privat.getAll(function(err, result) {
         expect(err).to.be.null;
         expect(typeof result).to.eql('array');
         expect(result.length).to.eql(4);
@@ -23,7 +23,7 @@ describe('controllers - provider', function() {
     });
   });
 
-  describe('private.getList', function() {
+  describe('privat.getList', function() {
 
     var mockProviders = {
       'SGI': {
@@ -76,7 +76,7 @@ describe('controllers - provider', function() {
 
       it('result must be object, its length should be ' + mockProviders[p.key].count + ', for provider key "' + p.key + '"', function() {
         $ = cheerio.load(contents);
-        var result = Provider.private.getList(p, $);
+        var result = Provider.privat.getList(p, $);
         expect(typeof result).to.eql('object');
         expect(result.length).to.eql(mockProviders[p.key].count);
       });
@@ -84,7 +84,7 @@ describe('controllers - provider', function() {
     });
   });
 
-  describe('private.detectNationality', function() {
+  describe('privat.detectNationality', function() {
 
     providers.forEach(function(p) {
 
@@ -95,7 +95,7 @@ describe('controllers - provider', function() {
           name: 'Nome Cognome',
           description: 'Ricercatrice apolide.',
         };
-        var nationality = Provider.private.detectNationality(person, p, config);
+        var nationality = Provider.privat.detectNationality(person, p, config);
         expect(nationality).to.equal(null);
       });
   
@@ -104,7 +104,7 @@ describe('controllers - provider', function() {
           name: 'Nome Cognome Italiana',
           description: 'Ricercatrice di Roma.',
         };
-        var nationality = Provider.private.detectNationality(person, p, config);
+        var nationality = Provider.privat.detectNationality(person, p, config);
         expect(nationality).to.equal('it');
       });
 
@@ -113,7 +113,7 @@ describe('controllers - provider', function() {
           name: 'Nome Cognome tedesca',
           description: 'Speleologa.',
         };
-        var nationality = Provider.private.detectNationality(person, p, config);
+        var nationality = Provider.privat.detectNationality(person, p, config);
         expect(nationality).to.equal('de');
       });
 
@@ -122,7 +122,7 @@ describe('controllers - provider', function() {
           name: 'Nome Cognome spagnola',
           description: 'Giornalista freelance.',
         };
-        var nationality = Provider.private.detectNationality(person, p, config);
+        var nationality = Provider.privat.detectNationality(person, p, config);
         expect(nationality).to.equal(null);
       });
 
@@ -131,7 +131,7 @@ describe('controllers - provider', function() {
           name: 'Nome Cognome',
           description: 'Geologa della corea del sud.',
         };
-        var nationality = Provider.private.detectNationality(person, p, config);
+        var nationality = Provider.privat.detectNationality(person, p, config);
         expect(nationality).to.equal('kr');
       });
 
@@ -140,7 +140,7 @@ describe('controllers - provider', function() {
           name: 'Nome Cognome',
           description: 'Biologa dalla Spagna del nord.',
         };
-        var nationality = Provider.private.detectNationality(person, p, config);
+        var nationality = Provider.privat.detectNationality(person, p, config);
         expect(nationality).to.equal('es');
       });
 
@@ -149,7 +149,7 @@ describe('controllers - provider', function() {
           name: 'Nome Cognome',
           description: 'Politica spagnola molto simpatica.',
         };
-        var nationality = Provider.private.detectNationality(person, p, config);
+        var nationality = Provider.privat.detectNationality(person, p, config);
         expect(nationality).to.equal(null);
       });
 
@@ -158,7 +158,7 @@ describe('controllers - provider', function() {
           name: 'Nome Cognome',
           description: 'Scrittrice noir sudamericana.',
         };
-        var nationality = Provider.private.detectNationality(person, p, config);
+        var nationality = Provider.privat.detectNationality(person, p, config);
         expect(nationality).to.equal('south-america');
       });
 
@@ -167,7 +167,7 @@ describe('controllers - provider', function() {
           name: 'Nome Cognome',
           description: 'Arredatrice dalla Francia del sud.',
         };
-        var nationality = Provider.private.detectNationality(person, p, config);
+        var nationality = Provider.privat.detectNationality(person, p, config);
         expect(nationality).to.equal('fr');
       });
 
@@ -176,7 +176,7 @@ describe('controllers - provider', function() {
           name: 'Nome Cognome',
           description: 'Cuoca - Sede in Corso Francia, 300.',
         };
-        var nationality = Provider.private.detectNationality(person, p, config);
+        var nationality = Provider.privat.detectNationality(person, p, config);
         expect(nationality).to.equal(null);
       });
 
@@ -185,7 +185,7 @@ describe('controllers - provider', function() {
           name: 'Nome Cognome',
           description: 'Fotografa - Sede in Piazza Ungheria, 1bis.',
         };
-        var nationality = Provider.private.detectNationality(person, p, config);
+        var nationality = Provider.privat.detectNationality(person, p, config);
         expect(nationality).to.equal(null);
       });
 

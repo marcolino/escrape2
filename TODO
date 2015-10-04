@@ -5,5 +5,6 @@
 - user all lowercase for errors
 - adopt grunt
 - use grunt-remove-logging
+- add mongo dependency and (http://docs.mongodb.org/manual/installation/) start it in deploy script...
 
 V remove all "err.context = " lines

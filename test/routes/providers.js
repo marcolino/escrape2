@@ -12,7 +12,6 @@ var URL = 'http://localhost:3000/providers/';
 
 describe('routes - provider', function() {
 
-/*
   describe('getAll', function() {
 
     it('routing: getAll', function(done) {
@@ -31,5 +30,5 @@ describe('routes - provider', function() {
     });
   
   });
-*/
+
 });

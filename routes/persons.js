@@ -8,7 +8,7 @@ var router = express.Router(); // express router
 
 //router.use(bodyParser.urlencoded({ extended: true })); // already in app.js (is it sufficient???)
 
-router.use(methodOverride(function(req, res) { // method override for clients supporting only POST method
+router.use(methodOverride(function(req) { // method override for clients supporting only POST method
   if (req.body && typeof req.body === 'object' && '_method' in req.body) {
     // look in urlencoded POST bodies and delete it
     var method = req.body._method;
@@ -17,7 +17,7 @@ router.use(methodOverride(function(req, res) { // method override for clients su
   }
 }));
 
-router.route('/').get(function(req, res, next) { // get all persons
+router.route('/').get(function(req, res) { // get all persons
   // retrieve all persons from mongo database
   mongoose.model('Person').find({}, function(err, persons) {
     if (err) {
@@ -26,7 +26,7 @@ router.route('/').get(function(req, res, next) { // get all persons
     } else {
       console.log('GET persons: ' + persons);
       res.json(persons);
-    }   
+    }
   });
 });
 
@@ -36,12 +36,12 @@ router.route('/').post(function(req, res) { // post a new person
     vote: req.body.vote,
     dateofcreation: req.body.dateofcreation,
     company: req.body.company,
-    isloved: req.body.isloved,
+    isloved: req.body.isloved
   };
 
   mongoose.model('Person').create(record, function(err, person) {
     if (err) {
-      console.error("Error adding a person to the database:", err);
+      console.error('Error adding a person to the database:', err);
       res.json({ error: err });
     } else { // person has been created
       console.log('POST person: ' + person);
@@ -119,7 +119,7 @@ router.route('/:id/edit').put(function(req, res) { // update a person by id
     vote: req.body.vote,
     dateofcreation: req.body.dateofcreation,
     company: req.body.company,
-    isloved: req.body.isloved,
+    isloved: req.body.isloved
   };
 
   // find the document by ID
@@ -128,7 +128,7 @@ router.route('/:id/edit').put(function(req, res) { // update a person by id
       console.error('Error retrieving person with id ' + req.id + ':', err);
       res.json({ error: err });
     } else { // update the person
-        person.update(record, function(err, personID) {
+      person.update(record, function(err, person) {
         if (err) {
           console.error('Error updating person with id', req.id + ':', err);
           res.json({ error: err });
@@ -160,8 +160,6 @@ router.route('/:id/edit').delete(function(req, res) { // delete a person by id
     }
   });
 });
-
-
 
 // export all router methods
 module.exports = router;

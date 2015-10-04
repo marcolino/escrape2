@@ -6,10 +6,10 @@ var statusSchema = new mongoose.Schema({
   dateStop: Date,
   status: String, // started, stopped
   message: String, // message
-  exitus: String, // success, error
+  exitus: String // success, error
 }, {
   autoIndex: config.debug,
-  collection: "status",
+  collection: 'status'
 });
 
 module.exports = mongoose.model('Status', statusSchema);

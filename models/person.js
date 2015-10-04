@@ -1,13 +1,13 @@
-var mongoose = require('mongoose')  
+var mongoose = require('mongoose')
   , config = require('../config'); // application configuration
 
-var personSchema = new mongoose.Schema({  
-/*
+var personSchema = new mongoose.Schema({
+  /*
   name: String,
   vote: Number,
   dateofcreation: { type: Date, default: Date.now },
   isloved: Boolean,
-*/
+  */
   idUser: String, // ObjectId reference
   key: String,
   //key: String, TODO: define a compound key from: key, providerKey
@@ -30,11 +30,11 @@ var personSchema = new mongoose.Schema({
   dateOfLastSync: { type: Date, default: Date.now },
   isPresent: Boolean,
   aliasPrev: String, // ObjectId reference
-  aliasNext: String, // ObjectId reference
+  aliasNext: String // ObjectId reference
 },
 {
   autoIndex: config.debug,
-  collection: "persons",
+  collection: 'persons'
 });
 personSchema.index({ providerKey: 1, key: 1 }, { unique: true });
 

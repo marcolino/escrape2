@@ -13,6 +13,8 @@
   "disallowSpacesInsideObjectBrackets": null,
   "disallowImplicitTypeConversion": ["string"],
 
+  "disallowMultipleVarDecl": false,
+
   "safeContextKeyword": "_this",
 
   "jsDoc": {

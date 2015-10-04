@@ -10,21 +10,21 @@ var request = require('requestretry') // to place http requests and retry if nee
 exports.requestRetryAnonymous = function(resource, error, success) {
   // TODO: handle type (text / image / ...) ...
   var encoding =
-    (resource.type === 'text') ? null : 
-    (resource.type === 'image') ? 'binary' : 
+    (resource.type === 'text') ? null :
+    (resource.type === 'image') ? 'binary' :
     null
   ;
-//console.log('!!!!! setting header If-Modified-Since to', resource.lastModified);
+  //console.log('!!!!! setting header If-Modified-Since to', resource.lastModified);
   var options = {
     url: resource.url,
     maxAttempts: 2, // retry for 2 attempts more after the first one
     retryDelay: 600 * 1000, // wait for 10' before trying again
     retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
     headers: {
-      'User-Agent': randomUseragent.getRandom(), // use random UA
+      'User-Agent': randomUseragent.getRandom() // use random UA
       //'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1'
     },
-    encoding: encoding,
+    encoding: encoding
   };
   // TODO: before setting cache fields in request header, check we have image on fs, it could have been deleted...
   if (resource.etag) { // set header's If-None-Match tag if we have an etag
@@ -34,19 +34,21 @@ exports.requestRetryAnonymous = function(resource, error, success) {
       options.headers['If-Modified-Since'] = resource.lastModified;
     }
   }
-  if (config.mode !== 'fake') { // not fake, use TOR
-    options.agentClass = agent;
-    options.agentOptions = { // TOR socks host/port
-      socksHost: config.tor.host,
-      socksPort: config.tor.port,
-    };
+  if (config.mode !== 'fake') { // not fake
+    if (config.tor.available) { // TOR is available
+      options.agentClass = agent;
+      options.agentOptions = { // TOR socks host/port
+        socksHost: config.tor.host,
+        socksPort: config.tor.port
+      };
+    }
   }
 
   request(
-  	options,
-  	function (err, response, contents) {
+    options,
+    function(err, response, contents) {
       if (err) {
-        console.error('error in request to', url + ':', err);
+        console.error('error in request to', options.url + ':', err);
         return error(err);
       }
       if (response.statusCode < 300) { // 2xx, success, download effected
@@ -70,7 +72,7 @@ exports.requestRetryAnonymous = function(resource, error, success) {
    * @param  {Object} response
    * @return {Boolean} true if the request should be retried
    */
-  function retryStrategyForbidden(err, response, retry) {
+  function retryStrategyForbidden(err, response) {
     // TODO: debug only
     if (response &&
         response.statusCode !== 200 &&
@@ -89,17 +91,23 @@ exports.requestRetryAnonymous = function(resource, error, success) {
     var forbidden = (
       response && (
         (response.statusCode === 403) || // 403 status code (forbidden)
-        (response.statusCode === 524) || ( // 524 status code (cloudfare timeout)
-          (response.statusCode === 200) &&
-          (response.body && (
-            response.body.toString().match(/<title>.*?A timeout occurred.*?<\/title>/) || // SGI provider timeout signature
-            response.body.toString().match(/<title>Attention Required!\s*\|\s*CloudFlare<\/title>/) // SGI provider cloud warning
-          ))
+        (response.statusCode === 524) || // 524 status code (cloudfare timeout)
+          (
+            (response.statusCode === 200) &&
+            (response.body && (
+              response.body.toString().match(
+                /<title>.*?A timeout occurred.*?<\/title>/ // SGI provider timeout signature
+              ) ||
+              response.body.toString().match(
+                /<title>Attention Required!\s*\|\s*CloudFlare<\/title>/ // SGI provider cloud warning
+              )
+            )
+          )
         )
       )
     );
     if (forbidden) {
-    	console.warn('request for url', url, 'was forbidden; will retry in', options.retryDelay, 'ms...');
+      console.warn('request was forbidden; will retry in', options.retryDelay, 'ms...');
     }
     return forbidden;
   }

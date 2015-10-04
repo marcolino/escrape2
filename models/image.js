@@ -1,7 +1,8 @@
-var mongoose = require('mongoose')  
-  , config = require('../config'); // application configuration
+var mongoose = require('mongoose')
+  , config = require('../config') // application configuration
+;
 
-var imageSchema = new mongoose.Schema({  
+var imageSchema = new mongoose.Schema({
   url: { type: String, required: true },
   providerKey: String,
   idPerson: String, // ObjectId reference
@@ -12,10 +13,10 @@ var imageSchema = new mongoose.Schema({
   dateOfFirstSync: { type: Date, default: Date.now },
   signature: String,
   showcase: Boolean,
-  truthful: Boolean,
+  truthful: Boolean
 },
 {
-  autoIndex: config.debug,
+  autoIndex: config.debug
 });
 imageSchema.index({ url: 1 }, { unique: true });
 

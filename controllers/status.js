@@ -25,7 +25,7 @@ exports.error = function(message) {
 exports._do = function(action, message) {
   status.dateStart = new Date();
   status.message = message;
-  status.save(function (err) {
+  status.save(function(err) {
     assert.equal(err, null);
     //console.log('saved log into the status collection');
   });

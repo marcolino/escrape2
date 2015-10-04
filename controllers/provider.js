@@ -1,6 +1,6 @@
 var mongoose = require('mongoose') // mongo abstraction
   , cheerio = require('cheerio') // to parse fetched DOM data
-  , async = require("async") // to call many async functions in a loop
+  , async = require('async') // to call many async functions in a loop
   , fs = require('fs') // file-system handling
   , network = require('./network') // network handling
   , image = require('./image') // network handling
@@ -10,25 +10,27 @@ var mongoose = require('mongoose') // mongo abstraction
   , Status = require('./status') // controller of provider logging
 ;
 
-var private = {};
+var privat = {};
 
-mongoose.connection.on('open', function () {
+mongoose.connection.on('open', function() {
   // create providers
-  private.createProviders(config.providers, function(err, result) {
+  privat.createProviders(config.providers, function(err) {
     if (err) {
       return console.error('Error creating providers:', err);
     }
   });
 });
 
-exports.getAll = function(req, res, next) { // GET all providers
-  private.getAll(function(err, providers) {
+exports.getAll = function(request, callback) { // GET all providers
+  //console.log('C req:', request);
+  //console.log('res:', res);
+  privat.getAll(function(err, providers) {
     if (err) {
       console.error('Error retrieving providers:', err);
-      res.json({ error: err });
+      callback(err);
     } else {
-      res.json(providers);
-    }   
+      callback(null, providers);
+    }
   });
 };
 
@@ -38,12 +40,12 @@ exports.syncPersons = function(req, res) { // sync persons
   var retrievedPersonsCount = 0;
   var syncStartDate = new Date(); // start of this sync date
   var resource;
- 
+
   // return immedately, log progress to db
   res.json('persons sync started');
   Status.log('persons sync started');
 
-  private.getAll({ type: 'persons', mode: config.mode, key: 'FORBES' }, function(err, providers) { // GET all providers
+  privat.getAll({ type: 'persons', mode: config.mode, key: 'TOE' }, function(err, providers) { // GET all providers
     if (err) {
       console.error('error syncing providers:', err);
       //res.json({ error: err });
@@ -59,9 +61,9 @@ exports.syncPersons = function(req, res) { // sync persons
         function(provider, callbackOuter) { // 2nd param is the function that each item is passed to
           //console.log('provider:', provider.key);
           resource = {
-            url: private.buildListUrl(provider, config),
+            url: privat.buildListUrl(provider, config),
             type: 'text',
-            etag: null,
+            etag: null
           };
           console.log('list resource.url:', resource.url);
           network.requestRetryAnonymous(
@@ -72,13 +74,15 @@ exports.syncPersons = function(req, res) { // sync persons
             },
             function(contents) { // success
               console.log('url', resource.url, 'contents lenght is', contents.length);
-              if (contents.length < 10000) { console.error('!!!!!!!!!!!! SHORT LIST (SHOULD NOT HAPPEN ANYMORE...):', contents.toString()); }
+              if (contents.length < 10000) {
+                console.error('!!!!!!!!!!!! SHORT LIST (SHOULD NOT HAPPEN ANYMORE...):', contents.toString());
+              }
               if (!contents) {
                 console.warn('Error syncing provider', provider.key + ':', 'empty contents', '-', 'skipping');
                 return callbackOuter(); // skip this outer loop
               }
               $ = cheerio.load(contents);
-              var list = private.getList(provider, $);
+              var list = privat.getList(provider, $);
               providersPersonsCount += list.length;
               //async.eachLimit(
               async.each(
@@ -97,37 +101,51 @@ exports.syncPersons = function(req, res) { // sync persons
                     return callbackInner(); // skip this inner loop
                   }
                   resource = {
-                    url: private.buildDetailsUrl(provider, person, config),
-                    type: 'text',
+                    url: privat.buildDetailsUrl(provider, person, config),
+                    type: 'text'
                     //etag: null,
                   };
                   console.log('details resource.url:', resource.url);
                   network.requestRetryAnonymous(
                     resource,
                     function(err) {
-                      console.warn('Error syncing provider', provider.key + ',', 'person', person.key + ':', err, '-', 'skipping');
+                      console.warn(
+                        'Error syncing provider', provider.key + ',',
+                        'person', person.key + ':',
+                        err, '-', 'skipping'
+                      );
                       return callbackInner(); // skip this inner loop
                     },
                     function(contents) {
 
                       //console.log('content of page of person', person.key, 'is long', contents.length);
                       if (!contents) {
-                        console.warn('Error syncing provider', provider.key + ',', 'person', person.key + ':', 'empty contents', '-', 'skipping');
+                        console.warn(
+                          'Error syncing provider', provider.key + ',',
+                          'person', person.key + ':',
+                          'empty contents', '-', 'skipping'
+                        );
                         return callbackInner(); // skip this inner loop
                       }
                       $ = cheerio.load(contents);
-                      person.name = private.getDetailsName($, provider);
-                      //if (!person.name) { console.log('person', person.key, 'name is EMPTY!!! contents:', contents); callbackOuter(); return; }
-                      person.zone = private.getDetailsZone($, provider);
-                      person.description = private.getDetailsDescription($, provider);
-                      person.phone = private.getDetailsPhone($, provider);
-                      person.imageUrls = private.getDetailsImageUrls($, provider);
-                      person.nationality = private.detectNationality(person, provider, config);
+                      person.name = privat.getDetailsName($, provider);
+                      //if (!person.name) {
+                      //  console.log('person', person.key, 'name is EMPTY!!! contents:', contents);
+                      //  callbackOuter();
+                      //  return;
+                      //}
+                      person.zone = privat.getDetailsZone($, provider);
+                      person.description = privat.getDetailsDescription($, provider);
+                      person.phone = privat.getDetailsPhone($, provider);
+                      person.imageUrls = privat.getDetailsImageUrls($, provider);
+                      person.nationality = privat.detectNationality(person, provider, config);
                       person.providerKey = provider.key;
                       person.dateOfLastSync = new Date();
                       // TODO: why we get here when requestRetryAnonymous() is retrying (and person.name is empty)???
 
                       // save this person to database
+                      console.log('PERSON:', person);
+                      /*
                       Person.findOneAndUpdate(
                         { providerKey: provider.key, key: person.key }, // query
                         person,
@@ -137,15 +155,18 @@ exports.syncPersons = function(req, res) { // sync persons
                           if (err) {
                             console.warn('Error saving person', person.name + ':', err, '-', 'skipping');
                           } else {
+                            console.log('DOC:', doc);
                             person.id = doc.id; // get upserted object id
                             retrievedPersonsCount++;
                             console.log(retrievedPersonsCount + ' / ' + providersPersonsCount);
                             console.log(person.providerKey, person.key, (person.name ? '[' + person.name + ']' : ''));
 
                             // sync this person images, too
-                            image.syncPersonImages(person, function(err, result) {
+                            image.syncPersonImages(person, function(err) {
                               if (err) {
-                                return console.error('Error retrieving images for person', provider.key, person.key + ':', err);
+                                return console.error('Error retrieving images for person',
+                                  provider.key, person.key + ':', err
+                                );
                               }
                               //console.log('person images sync\'d');
                             });
@@ -153,11 +174,47 @@ exports.syncPersons = function(req, res) { // sync persons
 
                           // wait some time to avoid overloading provider - TODO: DO WE NEED THIS?
                           //setTimeout(function () {
-                            callbackInner();
-                          //}, 7 * 1000/*provider.limit*/);
+                          callbackInner();
+                          //}, 7 * 1000); //provider.limit
                           //callbackInner();
                         }
                       );
+                      */
+                      Person.findOne(
+                        { providerKey: provider.key, key: person.key }, // query
+                        function(err, doc) {
+                          if (err) {
+                            console.warn('Error saving person', person.name + ':', err, '-', 'skipping');
+                          } else {
+                            if (!doc) { // person did not exist before
+                              doc = new Person();
+                              doc.url = person.url;
+                              doc.key = person.key;
+                              doc.providerKey = person.providerKey;
+                              doc.name = person.name;
+                              doc.description = person.description;
+                              doc.phone = person.phone;
+                              doc.imageUrls = person.imageUrls;
+                              doc.nationality = person.nationality;
+                              doc.dateOfLadtSync = person.dateOfLadtSync;
+                            }
+                            //doc.status = request.status;
+                            doc.save(function(err) {
+                              if (err) {
+                                console.log('Error: could not save person', doc.key);
+                              } else {
+                                //console.log('person', doc.key, 'created at',
+                                //  doc.createdAt, ' updated at ', doc.updatedAt);
+                                console.log('person', doc.key, 'created / updated...');
+                              }
+
+                              callbackInner();
+
+                            });
+                          }
+                        }
+                      );
+
                     }
                   );
                 },
@@ -185,7 +242,7 @@ exports.syncPersons = function(req, res) { // sync persons
           }
 
           // set activity status
-          private.setActivityStatus(syncStartDate, function(err) {
+          privat.setActivityStatus(syncStartDate, function(err) {
             if (err) {
               return console.error('Error setting activity status:', err);
             }
@@ -201,16 +258,19 @@ exports.syncPersons = function(req, res) { // sync persons
 
 };
 
-private.setActivityStatus = function(syncStartDate, callback) {
-  private.presenceReset(function(err) {
-    private.presenceSet(syncStartDate, callback);
+privat.setActivityStatus = function(syncStartDate, callback) {
+  privat.presenceReset(function(err) {
+    if (err) {
+      return callback(err);
+    }
+    privat.presenceSet(syncStartDate, callback);
   });
 };
 
 // set persons present flag to false
-private.presenceReset = function(callback) {
+privat.presenceReset = function(callback) {
   Person
-    .update({}, { $set: { isPresent: false } }, { multi: true }, function (err, count) {
+    .update({}, { $set: { isPresent: false } }, { multi: true }, function(err, count) {
       if (err) {
         console.warn('Error resetting persons activity status:', err);
         return callback(err);
@@ -225,13 +285,12 @@ private.presenceReset = function(callback) {
   ;
 };
 
-
 // set persons present flag according to date of last sync
-private.presenceSet = function(syncStartDate, callback) {
+privat.presenceSet = function(syncStartDate, callback) {
   // set just sync'd persons as present
   Person
     .where('dateOfLastSync').gte(syncStartDate)
-    .update({}, { $set: { isPresent: true } }, { multi: true }, function (err, count) {
+    .update({}, { $set: { isPresent: true } }, { multi: true }, function(err, count) {
       if (err) {
         console.warn('Error setting persons activity status:', err);
         return callback(err);
@@ -246,17 +305,17 @@ private.presenceSet = function(syncStartDate, callback) {
   ;
 };
 
-exports.syncComments = function(req, res) { // sync comments
+exports.syncComments = function(/*req*/) { // sync comments
   // TODO
 };
 
-exports.syncPlaces = function(req, res) { // sync persons
+exports.syncPlaces = function(/*req*/) { // sync persons
   // ... parsePlaces($, provider, config);
 
-  function parsePlaces($, provider, config) {
+  function parsePlaces(/*$, provider, config*/) {
     var val = {};
-/*
-    if (provider.key === 'SGI') { 
+    /*
+    if (provider.key === 'SGI') {
       $(provider.listCategories[config.category].selectors.category + ' > ul > li > a').each(function() {
         var region = $(this).text();
         var city = $(this).next('ul').find('li a').map(function() {
@@ -265,7 +324,7 @@ exports.syncPlaces = function(req, res) { // sync persons
         val[region] = city;
       });
     }
-*/
+    */
     return val;
   }
 };
@@ -280,18 +339,21 @@ exports.status = function(req, res) { // get providers status
     } else {
       console.console.log('current status: ' + currentStatus);
       res.json(currentStatus);
-    }   
+    }
   });
 };
 */
 
-private.createProviders = function(providers, callback) {
+privat.createProviders = function(providers, callback) {
   // populate model (remove ad create)
   collectionExists('Provider', function(exists) {
     if (exists) {
       if (config.env === 'development') {
         console.log('Provider collection exists, environment is development, re-creating providers');
         remove(function(err) {
+          if (err) {
+            return callback(err);
+          }
           create(providers, function(err) {
             callback(err);
           });
@@ -326,24 +388,24 @@ private.createProviders = function(providers, callback) {
   }
 
   function collectionExists(collectionName, callback) {
-    private.getAll(function(err, providers) {
+    privat.getAll(function(err, providers) {
       if (err) {
         return callback(false);
       } else {
         callback(providers.length > 0);
-      }   
+      }
     });
   }
 
 };
 
-private.getAll = function(filter, result) { // get all providers
+privat.getAll = function(filter, result) { // get all providers
   Provider.find(filter, function(err, providers) {
     result(err, providers);
   });
 };
 
-private.getList = function(provider, $) {
+privat.getList = function(provider, $) {
   var val = [];
   if (provider.key === 'SGI') {
     $('a[OnClick="get_position();"]').each(function(index, element) {
@@ -361,7 +423,7 @@ private.getList = function(provider, $) {
         var key = url.replace(/\.\/annuncio\?id=(.*)/, '$1');
         val.push({ key: key, url: url });
       }
-    });      
+    });
   }
   if (provider.key === 'FORBES') {
     $('h2 > span[id="2015"]').parent().next('div').find('ol > li > a:not([class])').each(function(index, element) {
@@ -373,7 +435,7 @@ private.getList = function(provider, $) {
   return val;
 };
 
-private.buildListUrl = function(provider, config) {
+privat.buildListUrl = function(provider, config) {
   var val;
   if (provider.key === 'SGI') {
     val = provider.url + provider.categories[config.category].path + '/' + config.city;
@@ -387,7 +449,7 @@ private.buildListUrl = function(provider, config) {
   return val;
 };
 
-private.buildDetailsUrl = function(provider, person, config) {
+privat.buildDetailsUrl = function(provider, person, config) {
   var val;
   if (provider.key === 'SGI') {
     val = provider.url + provider.categories[config.category].path + '/' + person.url;
@@ -402,7 +464,7 @@ private.buildDetailsUrl = function(provider, person, config) {
 };
 
 /* TODO: do we need this method?
-var private.buildImageUrl = function(provider, person, config) {
+var privat.buildImageUrl = function(provider, person, config) {
   var val;
   if (provider.key === 'SGI') {
     val = provider.url + provider.categories[config.category].path + '/' + person.url;
@@ -417,7 +479,7 @@ var private.buildImageUrl = function(provider, person, config) {
 };
 */
 
-private.getDetailsName = function($, provider) {
+privat.getDetailsName = function($, provider) {
   var val, element;
   if (provider.key === 'SGI') {
     element = $('td[id="ctl00_content_CellaNome"]');
@@ -449,7 +511,7 @@ private.getDetailsName = function($, provider) {
   return val;
 };
 
-private.getDetailsZone = function($, provider) {
+privat.getDetailsZone = function($, provider) {
   var val = '', element;
   if (provider.key === 'SGI') {
     element = $('td[id="ctl00_content_CellaZona"]');
@@ -469,7 +531,7 @@ private.getDetailsZone = function($, provider) {
   return val;
 };
 
-private.getDetailsDescription = function($, provider) {
+privat.getDetailsDescription = function($, provider) {
   var val = '', element;
   if (provider.key === 'SGI') {
     element = $('td[id="ctl00_content_CellaDescrizione"]');
@@ -488,7 +550,7 @@ private.getDetailsDescription = function($, provider) {
     element = $('p[class="annuncio"]');
     if (element) {
       val = $(element).text();
-    }      
+    }
   }
   if (provider.key === 'FORBES') {
     element = $('table[class="sinottico"]').next('p');
@@ -497,7 +559,7 @@ private.getDetailsDescription = function($, provider) {
   return val;
 };
 
-private.getDetailsPhone = function($, provider) {
+privat.getDetailsPhone = function($, provider) {
   var val = null, element;
   if (provider.key === 'SGI') {
     element = $('td[id="ctl00_content_CellaTelefono"]');
@@ -534,7 +596,7 @@ private.getDetailsPhone = function($, provider) {
   return val;
 };
 
-private.getDetailsImageUrls = function($, provider) {
+privat.getDetailsImageUrls = function($, provider) {
   var val = [];
   if (provider.key === 'SGI') {
     $('a[rel="group"][class="fancybox"]').each(function(index, element) {
@@ -565,10 +627,10 @@ private.getDetailsImageUrls = function($, provider) {
   return val;
 };
 
-private.detectNationality = function(person, provider, config) {
+privat.detectNationality = function(person, provider, config) {
   var fields = [
     person.name,
-    person.description,
+    person.description
   ];
   var nationalityPatterns = [
     {
@@ -681,11 +743,11 @@ private.detectNationality = function(person, provider, config) {
             { 'orient[e|(ale)]': 'asia' },
             { 'medio[\s-]?orientale': 'middle-east' },
             { 'oceania': 'oceania' },
-            { 'sud[\s-]?america(na)?': 'south-america' },
-          ],
-        },
-      ],
-    },
+            { 'sud[\s-]?america(na)?': 'south-america' }
+          ]
+        }
+      ]
+    }
   ];
 
   var negativeLookbehinds = [
@@ -759,15 +821,15 @@ private.detectNationality = function(person, provider, config) {
             'viale',
             'vicolo',
             'viottolo',
-            'zona',
+            'zona'
           ]
-        },
-      ],
-    },
+        }
+      ]
+    }
   ];
 
   return parseNationalityPatterns();
-  
+
   function parseNationalityPatterns() {
     for (var i = 0; i < fields.length; i++) {
       var field = fields[i];
@@ -825,7 +887,8 @@ private.detectNationality = function(person, provider, config) {
                 var catPatterns = negativeLookbehindPatternObj[cat];
                 for (var k = 0; k < catPatterns.length; k++) {
                   var negativeLookbehind = catPatterns[k];
-                  var regexNegativeLookbehind = new RegExp('\\b' + negativeLookbehind + '\\s+' + catPattern + '\\b', 'gi');
+                  var regexNegativeLookbehind =
+                    new RegExp('\\b' + negativeLookbehind + '\\s+' + catPattern + '\\b', 'gi');
                   if (field.match(regexNegativeLookbehind)) {
                     // negative lookbehind pattern matched
                     return true;
@@ -842,14 +905,14 @@ private.detectNationality = function(person, provider, config) {
 };
 
 /**
- * when developing, export also private functions,
+ * when developing, export also privat functions,
  * prefixed with '_' character,
  * to be able to unit test them
  */
 if (config.env === 'development') {
-  exports.private = {};
-  for (var method in private) {
-    exports.private[method] = private[method];
+  exports.privat = {};
+  for (var method in privat) {
+    exports.privat[method] = privat[method];
   }
 }
 

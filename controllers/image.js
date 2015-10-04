@@ -1,12 +1,12 @@
 var fs = require('fs') // file-system handling
   , mkdirp = require('mkdirp') // to make directories with parents
   , path = require('path') // path handling
-  , async = require("async") // to call many async functions in a loop
+  , async = require('async') // to call many async functions in a loop
   , network = require('./network') // network handling
   , Image = require('../models/image') // images handling
   , config = require('../config') // global configuration
 ;
-var private = {};
+var prixports = {};
 
 // syncronize all images for person
 exports.syncPersonImages = function(person, callback) {
@@ -29,7 +29,7 @@ exports.syncPersonImages = function(person, callback) {
       }
 
       // find this url in images collection
-      Image.findOne({ url: image.url }, function (err, img) {
+      Image.findOne({ url: image.url }, function(err, img) {
         if (err) {
           return console.error('Error finding image', umage.url, 'in database');
         }
@@ -41,16 +41,16 @@ exports.syncPersonImages = function(person, callback) {
           url: image.url,
           type: 'image',
           etag: img.etag,
-          lastModified: img.lastModified,
+          lastModified: img.lastModified
         };
-        private.download(resource, destination, function(err, resource) {
+        prixports.download(resource, destination, function(err, resource) {
           if (err)  {
             return console.error('Error downloading image', image.url, 'download error:', err);
           }
           //console.log('£££ image resource from download():', resource)
           img.etag = resource.etag; // ETag, to handle caching
           img.lastModified = resource.lastModified; // lastModified, to handle alternative caching
-          img.save(function (err) {
+          img.save(function(err) {
             if (err) {
               return console.error('Error saving image', image.url + ':', err);
             }
@@ -73,7 +73,7 @@ exports.syncPersonImages = function(person, callback) {
 };
 
 // download an image from url to destination on filesystem
-private.download = function(resource, destination, callback) {
+prixports.download = function(resource, destination, callback) {
   network.requestRetryAnonymous(
     resource,
     function(err) {
@@ -82,7 +82,7 @@ private.download = function(resource, destination, callback) {
     function(contents, resource) {
       //console.error('NETWORK REQUEST SUCCESS: resource is long', contents.length);
       var urlBasename = path.basename(resource.url);
-      mkdirp(destination, function (err) {
+      mkdirp(destination, function(err) {
         if (err) {
           return callback(err);
         }
@@ -91,7 +91,7 @@ private.download = function(resource, destination, callback) {
           destination,
           contents,
           'binary',
-          function (err) {
+          function(err) {
             if (err) {
               console.error('fs.writeFile ERROR:', err);
               return callback(err);

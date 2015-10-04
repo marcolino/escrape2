@@ -8,9 +8,9 @@ var providerSchema = new mongoose.Schema({
   url: String,
   language: String,
   //limit: Number,
-  categories: Object,
+  categories: Object
 }, {
-  autoIndex: config.debug,
+  autoIndex: config.debug
 });
 
 /*
