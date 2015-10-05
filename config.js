@@ -12,7 +12,7 @@ config.db.type = 'mongodb';
 config.db.host = 'localhost';
 config.db.name = 'escrape';
 config.tor = {};
-config.tor.available = false; // TODO: test if TOR is available, someway...
+config.tor.available = (os.hostname() === 'localhost'); // TOR is available only locally, at the moment...
 config.tor.host = 'localhost';
 config.tor.port = 9050;
 

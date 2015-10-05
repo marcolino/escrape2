@@ -18,7 +18,7 @@ describe('routes - provider', function() {
       superagent.get(URL)
       .end(function(e, res) {
         expect(e).to.eql(null);
-        expect(typeof res.body).to.eql('object');
+        expect(res.body).to.be.instanceof(Array);
         var n = 0;
         res.body.forEach(function(p) {
           expect(p._id.length).to.eql(24);
