@@ -2,12 +2,12 @@ var mongoose = require('mongoose') // mongo abstraction
   , cheerio = require('cheerio') // to parse fetched DOM data
   , async = require('async') // to call many async functions in a loop
   , fs = require('fs') // file-system handling
-  , network = require('./network') // network handling
-  , image = require('./image') // network handling
+  , network = require('../controllers/network') // network handling
+  , image = require('../controllers/image') // network handling
+  , status = require('../controllers/status') // controller of provider logging
   , config = require('../config') // global configuration
   , Provider = require('../models/provider') // model of provider
   , Person = require('../models/person') // model of person
-  , Status = require('./status') // controller of provider logging
 ;
 
 var privat = {};

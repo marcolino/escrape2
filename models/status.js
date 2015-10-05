@@ -1,12 +1,12 @@
 var mongoose = require('mongoose')
   , config = require('../config'); // application configuration
 
+// const DEBUG = 1; ....
 var statusSchema = new mongoose.Schema({
-  dateStart: Date,
-  dateStop: Date,
-  status: String, // started, stopped
-  message: String, // message
-  exitus: String // success, error
+  thread: String, // the thread (group) of this message (an ObjectId?)
+  date: Date, // date of emission
+  level: Number, // started, stopped
+  message: String // message
 }, {
   autoIndex: config.debug,
   collection: 'status'
