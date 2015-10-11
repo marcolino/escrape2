@@ -12,7 +12,7 @@ var personSchema = new mongoose.Schema({
   key: String,
   //key: String, TODO: define a compound key from: key, providerKey
   providerKey: String,
-  providerUrl: String,
+  url: String,
   name: String,
   //sex: String,
   addressZone: String,

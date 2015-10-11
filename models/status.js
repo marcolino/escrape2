@@ -9,7 +9,13 @@ var statusSchema = new mongoose.Schema({
   message: String // message
 }, {
   autoIndex: config.debug,
-  collection: 'status'
+  collection: 'status',
+  capped: {
+    size: 1024 * 1000,
+    max: 1000,
+    awaitData: true,
+    autoIndexId: true
+  }
 });
 
 module.exports = mongoose.model('Status', statusSchema);

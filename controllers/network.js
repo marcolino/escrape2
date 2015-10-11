@@ -18,7 +18,7 @@ exports.requestRetryAnonymous = function(resource, error, success) {
   var options = {
     url: resource.url,
     maxAttempts: 2, // retry for 2 attempts more after the first one
-    retryDelay: 600 * 1000, // wait for 10' before trying again
+    retryDelay: 1/*600*/ * 1000, // wait for 10' before trying again
     retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
     headers: {
       'User-Agent': randomUseragent.getRandom() // use random UA
@@ -80,7 +80,7 @@ exports.requestRetryAnonymous = function(resource, error, success) {
         response.statusCode !== 403 &&
         response.statusCode !== 524
       ) {
-      console.warn('^^^', 'retryStrategyForbiddwn()', 'unforeseen response.statusCode:', response.statusCode, '^^^');
+      console.warn('^^^', 'retryStrategyForbidden()', 'unforeseen response.statusCode:', response.statusCode, '^^^');
     }
 
     /*

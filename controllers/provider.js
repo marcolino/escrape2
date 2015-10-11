@@ -42,8 +42,8 @@ exports.syncPersons = function(req, res) { // sync persons
   var resource;
 
   // return immedately, log progress to db
+  status.info('persons sync started');
   res.json('persons sync started');
-  Status.log('persons sync started');
 
   privat.getAll({ type: 'persons', mode: config.mode, key: 'TOE' }, function(err, providers) { // GET all providers
     if (err) {
@@ -144,7 +144,7 @@ exports.syncPersons = function(req, res) { // sync persons
                       // TODO: why we get here when requestRetryAnonymous() is retrying (and person.name is empty)???
 
                       // save this person to database
-                      console.log('PERSON:', person);
+                      //console.log('PERSON:', person);
                       /*
                       Person.findOneAndUpdate(
                         { providerKey: provider.key, key: person.key }, // query
@@ -184,9 +184,15 @@ exports.syncPersons = function(req, res) { // sync persons
                         { providerKey: provider.key, key: person.key }, // query
                         function(err, doc) {
                           if (err) {
-                            console.warn('Error saving person', person.name + ':', err, '-', 'skipping');
+                            console.warn('Error finding person', person.name + ':', err, '-', 'skipping');
+                            callbackInner();
                           } else {
-                            if (!doc) { // person did not exist before
+                            var isNew;
+                            if (doc) { // person did already exist
+                              isNew = false;
+                              doc.dateOfLastSync = person.dateOfLastSync;
+                            } else { // person did not exist before
+                              isNew = true;
                               doc = new Person();
                               doc.url = person.url;
                               doc.key = person.key;
@@ -196,7 +202,7 @@ exports.syncPersons = function(req, res) { // sync persons
                               doc.phone = person.phone;
                               doc.imageUrls = person.imageUrls;
                               doc.nationality = person.nationality;
-                              doc.dateOfLadtSync = person.dateOfLadtSync;
+                              doc.dateOfLastSync = person.dateOfLastSync;
                             }
                             //doc.status = request.status;
                             doc.save(function(err) {
@@ -205,11 +211,11 @@ exports.syncPersons = function(req, res) { // sync persons
                               } else {
                                 //console.log('person', doc.key, 'created at',
                                 //  doc.createdAt, ' updated at ', doc.updatedAt);
-                                console.log('person', doc.key, 'created / updated...');
+                                console.log('person', doc.key, (isNew ? 'created' : 'updated'));
+                                retrievedPersonsCount++;
                               }
 
                               callbackInner();
-
                             });
                           }
                         }
@@ -220,11 +226,13 @@ exports.syncPersons = function(req, res) { // sync persons
                 },
                 function(err) { // 4th param is the function to call when everything's done (inner callback)
                   if (err) {
-                    return console.error('Error in the final internal async callback:', err, '\n',
+                    return console.error('Error in the final inner async callback:', err, '\n',
                       'One of the iterations produced an error.\n',
                       'Skipping this iteration.'
                     );
                   }
+                  callbackOuter(); // signal this inner loop is finished
+                  console.log('Finished persons sync');
                   // all tasks are successfully done now
                 }
               );
@@ -232,8 +240,9 @@ exports.syncPersons = function(req, res) { // sync persons
           );
         },
         function(err) { // 3rd param is the function to call when everything's done (outer callback)
+          console.log('outer callback finished');
           if (err) {
-            console.error('Error in the final external async callback:', err, '\n',
+            console.error('Error in the final outer async callback:', err, '\n',
               'One of the iterations produced an error.\n',
               'All processing will now stop.'
             );
@@ -247,8 +256,8 @@ exports.syncPersons = function(req, res) { // sync persons
               return console.error('Error setting activity status:', err);
             }
             // all tasks are successfully done now
-            console.log('Finished persons sync:', retrievedPersonsCount, 'persons found');
-            Status.log('persons sync stopped');
+            console.log('Finished providers persons sync:', retrievedPersonsCount, 'persons found');
+            status.info('persons sync finished');
           });
 
         }
@@ -288,6 +297,7 @@ privat.presenceReset = function(callback) {
 // set persons present flag according to date of last sync
 privat.presenceSet = function(syncStartDate, callback) {
   // set just sync'd persons as present
+  //console.log('updating persons isPresent flag to true for persons with datOfLastSync $gte than', syncStartDate);
   Person
     .where('dateOfLastSync').gte(syncStartDate)
     .update({}, { $set: { isPresent: true } }, { multi: true }, function(err, count) {
@@ -349,7 +359,7 @@ privat.createProviders = function(providers, callback) {
   collectionExists('Provider', function(exists) {
     if (exists) {
       if (config.env === 'development') {
-        console.log('Provider collection exists, environment is development, re-creating providers');
+        console.log('Provider collection exists, environment is development: re-creating providers');
         remove(function(err) {
           if (err) {
             return callback(err);
@@ -360,7 +370,7 @@ privat.createProviders = function(providers, callback) {
         });
       }
     } else {
-      console.log('Provider collection does not exist, creating providers');
+      console.log('Provider collection does not exist: creating providers');
       create(providers, function(err) {
         callback(err);
       });
