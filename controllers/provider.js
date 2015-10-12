@@ -79,7 +79,7 @@ exports.syncPersons = function(req, res) { // sync persons
               return callbackOuter(); // skip this outer loop
             },
             function(contents) { // success
-              console.log('url', resource.url, 'contents lenght is', contents.length);
+              console.log('contents lenght is', contents.length);
               if (contents.length < 10000) {
                 console.error('!!!!!!!!!!!! SHORT LIST (SHOULD NOT HAPPEN ANYMORE...):', contents.toString());
               }
@@ -111,7 +111,7 @@ exports.syncPersons = function(req, res) { // sync persons
                     type: 'text'
                     //etag: null,
                   };
-                  console.log('details resource.url:', resource.url);
+                  //console.log('details resource.url:', resource.url);
                   network.requestRetryAnonymous(
                     resource,
                     function(err) {
@@ -217,7 +217,7 @@ exports.syncPersons = function(req, res) { // sync persons
                               } else {
                                 //console.log('person', doc.key, 'created at',
                                 //  doc.createdAt, ' updated at ', doc.updatedAt);
-                                console.log('person', doc.key, (isNew ? 'created' : 'updated'));
+                                console.log('person', doc.providerKey, doc.key, (isNew ? 'created' : 'updated'));
                                 retrievedPersonsCount++;
                               }
 
@@ -237,7 +237,7 @@ exports.syncPersons = function(req, res) { // sync persons
                       'Skipping this iteration.'
                     );
                   }
-                  callbackOuter(); // signal this inner loop is finished
+                  //callbackOuter(); // signal this inner loop is finished
                   console.log('Finished persons sync');
                   // all tasks are successfully done now
                 }
