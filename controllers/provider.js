@@ -4,13 +4,17 @@ var mongoose = require('mongoose') // mongo abstraction
   , fs = require('fs') // file-system handling
   , network = require('../controllers/network') // network handling
   , image = require('../controllers/image') // network handling
-  , status = require('../controllers/status') // controller of provider logging
+  //, status = require('../controllers/status') // controller of provider logging
   , config = require('../config') // global configuration
   , Provider = require('../models/provider') // model of provider
   , Person = require('../models/person') // model of person
+  //, Status = require('../models/status') // model of status
+//  , logger = require('simple-node-logger')
 ;
 
-var privat = {};
+var privat = {}; // devine private objects container
+//var log = logger.createSimpleLogger(config.logger); // create a simple logger
+var log = config.log;
 
 mongoose.connection.on('open', function() {
   // create providers
@@ -42,14 +46,16 @@ exports.syncPersons = function(req, res) { // sync persons
   var resource;
 
   // return immedately, log progress to db
-  status.info('persons sync started');
   res.json('persons sync started');
+  //status.info('persons sync started');
+  //log.info('subscription to ', channel, ' accepted at ', new Date().toJSON());
+  log.info('persons sync started');
 
-  privat.getAll({ type: 'persons', mode: config.mode, key: 'TOE' }, function(err, providers) { // GET all providers
+  privat.getAll({ type: 'persons', mode: config.mode/*, key: 'TOE'*/ }, function(err, providers) { // GET all providers
     if (err) {
-      console.error('error syncing providers:', err);
+      log.error('error syncing providers: ', err);
       //res.json({ error: err });
-      Status.log('error syncing providers:', err);
+      //log('error syncing providers:', err);
     } else {
       /*
        * providers are expected to publish a main page containing
@@ -256,8 +262,7 @@ exports.syncPersons = function(req, res) { // sync persons
               return console.error('Error setting activity status:', err);
             }
             // all tasks are successfully done now
-            console.log('Finished providers persons sync:', retrievedPersonsCount, 'persons found');
-            status.info('persons sync finished');
+            log.info('persons sync finished: ', retrievedPersonsCount, ' persons found');
           });
 
         }

@@ -7,6 +7,10 @@ config.mode = ((os.hostname() === 'linux-backup') ? 'fake' : 'normal');
 config.category = 'women'; // TODO: will get it from req, this will be a default value (?)
 config.city = 'torino'; // TODO: will get it from req, this will be a default value (?)
 config.imagesPath = './data/images';
+config.logger = {};
+config.logger.logFilePath = 'logs/escrape.log';
+config.logger.timestampFormat = 'YYYY-MM-DD HH:mm:ss.SSS';
+config.log = require('simple-node-logger').createSimpleLogger(config.logger); // create a simple logger
 config.db = {};
 config.db.type = 'mongodb';
 config.db.host = 'localhost';
@@ -16,7 +20,7 @@ config.tor.available = (os.hostname() === 'localhost'); // TOR is available only
 config.tor.host = 'localhost';
 config.tor.port = 9050;
 
-// only for development
+// development only
 config.providers = [
   {
     key: 'SGI',

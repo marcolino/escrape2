@@ -1,28 +1,33 @@
-var mongo = require("mongodb");
+var mongo = require('mongodb');
 
-var mongodbUri = "mongodb://127.0.0.1/escrape";
+var mongodbUri = 'mongodb://127.0.0.1/escrape';
 
-mongo.MongoClient.connect (mongodbUri, function (err, db) {
+mongo.MongoClient.connect(mongodbUri, function (err, db) {
 
-  db.collection('messages', function(err, collection) {
+  db.collection('status', function(err, collection) {
     // open a tailable cursor
     if (err) {
-      return console.error('error in messages collection:', err);
+      return console.error('error in status collection:', err);
     }
-    //console.log("== open tailable cursor");
+    console.log('opening tailable cursor');
+    var filter = { date: { '$gte': Date.now() } };
+    var options = { tailable: true, awaitdata: true, numberOfRetries: -1 };
     collection.find(
-      {},
-      { tailable: true, awaitdata: true, numberOfRetries: -1 }
+      filter,
+      options
     ).each(function(err, doc) {
       if (err) {
         if (err.message === 'No more documents in tailed cursor') {
-          console.log('...');
+          console.log('no more documents in tailed cursor');
         } else {
-          return console.error('error in messages collection scan:', err);
+          console.error('error in status collection scan:', err);
+          return false;
         }
-        return;
+      } else {
+        if (doc) {
+          console.log('message:', doc.message);
+        }
       }
-      console.log('type of document:', doc.type);
     })
   });
 

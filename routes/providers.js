@@ -1,5 +1,5 @@
 var express = require('express')
-  , status = require('../controllers/status')
+  //, status = require('../controllers/status')
   , provider = require('../controllers/provider')
 ;
 

@@ -1,0 +1,323 @@
+0 info it worked if it ends with ok
+1 verbose cli [ '/usr/local/bin/node',
+1 verbose cli   '/usr/local/bin/npm',
+1 verbose cli   'install',
+1 verbose cli   '-g',
+1 verbose cli   'istanbul' ]
+2 info using npm@2.14.2
+3 info using node@v4.0.0
+4 verbose install initial load of /usr/local/lib/package.json
+5 verbose readDependencies loading dependencies from /usr/local/lib/package.json
+6 silly cache add args [ 'istanbul', null ]
+7 verbose cache add spec istanbul
+8 silly cache add parsed spec Result {
+8 silly cache add   raw: 'istanbul',
+8 silly cache add   scope: null,
+8 silly cache add   name: 'istanbul',
+8 silly cache add   rawSpec: '',
+8 silly cache add   spec: '*',
+8 silly cache add   type: 'range' }
+9 silly addNamed istanbul@*
+10 verbose addNamed "*" is a valid semver range for istanbul
+11 silly addNameRange { name: 'istanbul', range: '*', hasData: false }
+12 silly mapToRegistry name istanbul
+13 silly mapToRegistry using default registry
+14 silly mapToRegistry registry https://registry.npmjs.org/
+15 silly mapToRegistry uri https://registry.npmjs.org/istanbul
+16 verbose addNameRange registry:https://registry.npmjs.org/istanbul not in flight; fetching
+17 verbose request uri https://registry.npmjs.org/istanbul
+18 verbose request no auth needed
+19 info attempt registry request try #1 at 5:03:11 PM
+20 verbose request id ddd10182833fcaf3
+21 http request GET https://registry.npmjs.org/istanbul
+22 http 200 https://registry.npmjs.org/istanbul
+23 silly get cb [ 200,
+23 silly get   { server: 'CouchDB/1.5.0 (Erlang OTP/R16B03)',
+23 silly get     etag: '"2BHVKFUBHGRKL4ERYHTG2KHVC"',
+23 silly get     'content-type': 'application/json',
+23 silly get     'cache-control': 'max-age=60',
+23 silly get     'content-length': '264050',
+23 silly get     'accept-ranges': 'bytes',
+23 silly get     date: 'Mon, 12 Oct 2015 15:03:02 GMT',
+23 silly get     via: '1.1 varnish',
+23 silly get     age: '41',
+23 silly get     connection: 'keep-alive',
+23 silly get     'x-served-by': 'cache-lhr6322-LHR',
+23 silly get     'x-cache': 'HIT',
+23 silly get     'x-cache-hits': '1',
+23 silly get     'x-timer': 'S1444662182.399384,VS0,VE4',
+23 silly get     vary: 'Accept' } ]
+24 verbose get saving istanbul to /home/msolari/.npm/registry.npmjs.org/istanbul/.cache.json
+25 silly addNameRange number 2 { name: 'istanbul', range: '*', hasData: true }
+26 silly addNameRange versions [ 'istanbul',
+26 silly addNameRange   [ '0.1.0',
+26 silly addNameRange     '0.1.1',
+26 silly addNameRange     '0.1.2',
+26 silly addNameRange     '0.1.3',
+26 silly addNameRange     '0.1.4',
+26 silly addNameRange     '0.1.5',
+26 silly addNameRange     '0.1.6',
+26 silly addNameRange     '0.1.7',
+26 silly addNameRange     '0.1.8',
+26 silly addNameRange     '0.1.9',
+26 silly addNameRange     '0.1.10',
+26 silly addNameRange     '0.1.11',
+26 silly addNameRange     '0.1.12',
+26 silly addNameRange     '0.1.13',
+26 silly addNameRange     '0.1.14',
+26 silly addNameRange     '0.1.15',
+26 silly addNameRange     '0.1.16',
+26 silly addNameRange     '0.1.17',
+26 silly addNameRange     '0.1.18',
+26 silly addNameRange     '0.1.19',
+26 silly addNameRange     '0.1.20',
+26 silly addNameRange     '0.1.21',
+26 silly addNameRange     '0.1.22',
+26 silly addNameRange     '0.1.23',
+26 silly addNameRange     '0.1.24',
+26 silly addNameRange     '0.1.25',
+26 silly addNameRange     '0.1.26',
+26 silly addNameRange     '0.1.27',
+26 silly addNameRange     '0.1.28',
+26 silly addNameRange     '0.1.29',
+26 silly addNameRange     '0.1.30',
+26 silly addNameRange     '0.1.31',
+26 silly addNameRange     '0.1.32',
+26 silly addNameRange     '0.1.33',
+26 silly addNameRange     '0.1.34',
+26 silly addNameRange     '0.1.35',
+26 silly addNameRange     '0.1.36',
+26 silly addNameRange     '0.1.37',
+26 silly addNameRange     '0.1.38',
+26 silly addNameRange     '0.1.39',
+26 silly addNameRange     '0.1.40',
+26 silly addNameRange     '0.1.41',
+26 silly addNameRange     '0.1.42',
+26 silly addNameRange     '0.1.43',
+26 silly addNameRange     '0.1.44',
+26 silly addNameRange     '0.1.45',
+26 silly addNameRange     '0.1.46',
+26 silly addNameRange     '0.2.0',
+26 silly addNameRange     '0.2.1',
+26 silly addNameRange     '0.2.2',
+26 silly addNameRange     '0.2.3',
+26 silly addNameRange     '0.2.4',
+26 silly addNameRange     '0.2.5',
+26 silly addNameRange     '0.2.6',
+26 silly addNameRange     '0.2.7',
+26 silly addNameRange     '0.2.8',
+26 silly addNameRange     '0.2.9',
+26 silly addNameRange     '0.2.10',
+26 silly addNameRange     '0.2.11',
+26 silly addNameRange     '0.2.12',
+26 silly addNameRange     '0.2.13',
+26 silly addNameRange     '0.2.14',
+26 silly addNameRange     '0.2.15',
+26 silly addNameRange     '0.2.16',
+26 silly addNameRange     '0.3.0',
+26 silly addNameRange     '0.3.1',
+26 silly addNameRange     '0.3.2',
+26 silly addNameRange     '0.3.3',
+26 silly addNameRange     '0.3.4',
+26 silly addNameRange     '0.3.5',
+26 silly addNameRange     '0.3.6',
+26 silly addNameRange     '0.3.7',
+26 silly addNameRange     '0.3.8',
+26 silly addNameRange     '0.3.9',
+26 silly addNameRange     '0.3.10',
+26 silly addNameRange     '0.3.11',
+26 silly addNameRange     '0.3.13',
+26 silly addNameRange     '0.3.14',
+26 silly addNameRange     '0.3.15',
+26 silly addNameRange     '0.3.16',
+26 silly addNameRange     '0.3.17',
+26 silly addNameRange     '0.3.18',
+26 silly addNameRange     '0.3.19',
+26 silly addNameRange     '0.3.20',
+26 silly addNameRange     '0.3.21',
+26 silly addNameRange     '0.3.22' ] ]
+27 silly addNamed istanbul@0.3.22
+28 verbose addNamed "0.3.22" is a plain semver version for istanbul
+29 silly mapToRegistry name istanbul
+30 silly mapToRegistry using default registry
+31 silly mapToRegistry registry https://registry.npmjs.org/
+32 silly mapToRegistry uri https://registry.npmjs.org/istanbul
+33 verbose addRemoteTarball https://registry.npmjs.org/istanbul/-/istanbul-0.3.22.tgz not in flight; adding
+34 verbose addRemoteTarball [ 'https://registry.npmjs.org/istanbul/-/istanbul-0.3.22.tgz',
+34 verbose addRemoteTarball   '3e164d85021fe19c985d1f0e7ef0c3e22d012eb6' ]
+35 info retry fetch attempt 1 at 5:03:12 PM
+36 info attempt registry request try #1 at 5:03:12 PM
+37 http fetch GET https://registry.npmjs.org/istanbul/-/istanbul-0.3.22.tgz
+38 http fetch 200 https://registry.npmjs.org/istanbul/-/istanbul-0.3.22.tgz
+39 silly fetchAndShaCheck shasum 3e164d85021fe19c985d1f0e7ef0c3e22d012eb6
+40 verbose addTmpTarball /tmp/npm-31299-e85dafa1/registry.npmjs.org/istanbul/-/istanbul-0.3.22.tgz not in flight; adding
+41 verbose addTmpTarball already have metadata; skipping unpack for istanbul@0.3.22
+42 silly cache afterAdd istanbul@0.3.22
+43 verbose afterAdd /home/msolari/.npm/istanbul/0.3.22/package/package.json not in flight; writing
+44 verbose afterAdd /home/msolari/.npm/istanbul/0.3.22/package/package.json written
+45 silly install resolved [ { name: 'istanbul',
+45 silly install resolved     version: '0.3.22',
+45 silly install resolved     description: 'Yet another JS code coverage tool that computes statement, line, function and branch coverage with module loader hooks to transparently add coverage when running tests. Supports all JS coverage use cases including unit tests, server side functional tests ',
+45 silly install resolved     keywords: [ 'coverage', 'code coverage', 'JS code coverage', 'JS coverage' ],
+45 silly install resolved     author:
+45 silly install resolved      { name: 'Krishnan Anantheswaran',
+45 silly install resolved        email: 'kananthmail-github@yahoo.com' },
+45 silly install resolved     license: 'BSD-3-Clause',
+45 silly install resolved     contributors:
+45 silly install resolved      [ [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object],
+45 silly install resolved        [Object] ],
+45 silly install resolved     scripts:
+45 silly install resolved      { pretest: 'jshint index.js lib/ test/ && ./download-escodegen-browser.sh',
+45 silly install resolved        test: 'node --harmony test/run.js',
+45 silly install resolved        posttest: 'node ./lib/cli.js check-coverage --statements 95 --branches 80',
+45 silly install resolved        docs: 'npm install yuidocjs && node node_modules/yuidocjs/lib/cli.js .' },
+45 silly install resolved     bin: { istanbul: './lib/cli.js' },
+45 silly install resolved     files: [ 'index.js', 'lib/' ],
+45 silly install resolved     repository: { type: 'git', url: 'git://github.com/gotwarlost/istanbul.git' },
+45 silly install resolved     dependencies:
+45 silly install resolved      { abbrev: '1.0.x',
+45 silly install resolved        async: '1.x',
+45 silly install resolved        escodegen: '1.7.x',
+45 silly install resolved        esprima: '2.5.x',
+45 silly install resolved        fileset: '0.2.x',
+45 silly install resolved        handlebars: '^4.0.1',
+45 silly install resolved        'js-yaml': '3.x',
+45 silly install resolved        mkdirp: '0.5.x',
+45 silly install resolved        nopt: '3.x',
+45 silly install resolved        once: '1.x',
+45 silly install resolved        resolve: '1.1.x',
+45 silly install resolved        'supports-color': '^3.1.0',
+45 silly install resolved        which: '^1.1.1',
+45 silly install resolved        wordwrap: '^1.0.0' },
+45 silly install resolved     devDependencies:
+45 silly install resolved      { coveralls: '2.x',
+45 silly install resolved        glob: '^5.0.14',
+45 silly install resolved        jshint: '^2.8.0',
+45 silly install resolved        nodeunit: '0.9.x',
+45 silly install resolved        requirejs: '2.x',
+45 silly install resolved        rimraf: '^2.4.3' },
+45 silly install resolved     gitHead: '2a6d054a3ae5b1582000b4c84ce16577a471c713',
+45 silly install resolved     bugs: { url: 'https://github.com/gotwarlost/istanbul/issues' },
+45 silly install resolved     homepage: 'https://github.com/gotwarlost/istanbul#readme',
+45 silly install resolved     _id: 'istanbul@0.3.22',
+45 silly install resolved     _shasum: '3e164d85021fe19c985d1f0e7ef0c3e22d012eb6',
+45 silly install resolved     _from: 'istanbul@*',
+45 silly install resolved     _npmVersion: '2.13.5',
+45 silly install resolved     _nodeVersion: '0.10.39',
+45 silly install resolved     _npmUser: { name: 'davglass', email: 'davglass@gmail.com' },
+45 silly install resolved     maintainers: [ [Object], [Object] ],
+45 silly install resolved     dist:
+45 silly install resolved      { shasum: '3e164d85021fe19c985d1f0e7ef0c3e22d012eb6',
+45 silly install resolved        tarball: 'http://registry.npmjs.org/istanbul/-/istanbul-0.3.22.tgz' },
+45 silly install resolved     directories: {},
+45 silly install resolved     _resolved: 'https://registry.npmjs.org/istanbul/-/istanbul-0.3.22.tgz' } ]
+46 info install istanbul@0.3.22 into /usr/local/lib
+47 info installOne istanbul@0.3.22
+48 verbose installOne of istanbul to /usr/local/lib not in flight; installing
+49 verbose lock using /home/msolari/.npm/_locks/istanbul-53fefb5325ba20cf.lock for /usr/local/lib/node_modules/istanbul
+50 silly install write writing istanbul 0.3.22 to /usr/local/lib/node_modules/istanbul
+51 verbose unbuild lib/node_modules/istanbul
+52 silly gentlyRm /usr/local/lib/node_modules/istanbul is being purged from base /usr/local
+53 verbose gentlyRm don't care about contents; nuking /usr/local/lib/node_modules/istanbul
+54 verbose tar unpack /home/msolari/.npm/istanbul/0.3.22/package.tgz
+55 verbose tar unpacking to /usr/local/lib/node_modules/istanbul
+56 silly gentlyRm /usr/local/lib/node_modules/istanbul is being purged
+57 verbose gentlyRm don't care about contents; nuking /usr/local/lib/node_modules/istanbul
+58 silly gunzTarPerm modes [ '755', '644' ]
+59 error tar.unpack untar error /home/msolari/.npm/istanbul/0.3.22/package.tgz
+60 verbose unlock done using /home/msolari/.npm/_locks/istanbul-53fefb5325ba20cf.lock for /usr/local/lib/node_modules/istanbul
+61 verbose fstream_path /usr/local/lib/node_modules/istanbul
+62 verbose fstream_type Directory
+63 verbose fstream_class DirWriter
+64 verbose stack Error: EACCES: permission denied, mkdir '/usr/local/lib/node_modules/istanbul'
+64 verbose stack     at Error (native)
+65 verbose fstream_stack /usr/local/lib/node_modules/npm/node_modules/fstream/lib/dir-writer.js:35:25
+65 verbose fstream_stack /usr/local/lib/node_modules/npm/node_modules/mkdirp/index.js:47:53
+65 verbose fstream_stack FSReqWrap.oncomplete (fs.js:82:15)
+66 verbose cwd /home/msolari/apps/escrape2/test/controllers
+67 error Linux 2.6.32-504.12.2.el6.x86_64
+68 error argv "/usr/local/bin/node" "/usr/local/bin/npm" "install" "-g" "istanbul"
+69 error node v4.0.0
+70 error npm  v2.14.2
+71 error path /usr/local/lib/node_modules/istanbul
+72 error code EACCES
+73 error errno -13
+74 error syscall mkdir
+75 error Error: EACCES: permission denied, mkdir '/usr/local/lib/node_modules/istanbul'
+75 error     at Error (native)
+75 error  { [Error: EACCES: permission denied, mkdir '/usr/local/lib/node_modules/istanbul']
+75 error   errno: -13,
+75 error   code: 'EACCES',
+75 error   syscall: 'mkdir',
+75 error   path: '/usr/local/lib/node_modules/istanbul',
+75 error   fstream_type: 'Directory',
+75 error   fstream_path: '/usr/local/lib/node_modules/istanbul',
+75 error   fstream_class: 'DirWriter',
+75 error   fstream_stack:
+75 error    [ '/usr/local/lib/node_modules/npm/node_modules/fstream/lib/dir-writer.js:35:25',
+75 error      '/usr/local/lib/node_modules/npm/node_modules/mkdirp/index.js:47:53',
+75 error      'FSReqWrap.oncomplete (fs.js:82:15)' ] }
+76 error Please try running this command again as root/Administrator.
+77 verbose exit [ -13, true ]
+78 verbose unbuild lib/node_modules/istanbul
+79 silly gentlyRm /usr/local/lib/node_modules/istanbul is being purged from base /usr/local
+80 verbose gentlyRm don't care about contents; nuking /usr/local/lib/node_modules/istanbul
