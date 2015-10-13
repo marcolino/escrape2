@@ -16,7 +16,8 @@ config.db.type = 'mongodb';
 config.db.host = 'localhost';
 config.db.name = 'escrape';
 config.tor = {};
-config.tor.available = (os.hostname() === 'localhost'); // TOR is available only locally, at the moment...
+//console.log(os.hostname());
+config.tor.available = (os.hostname() === 'malibox'); // TOR is available only locally, at the moment...
 config.tor.host = 'localhost';
 config.tor.port = 9050;
 

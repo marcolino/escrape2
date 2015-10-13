@@ -45,7 +45,7 @@ local.getAll = function(filter, result) { // get all places
 };
 
 /**
- * when developing, export also local functions,
+ * when developing, expose also local functions,
  * prefixed with '_' character,
  * to be able to unit test them
  */

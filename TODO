@@ -9,5 +9,6 @@
 - remember to uninstall module 'socket.io', if not used for tailable cursor view...
 
 export NODE_DEBUG=request
+https://www.npmjs.com/package/request-replay
 
 V remove all "err.context = " lines

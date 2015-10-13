@@ -1,4 +1,4 @@
-var request = require('requestretry') // to place http requests and retry if needed
+var requestretry = require('requestretry') // to place http requests and retry if needed
   , randomUseragent = require('random-useragent') // to use a random user-agent
   , agent = require('socks5-http-client/lib/Agent') // to be able to proxy requests
   , fs = require('fs') // to be able to use filesystem
@@ -18,7 +18,7 @@ exports.requestRetryAnonymous = function(resource, error, success) {
   var options = {
     url: resource.url,
     maxAttempts: 2, // retry for 2 attempts more after the first one
-    retryDelay: 1/*600*/ * 1000, // wait for 10' before trying again
+    retryDelay: 10/*600*/ * 1000, // wait for 10" before trying again
     retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
     headers: {
       'User-Agent': randomUseragent.getRandom() // use random UA
@@ -44,11 +44,11 @@ exports.requestRetryAnonymous = function(resource, error, success) {
     }
   }
 
-  request(
+  requestretry(
     options,
     function(err, response, contents) {
       if (err) {
-        console.error('error in request to', options.url + ':', err);
+        //console.error('error in request to', options.url + ':', err);
         return error(err);
       }
       if (response.statusCode < 300) { // 2xx, success, download effected

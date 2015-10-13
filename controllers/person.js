@@ -24,7 +24,7 @@ var started = finished = 0;
   //log.info('subscription to ', channel, ' accepted at ', new Date().toJSON());
   log.info('persons sync started');
 
-  provider.getAll({ type: 'persons', mode: config.mode, key: 'TOE' }, function(err, providers) { // GET all providers
+  provider.getAll({ type: 'persons', mode: config.mode, key: /.*/ }, function(err, providers) { // GET all providers
     if (err) {
       log.error('error syncing providers: ', err);
       //res.json({ error: err });
@@ -119,7 +119,7 @@ started++; console.log('INNER', element.url, 'STARTED', started, finished);
                       person.providerKey = provider.key;
                       person.dateOfLastSync = new Date();
                       // save this person to database
-                      local.upsert()
+                      //local.upsert()
                       Person.findOne(
                         { providerKey: provider.key, key: person.key }, // query
                         function(err, doc) {
@@ -145,7 +145,7 @@ started++; console.log('INNER', element.url, 'STARTED', started, finished);
                               doc.dateOfLastSync = person.dateOfLastSync;
                             }
 finished++;
-console.log('INNER', person.url, 'FINISHED', started, finished);
+//console.log('INNER', person.url, 'FINISHED', started, finished);
                             doc.save(function(err) {
                               if (err) {
                                 console.log('Error: could not save person', doc.key);
@@ -828,7 +828,7 @@ local.get = function(filter, result) { // get person
 };
 
 /**
- * when developing, export also private functions,
+ * when developing, expose also private functions,
  * prefixed with '_' character,
  * to be able to unit test them
  */
