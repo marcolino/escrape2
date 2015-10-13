@@ -44,6 +44,7 @@ exports.syncPersons = function(req, res) { // sync persons
   var retrievedPersonsCount = 0;
   var syncStartDate = new Date(); // start of this sync date
   var resource;
+var started = finished = 0;
 
   // return immedately, log progress to db
   res.json('persons sync started');
@@ -80,21 +81,21 @@ exports.syncPersons = function(req, res) { // sync persons
             },
             function(contents) { // success
               console.log('contents lenght is', contents.length);
-              if (contents.length < 10000) {
-                console.error('!!!!!!!!!!!! SHORT LIST (SHOULD NOT HAPPEN ANYMORE...):', contents.toString());
-              }
+              //if (contents.length < 10000) {
+              //  console.error('!!!!!!!!!!!! SHORT LIST (SHOULD NOT HAPPEN ANYMORE...):', contents.toString());
+              //}
               if (!contents) {
                 console.warn('Error syncing provider', provider.key + ':', 'empty contents', '-', 'skipping');
                 return callbackOuter(); // skip this outer loop
               }
               $ = cheerio.load(contents);
               var list = privat.getList(provider, $);
+              //console.log('list:', list);
               providersPersonsCount += list.length;
-              //async.eachLimit(
               async.each(
                 list, // 1st param is the array of items
-                //provider.limit, // 2nd param is a limit (ms) to throttle requests rate
                 function(element, callbackInner) { // 3nd param is the function that each item is passed to
+started++; console.log('INNER', element.url, 'STARTED', started, finished);
                   var person = {};
                   person.url = element.url;
                   if (!person.url) {
@@ -147,45 +148,7 @@ exports.syncPersons = function(req, res) { // sync persons
                       person.nationality = privat.detectNationality(person, provider, config);
                       person.providerKey = provider.key;
                       person.dateOfLastSync = new Date();
-                      // TODO: why we get here when requestRetryAnonymous() is retrying (and person.name is empty)???
-
                       // save this person to database
-                      //console.log('PERSON:', person);
-                      /*
-                      Person.findOneAndUpdate(
-                        { providerKey: provider.key, key: person.key }, // query
-                        person,
-                        { upsert: true },
-                        //{ $setOnInsert: { dateOfFirstSync: new Date() } }, // if inserting, set dateOfFirstSync to now
-                        function(err, doc) {
-                          if (err) {
-                            console.warn('Error saving person', person.name + ':', err, '-', 'skipping');
-                          } else {
-                            console.log('DOC:', doc);
-                            person.id = doc.id; // get upserted object id
-                            retrievedPersonsCount++;
-                            console.log(retrievedPersonsCount + ' / ' + providersPersonsCount);
-                            console.log(person.providerKey, person.key, (person.name ? '[' + person.name + ']' : ''));
-
-                            // sync this person images, too
-                            image.syncPersonImages(person, function(err) {
-                              if (err) {
-                                return console.error('Error retrieving images for person',
-                                  provider.key, person.key + ':', err
-                                );
-                              }
-                              //console.log('person images sync\'d');
-                            });
-                          }
-
-                          // wait some time to avoid overloading provider - TODO: DO WE NEED THIS?
-                          //setTimeout(function () {
-                          callbackInner();
-                          //}, 7 * 1000); //provider.limit
-                          //callbackInner();
-                        }
-                      );
-                      */
                       Person.findOne(
                         { providerKey: provider.key, key: person.key }, // query
                         function(err, doc) {
@@ -210,17 +173,16 @@ exports.syncPersons = function(req, res) { // sync persons
                               doc.nationality = person.nationality;
                               doc.dateOfLastSync = person.dateOfLastSync;
                             }
-                            //doc.status = request.status;
+finished++; console.log('INNER', person.url, 'FINISHED', started, finished);
                             doc.save(function(err) {
                               if (err) {
                                 console.log('Error: could not save person', doc.key);
                               } else {
                                 //console.log('person', doc.key, 'created at',
                                 //  doc.createdAt, ' updated at ', doc.updatedAt);
-                                console.log('person', doc.providerKey, doc.key, (isNew ? 'created' : 'updated'));
+                                ///console.log('person', doc.providerKey, doc.key, (isNew ? 'created' : 'updated'));
                                 retrievedPersonsCount++;
                               }
-
                               callbackInner();
                             });
                           }
@@ -232,12 +194,12 @@ exports.syncPersons = function(req, res) { // sync persons
                 },
                 function(err) { // 4th param is the function to call when everything's done (inner callback)
                   if (err) {
-                    return console.error('Error in the final inner async callback:', err, '\n',
+                    console.error('Error in the final inner async callback:', err, '\n',
                       'One of the iterations produced an error.\n',
                       'Skipping this iteration.'
                     );
                   }
-                  //callbackOuter(); // signal this inner loop is finished
+                  callbackOuter(); // signal this inner loop is finished
                   console.log('Finished persons sync');
                   // all tasks are successfully done now
                 }
@@ -447,6 +409,13 @@ privat.getList = function(provider, $) {
       val.push({ key: key, url: url });
     });
   }
+  if (provider.key === 'TEST') {
+    $('ol > li a').each(function(index, element) {
+      var url = $(element).attr('href');
+      var key = $(element).attr('title');
+      val.push({ key: key, url: url });
+    });
+  }
   return val;
 };
 
@@ -461,6 +430,9 @@ privat.buildListUrl = function(provider, config) {
   if (provider.key === 'FORBES') {
     val = provider.url + provider.categories[config.category].path;
   }
+  if (provider.key === 'TEST') {
+    val = provider.url + provider.categories[config.category].path;
+  }
   return val;
 };
 
@@ -473,6 +445,9 @@ privat.buildDetailsUrl = function(provider, person, config) {
     val = provider.url + '/' + person.url;
   }
   if (provider.key === 'FORBES') {
+    val = provider.url + person.url;
+  }
+  if (provider.key === 'TEST') {
     val = provider.url + person.url;
   }
   return val;
@@ -513,9 +488,18 @@ privat.getDetailsName = function($, provider) {
     }
   }
   if (provider.key === 'FORBES') {
+    /*
     element = $('h1[id="firstHeading"]').each(function(index, element) {
       val = $(element).text();
     });
+    */
+    element = $('h1[id="firstHeading"]');
+    if (element) {
+      val = $(element).text();
+    }
+  }
+  if (provider.key === 'TEST') {
+    val = 'TEST name';
   }
   if (val) {
     val = val
@@ -541,6 +525,9 @@ privat.getDetailsZone = function($, provider) {
     }
   }
   if (provider.key === 'FORBES') {
+    val = '';
+  }
+  if (provider.key === 'TEST') {
     val = '';
   }
   return val;
@@ -570,6 +557,9 @@ privat.getDetailsDescription = function($, provider) {
   if (provider.key === 'FORBES') {
     element = $('table[class="sinottico"]').next('p');
     val = $(element).text();
+  }
+  if (provider.key === 'TEST') {
+    val = 'TEST desription';
   }
   return val;
 };
@@ -604,9 +594,9 @@ privat.getDetailsPhone = function($, provider) {
   }
   if (provider.key === 'FORBES') {
     val = '333.33333333';
-    if (val) {
-      val = val.replace(/[^\d]/, '');
-    }
+  }
+  if (provider.key === 'TEST') {
+    val = '444.44444444';
   }
   return val;
 };
@@ -638,6 +628,9 @@ privat.getDetailsImageUrls = function($, provider) {
       href = 'http:' + $(element).attr('src'); // TODO: do not add 'http', make network.request work without schema...
       val.push(href);
     });
+  }
+  if (provider.key === 'TEST') {
+    // no images for test
   }
   return val;
 };

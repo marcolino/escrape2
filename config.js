@@ -65,6 +65,19 @@ config.providers = [
     },
   },
   {
+    key: 'TEST',
+    mode: 'fake',
+    type: 'persons',
+    url: 'http://localhost',
+    language: 'it',
+    //limit: 1, // don't use it aymore...
+    categories: {
+      women: { 
+        path: '/test/list.zero'
+      },
+    },
+  },
+  {
     key: 'GF',
     mode: 'normal',
     type: 'comments',

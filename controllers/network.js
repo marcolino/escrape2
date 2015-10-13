@@ -80,7 +80,7 @@ exports.requestRetryAnonymous = function(resource, error, success) {
         response.statusCode !== 403 &&
         response.statusCode !== 524
       ) {
-      console.warn('^^^', 'retryStrategyForbidden()', 'unforeseen response.statusCode:', response.statusCode, '^^^');
+      console.warn('retryStrategyForbidden()', 'ignored response status code ', response.statusCode, '^^^');
     }
 
     /*
