@@ -1,25 +1,27 @@
-var express = require('express'); // web server
-var logger = require('morgan'); // clients requests logger
-var bodyParser = require('body-parser'); // body parser
-var methodOverride = require('method-override'); // method overryde for clients not supporting all REST verbs
-var config = require('./config'); // application configuration
+'use strict';
+
+var express = require('express') // web server
+  , logger = require('morgan') // clients requests logger
+  , bodyParser = require('body-parser') // body parser
+  , methodOverride = require('method-override') // method overryde for clients not supporting all REST verbs
+  , config = require('./config') // application configuration
+;
 
 // required models
 var db = require('./models/db');
-var provider = require('./models/provider');
-var user = require('./models/user');
-var person = require('./models/person');
 
 // required routes
 var providers = require('./routes/providers');
 var users = require('./routes/users');
 var persons = require('./routes/persons');
+var places = require('./routes/places');
+var comments = require('./routes/comments');
 
 // create express application
 var app = module.exports = express();
 
 // use modules to become RESTful
-//app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(methodOverride());
 
@@ -27,26 +29,26 @@ app.use(methodOverride());
 app.use('/users', users);
 app.use('/persons', persons);
 app.use('/providers', providers);
+app.use('/places', places);
+app.use('/comments', comments);
 
-// errors handler
+// error handlers
 
-// catch 404 and forward to error handler
 app.use(function(req, res, next) {
-  var err = new Error('Not found', req);
-  err.status = 404;
-  next(err);
+  var status = 404;
+  res.status(status);
+  var err = new Error();
+  err.message = 'Not found';
+  err.status = status;
+  if (config.env === 'development') {
+    err.stacktrace = err.stack;
+  }
+  res.send({ error: err });
 });
 
-// catch all errors
-app.use(function(err, req, res) {
-  var error = {};
-  error.message = err.message;
-  if (app.get('env') === 'development') {
-    // development error handler (will print stacktrace)
-    error.stack = err.stack;
-  }
-  for (var prop in err) {
-    error[prop] = err[prop];
-  }
-  res.json({ error: error });
+// error-handling middleware
+app.use(function(err, req, res, next) {
+  var err = new Error('not allowed!');
+  res.status(err.status || 500);
+  res.send({ error: err });
 });
