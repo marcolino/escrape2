@@ -434,7 +434,7 @@ local.getDetailsDescription = function($, provider) {
     val = $(element).text();
   }
   if (provider.key === 'TEST') {
-    val = 'TEST desription';
+    val = 'TEST description';
   }
   return val;
 };

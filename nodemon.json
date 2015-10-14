@@ -1,5 +1,5 @@
 {
   "events": {
-    "restart": "echo 'nodemon restarted' && npm run restart"
+    "restart": "echo 'nodemon restarted' # && npm run restart-full-tests"
   }
 }

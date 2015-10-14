@@ -1,6 +1,5 @@
 var requestretry = require('requestretry') // to place http requests and retry if needed
-  , replay = require('request-replay') // to replay requests if all retryes fail
-  , randomUseragent = require('random-useragent') // to use a random user-agent
+  , randomUseragent = require('random-ua') // to use a random user-agent
   , agent = require('socks5-http-client/lib/Agent') // to be able to proxy requests
   , fs = require('fs') // to be able to use filesystem
   , config = require('../config'); // global configuration
@@ -18,12 +17,11 @@ exports.requestRetryAnonymous = function(resource, error, success) {
   //console.log('!!!!! setting header If-Modified-Since to', resource.lastModified);
   var options = {
     url: resource.url,
-    maxAttempts: 2, // retry for 2 attempts more after the first one
-    retryDelay: 10/*600*/ * 1000, // wait for 10" before trying again
+    maxAttempts: 12, // retry for 2 attempts more after the first one
+    retryDelay: 10 * 1000, // wait for 10" before trying again
     retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
     headers: {
-      'User-Agent': randomUseragent.getRandom() // use random UA
-      //'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1'
+      'User-Agent': randomUseragent.generate()
     },
     encoding: encoding
   };
@@ -45,7 +43,7 @@ exports.requestRetryAnonymous = function(resource, error, success) {
     }
   }
 
-  replay(
+  //replay(
     requestretry(
       options,
       function(err, response, contents) {
@@ -65,17 +63,17 @@ exports.requestRetryAnonymous = function(resource, error, success) {
       ,
       options.maxAttempts,
       options.retryDelay
-    ), {
-      retries: 50,
-      factor: 3
-    }
-  )
-  .on('replay', function (replay) {
-    // "replay" is an object that contains some useful information 
-    console.log('request failed: ' + replay.error.code + ' ' + replay.error.message);
-    console.log('replay nr: #' + replay.number);
-    console.log('will retry in: ' + replay.delay + 'ms')
-  });
+    );//, {
+  //    retries: 10,
+  //    factor: 2
+  //  }
+  //)
+  //.on('replay', function (replay) {
+  //  // "replay" is an object that contains some useful information 
+  //  console.log('request failed: ' + replay.error.code + ' ' + replay.error.message);
+  //  console.log('replay nr: #' + replay.number);
+  //  console.log('will replay in: ' + replay.delay + 'ms')
+  //});
 
   // request retry strategies
 
