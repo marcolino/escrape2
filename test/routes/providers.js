@@ -24,7 +24,7 @@ describe('routes - provider', function() {
           expect(p._id.length).to.eql(24);
           n++;
         });
-        expect(n).to.eql(4);
+        expect(n).to.eql(5);
         done();
       });
     });

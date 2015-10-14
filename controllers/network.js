@@ -1,4 +1,5 @@
 var requestretry = require('requestretry') // to place http requests and retry if needed
+  , replay = require('request-replay') // to replay requests if all retryes fail
   , randomUseragent = require('random-useragent') // to use a random user-agent
   , agent = require('socks5-http-client/lib/Agent') // to be able to proxy requests
   , fs = require('fs') // to be able to use filesystem
@@ -44,26 +45,37 @@ exports.requestRetryAnonymous = function(resource, error, success) {
     }
   }
 
-  requestretry(
-    options,
-    function(err, response, contents) {
-      if (err) {
-        //console.error('error in request to', options.url + ':', err);
-        return error(err);
+  replay(
+    requestretry(
+      options,
+      function(err, response, contents) {
+        if (err) {
+          //console.error('error in request to', options.url + ':', err);
+          return error(err);
+        }
+        if (response.statusCode < 300) { // 2xx, success, download effected
+          resource.etag = response.headers.etag;
+          resource.lastModified = response.headers['last-modified'];
+        }
+        success(contents, resource);
       }
-      if (response.statusCode < 300) { // 2xx, success, download effected
-        resource.etag = response.headers.etag;
-        resource.lastModified = response.headers['last-modified'];
-      }
-      success(contents, resource);
+      // requestretry wants these as 3rd and 4th params of request() call...
+      // TODO: with new requestretry versions we can remove these parameters...
+      // TEST THIS !!!!!!!!!!!!!!!!!!!!
+      ,
+      options.maxAttempts,
+      options.retryDelay
+    ), {
+      retries: 50,
+      factor: 3
     }
-    // requestretry wants these as 3rd and 4th params of request() call...
-    // TODO: with new requestretry versions we can remove these parameters...
-    // TEST THIS !!!!!!!!!!!!!!!!!!!!
-    //,
-    //options.maxAttempts,
-    //options.retryDelay
-  );
+  )
+  .on('replay', function (replay) {
+    // "replay" is an object that contains some useful information 
+    console.log('request failed: ' + replay.error.code + ' ' + replay.error.message);
+    console.log('replay nr: #' + replay.number);
+    console.log('will retry in: ' + replay.delay + 'ms')
+  });
 
   // request retry strategies
 

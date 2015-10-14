@@ -7,7 +7,6 @@ var providerSchema = new mongoose.Schema({
   type: String,
   url: String,
   language: String,
-  //limit: Number,
   categories: Object
 }, {
   autoIndex: config.debug
@@ -20,4 +19,16 @@ providerSchema.virtual('mode.type').get(function () {
 });
 */
 
-module.exports = mongoose.model('Provider', providerSchema);
+var model = mongoose.model('Provider', providerSchema);
+
+var getAll = function(filter, result) { // get all providers
+  model.find(filter, function(err, providers) {
+    result(err, providers);
+  });
+};
+
+module.exports = {
+  getAll: getAll,
+  schema: providerSchema,
+  model: model
+};

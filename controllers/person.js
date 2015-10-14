@@ -16,7 +16,7 @@ exports.sync = function(req, res) { // sync persons
   var retrievedPersonsCount = 0;
   var syncStartDate = new Date(); // start of this sync date
   var resource;
-var started = finished = 0;
+  var started = 0, finished = 0; // TODO: debug only
 
   // return immedately, log progress to db
   res.json('persons sync started');
@@ -67,7 +67,8 @@ var started = finished = 0;
               async.each(
                 list, // 1st param is the array of items
                 function(element, callbackInner) { // 3nd param is the function that each item is passed to
-started++; console.log('INNER', element.url, 'STARTED', started, finished);
+                  // TODO: debug only
+                  started++; console.log('INNER', element.url, 'STARTED', started, finished);
                   var person = {};
                   person.url = element.url;
                   if (!person.url) {
@@ -144,8 +145,8 @@ started++; console.log('INNER', element.url, 'STARTED', started, finished);
                               doc.nationality = person.nationality;
                               doc.dateOfLastSync = person.dateOfLastSync;
                             }
-finished++;
-//console.log('INNER', person.url, 'FINISHED', started, finished);
+                            finished++; // TODO: debug only
+                            //console.log('INNER', person.url, 'FINISHED', started, finished);
                             doc.save(function(err) {
                               if (err) {
                                 console.log('Error: could not save person', doc.key);
@@ -155,7 +156,8 @@ finished++;
                                 ///console.log('person', doc.providerKey, doc.key, (isNew ? 'created' : 'updated'));
                                 retrievedPersonsCount++;
                               }
-console.log('INNER', person.url, 'REALLY-FINISHED', started, finished);
+                              // TODO: debug only
+                              console.log('INNER', person.url, 'REALLY-FINISHED', started, finished);
                               callbackInner();
                             });
                           }
@@ -197,7 +199,7 @@ console.log('INNER', person.url, 'REALLY-FINISHED', started, finished);
               return console.error('Error setting activity status:', err);
             }
             // all tasks are successfully done now
-            log.info('persons sync finished: ', ''+retrievedPersonsCount, ' persons found');
+            log.info('persons sync finished: ', retrievedPersonsCount.toString(), ' persons found');
           });
 
         }

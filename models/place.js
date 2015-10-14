@@ -3,7 +3,7 @@ var mongoose = require('mongoose')
 ;
 
 var placeSchema = new mongoose.Schema({
-  name: String,
+  name: String
 },
 {
   autoIndex: config.debug
