@@ -10,8 +10,9 @@ var express = require('express') // web server
 ;
 
 // setup
-var pathStatic = __dirname + '/public'; // path to static directory
-var pathViews = __dirname + '/views'; // path to views directory
+var staticPathPublic = __dirname + '/public'; // path to static public directory
+var staticPathData = __dirname + '/data'; // path to static data directory
+//var pathViews = __dirname + '/views'; // path to views directory
 var engineTemplate = 'html'; // template engine name ('jade'...)
 
 // required routes
@@ -38,9 +39,10 @@ app.use('/persons', persons);
 app.use('/providers', providers);
 app.use('/places', places);
 app.use('/comments', comments);
-app.use(express.static(pathStatic));
-app.set('views', pathViews);
-app.set('view engine', engineTemplate); 
+app.use(express.static(staticPathPublic));
+app.use(express.static(staticPathData));
+//app.set('views', pathViews);
+//app.set('view engine', engineTemplate); 
 
 /*
 // frontend routes (angular requests)

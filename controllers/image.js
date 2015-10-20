@@ -59,7 +59,7 @@ exports.syncPersonImages = function(person, callback) {
             return callbackInner();
           }
           if (!resource) { // resurce is null, image not modified, do not save to disk
-            //log.debug('image did not change :-)');
+            //log.debug('image ', image.url, ' did not change :-)');
             return callbackInner();
           }
           //log.info('image resource from download():', resource);
@@ -69,7 +69,7 @@ exports.syncPersonImages = function(person, callback) {
             if (err) {
               log.warn('can\'t save image', image.url, ':', err);
             } else {
-              log.info('image ', image.url, ' saved');
+              //log.info('image ', image.url, ' saved');
               //person.images.push(path); // TODO...
             }
             return callbackInner();
