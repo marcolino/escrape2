@@ -30,7 +30,10 @@ var personSchema = new mongoose.Schema({
   dateOfLastSync: { type: Date, default: Date.now },
   isPresent: Boolean,
   aliasPrev: String, // ObjectId reference
-  aliasNext: String // ObjectId reference
+  aliasNext: String, // ObjectId reference
+  images: [
+    String
+  ]
 },
 {
   autoIndex: config.debug,

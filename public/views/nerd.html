@@ -1,5 +1,9 @@
 <div class="jumbotron text-center">
   <h1>Nerds</h1>
   <p>{{ tagline }}</p>
-  <pre>{{ persons }}</pre>
+  <div ng-repeat="person in persons"> 
+"/data/images/{{ person.providerKey }}/{{person.key}}/copertina.jpg"
+    <img ng-src="http://localhost/data/images/{{ person.providerKey }}/{{person.key}}/copertina.jpg" />
+    <div>{{ person.name }}</div>
+  </div>
 </div>

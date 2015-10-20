@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "postinstall": "bower install",
-    "prestart": "npm install",
+    "prestart": "npm install --silent",
     "start": "nodemon ./bin/www",
     "restart-full-tests": "echo 'restart with lint, jscs mocha' & npm run test",
     "test": "npm run lint & npm run jscs & npm run mocha",

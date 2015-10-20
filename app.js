@@ -4,6 +4,7 @@ var express = require('express') // web server
   , logger = require('morgan') // clients requests logger
   , bodyParser = require('body-parser') // body parser
   , methodOverride = require('method-override') // method overryde for clients not supporting all REST verbs
+  , path = require('path') // to manipulate paths
   , config = require('./config') // application configuration
   , db = require('./models/db') // database wiring
 ;
@@ -41,9 +42,10 @@ app.use(express.static(pathStatic));
 app.set('views', pathViews);
 app.set('view engine', engineTemplate); 
 
+/*
 // frontend routes (angular requests)
 //app.get('*', function(req, res) {
-app.route('*').get(function(req, res) { // * -> 
+app.route('*').get(function(req, res) { // * -> !/api
   // load the single view file (angular will handle the page changes on the front-end)
   res.sendFile('index.html', { root: path.join(__dirname, './public') });
 });
@@ -58,11 +60,27 @@ app.use(function(req, res, next) { // not found
   if (config.env === 'development') {
     err.stacktrace = err.stack;
   }
-  res.send({ error: err });
+  //log.error('404');
+  //log.error(err);
+  res.send({ error: 'not found' });
 });
 
 app.use(function(err, req, res, next) { // not allowed
   var err = new Error('not allowed');
   res.status(err.status || 500);
-  res.send({ error: err });
+  //log.error('500');
+  //log.error(err);
+  res.send({ error: 'internal server error'});
+});
+*/
+
+// all other (angular) requests go to frontend routes
+//app.use(function(err, req, res, next) {
+app.use(function(req, res, next) {
+/*
+  if (err) {
+    return res.send({ error: err });
+  };
+*/
+  res.sendFile('index.html', { root: path.join(__dirname, './public') });
 });

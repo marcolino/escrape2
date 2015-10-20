@@ -1,4 +1,6 @@
 angular.module('NerdCtrl', []).controller('NerdController', function($scope, Nerd) {
-  $scope.persons = Nerd.get();
+  Nerd.get(function(response) {
+    $scope.persons = response;
+  });
   $scope.tagline = 'Nothing beats a pocket protector!';
 });

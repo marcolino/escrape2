@@ -59,17 +59,18 @@ exports.syncPersonImages = function(person, callback) {
             return callbackInner();
           }
           if (!resource) { // resurce is null, image not modified, do not save to disk
-            //log.debug('IMAGE DID NOT CHANGE :-)');
+            //log.debug('image did not change :-)');
             return callbackInner();
           }
-          //log.info('£££ image resource from download():', resource);
+          //log.info('image resource from download():', resource);
           img.etag = resource.etag; // ETag, to handle caching
           img.lastModified = resource.lastModified; // lastModified, to handle alternative caching
-          img.save(function(err) {
+          img.save(function(err) { // , path // TODO...
             if (err) {
               log.warn('can\'t save image', image.url, ':', err);
             } else {
               log.info('image ', image.url, ' saved');
+              //person.images.push(path); // TODO...
             }
             return callbackInner();
           });
