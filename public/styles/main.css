@@ -1,0 +1,7 @@
+html {
+  overflow-y: scroll;
+  font-family: 'Open Sans', Sans;
+}
+body {
+  padding: 1.5em;
+}

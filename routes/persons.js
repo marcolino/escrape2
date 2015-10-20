@@ -2,6 +2,7 @@ var express = require('express') // express
   , mongoose = require('mongoose') // mongo abstraction
   , bodyParser = require('body-parser') // to parse information from POST
   , methodOverride = require('method-override') // to manipulate POST
+  , path = require('path') // to manipulate paths
   , person = require('../controllers/person') // person's controller
   , config = require('../config') // global configuration
 ;
@@ -84,7 +85,8 @@ router.param('id', function(req, res, next, id) {
   });
 });
 
-router.route('/:id').get(function(req, res) { // get person by ID
+//router.route('/:id').get(function(req, res) { // get person by ID
+router.route('/:id/get').get(function(req, res) { // get person by ID
   mongoose.model('Person').findById(req.id, function(err, person) {
     if (err) {
       console.error('Error retrieving person with id ' + req.id + ':', err);
@@ -95,7 +97,8 @@ router.route('/:id').get(function(req, res) { // get person by ID
         res.json(person);
       } else {
         console.log('GET person id: ' + '<NOT FOUND>');
-        res.json(null);
+        //var err = new Error('ID not found');
+        res.json({ error: 'ID not found' });
       }
     }
   });
@@ -160,6 +163,13 @@ router.route('/:id/edit').delete(function(req, res) { // delete a person by id
     }
   });
 });
+
+/* to ../app.js ...
+router.route('*').get(function(req, res) {
+//router.get('*', function(req, res) {
+  res.sendFile('index.html', { root: path.join(__dirname, '../public') }); // load the single view file (angular will handle the page changes on the front-end)
+});
+*/
 
 // export all router methods
 module.exports = router;

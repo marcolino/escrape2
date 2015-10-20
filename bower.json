@@ -1,0 +1,11 @@
+{
+  "name": "escrape2",
+  "version": "0.0.3",
+  "dependencies": {
+    "bootstrap": "latest",
+    "font-awesome": "latest",
+    "animate.css": "latest",
+    "angular": "latest",
+    "angular-route": "latest"   
+  }
+}
