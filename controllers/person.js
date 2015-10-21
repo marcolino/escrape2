@@ -121,19 +121,21 @@ exports.sync = function(req, res) { // sync persons
                     person.zone = local.getDetailsZone($, provider);
                     person.description = local.getDetailsDescription($, provider);
                     person.phone = local.getDetailsPhone($, provider);
-                    person.imageUrls = local.getDetailsImageUrls($, provider);
                     person.nationality = local.detectNationality(person, provider, config);
                     person.providerKey = provider.key;
                     person.dateOfLastSync = new Date();
+                    person._imageUrls = local.getDetailsImageUrls($, provider);
                     
                     // save this person to database
+/*
+                    // TODO: swap order of upsert and syncPersonImages...
                     local.upsert(person, function(err) {
                       if (err) {
                         // ignore this person error to continue with other persons
                         callbackInner();
                       } else {
                         retrievedPersonsCount++;
-                        image.syncPersonImages(person, function(err) {
+                        image.syncPersonImages(person, function(err, person) {
                           if (err) {
                             // ignore this person images error to continue with other persons
                           } else {
@@ -142,6 +144,23 @@ exports.sync = function(req, res) { // sync persons
                           callbackInner(); // this person is done
                         });
                       }
+                    });
+*/
+                    // DONE: swap order of upsert and syncPersonImages...
+                    image.syncPersonImages(person, function(err, person) {
+                      if (err) {
+                        // ignore this person images error to continue with person save
+                        log.warn('error in sync person images:', err);
+                      }
+                      local.upsert(person, function(err) {
+                        if (err) {
+                          // ignore this person error to continue with other persons
+                          callbackInner();
+                        } else {
+                          log.info('person ', person.providerKey, ' ', person.key, ' sync\'d');
+                        }
+                        callbackInner(); // this person is done
+                      });
                     });
                   }
                 );

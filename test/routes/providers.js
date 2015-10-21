@@ -8,7 +8,7 @@ var expect = require('chai').expect // assertion library
 
 // test routing methods (service must be running)
 
-var URL = 'http://localhost:3000/providers/';
+var URL = 'http://test.server.local:3000/providers/';
 
 describe('routes - provider', function() {
 

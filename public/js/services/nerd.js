@@ -3,32 +3,33 @@ angular.module('NerdService', []).factory('Nerd', ['$http', function($http) {
     get: function(callback) { // call to get all nerds
       $http({
         method: 'GET',
-        url: 'http://localhost:3000/persons',
-        data: null
+        url: 'http://test.server.local:3000/persons'
       })
       .success(function(response) {
         console.info('got persons data:', response);
         callback(response);        
       })
       .error(function(err) {
-        console.error('error getting persons data:', err);
+        console.warn('error getting persons data:', err);
       });
-      /*
-      $http.get({
-        method: 'GET',
-        url: '/persons/',
-      }).then(
-        function(response) {
-          console.info('got persons data:', response);
-          callback(response);
-        },
-        function(err) {
-          console.error('error getting persons data:', err);
-        }
-      );
-      */
-      //return $http.get('/persons'); // ('/api/nerds');
     },
+/*
+    getImages: function(person, callback) { // call to get all images for a person
+      console.info('getImages():', person);
+      $http({
+        method: 'GET',
+        url: 'http://test.server.local:3000/persons/' + person._id + '/getImages'
+      })
+      .success(function(response) {
+        console.info('got images for person ', person.providerKey, ' ', person.key, ':', response);
+        callback(null, response);
+      })
+      .error(function(err) {
+        console.warn('error getting images for person ', person.providerKey, ' ', person.key, ':', err);
+        callback(err);
+      });
+    },
+*/
     create: function(nerdData) {
       return $http.post('/api/nerds', nerdData);
     },

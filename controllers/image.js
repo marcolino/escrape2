@@ -18,17 +18,17 @@ exports.syncPersonImages = function(person, callback) {
   var destination = config.imagesPath + '/' + person.providerKey + '/' + person.key;
   var resource;
 
-  if (!person.imageUrls) {
+  if (!person._imageUrls) {
     log.warn('empty image urls for person ', personTag);
     return callback(true);
   }
-  if (person.imageUrls.length <= 0) {
+  if (person._imageUrls.length <= 0) {
     log.warn('no image urls for person ', personTag);
     return callback(true);
   }
 
   async.each(
-    person.imageUrls, // 1st param is the array of items
+    person._imageUrls, // 1st param is the array of items
     function(element, callbackInner) { // 2nd param is the function that each item is passed to
       var image = {};
       image.url = element;
@@ -50,8 +50,8 @@ exports.syncPersonImages = function(person, callback) {
         resource = {
           url: image.url,
           type: 'image',
-          etag: img.etag,
-          lastModified: img.lastModified
+          //etag: img.etag,
+          //lastModified: img.lastModified
         };
         local.download(resource, destination, function(err, resource) {
           if (err)  {
@@ -59,18 +59,21 @@ exports.syncPersonImages = function(person, callback) {
             return callbackInner();
           }
           if (!resource) { // resurce is null, image not modified, do not save to disk
-            //log.debug('image ', image.url, ' did not change :-)');
             return callbackInner();
           }
-          //log.info('image resource from download():', resource);
           img.etag = resource.etag; // ETag, to handle caching
           img.lastModified = resource.lastModified; // lastModified, to handle alternative caching
+          img.basename = resource.basename; // image base name
+          img.isShowcase = resource.isShowcase; // flag to indicate if this is the showcase image
+          //img.signature = ...; // TODO: calculate inage signature...
           img.save(function(err) { // , path // TODO...
             if (err) {
               log.warn('can\'t save image', image.url, ':', err);
             } else {
-              //log.info('image ', image.url, ' saved');
-              //person.images.push(path); // TODO...
+//log.info('image ', image.url, ' saved');
+              if (img.isShowcase) { // set person's showcase basename, if this image is the showcase
+                person.showcaseBasename = img.basename;
+              }
             }
             return callbackInner();
           });
@@ -83,10 +86,11 @@ exports.syncPersonImages = function(person, callback) {
           'some error in the final images async callback:', err,
           'one of the iterations produced an error: ', 'skipping this iteration'
         );
-        return callbackInner();
+        // return callbackInner(); // Nooooo
+        callback(err, person);
       }
       // all tasks are successfully done
-      callback(null);
+      callback(null, person);
     }
   );
 };
@@ -105,7 +109,8 @@ local.download = function(resource, destination, callback) {
         return callback(null, null);
       }
       var urlBasename = path.basename(resource.url);
-      mkdirp(destination, function(err) {
+      mkdirp(destination, function(err, made) {
+console.log('made:', made);
         if (err) {
           log.warn('can\'t make directory ', destination)
           return callback(err);
@@ -120,7 +125,11 @@ local.download = function(resource, destination, callback) {
               log.warn('can\'t write file to file system:', err);
               return callback(err);
             }
-            //log.debug('IMAGE ', resource.url, ', LONG ', contents.length.toString(), ' BYTES WRITTEN TO ', destination, ' :-)');
+            resource.basename = path.basename(destination);
+            resource.isShowcase = (made !== null); // an image will be a showcase
+                                                   // if it is the first one,
+                                                   // i.e.: a new directory was crated
+//console.log(' $$$ resource.basename:', resource.basename);
             callback(null, resource); // success
           }
         );

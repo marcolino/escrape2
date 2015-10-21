@@ -8,19 +8,7 @@ var express = require('express') // express
 ;
 
 var router = express.Router(); // express router
-
-//router.use(bodyParser.urlencoded({ extended: true })); // already in app.js (is it sufficient???)
-
-/*
-router.use(methodOverride(function(req) { // method override for clients supporting only POST method
-  if (req.body && typeof req.body === 'object' && '_method' in req.body) {
-    // look in urlencoded POST bodies and delete it
-    var method = req.body._method;
-    delete req.body._method;
-    return method;
-  }
-}));
-*/
+router.use(bodyParser.urlencoded({ extended: true })); // already in app.js (is it sufficient???)
 
 router.get('/sync', person.sync);
 
@@ -98,6 +86,23 @@ router.route('/:id/get').get(function(req, res) { // get person by ID
       } else {
         console.log('GET person id: ' + '<NOT FOUND>');
         //var err = new Error('ID not found');
+        res.json({ error: 'ID not found' });
+      }
+    }
+  });
+});
+
+router.route('/:id/getImages').get(function(req, res) { // get person by ID
+  mongoose.model('Image').find({ idPerson: req.id }, function(err, images) {
+    if (err) {
+      log.warn('Error retrieving images for person with id ' + req.id + ':', err);
+      res.json({ error: err });
+    } else {
+      if (images) {
+        log.info('got images for person id: ' + req.id);
+        res.json(images);
+      } else {
+        log.info('got *no* images for person id: ' + req.id);
         res.json({ error: 'ID not found' });
       }
     }

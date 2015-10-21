@@ -31,9 +31,7 @@ var personSchema = new mongoose.Schema({
   isPresent: Boolean,
   aliasPrev: String, // ObjectId reference
   aliasNext: String, // ObjectId reference
-  images: [
-    String
-  ]
+  showcaseBasename: String // showcase image base name
 },
 {
   autoIndex: config.debug,

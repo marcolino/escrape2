@@ -2,7 +2,7 @@
   <h1>Nerds</h1>
   <p>{{ tagline }}</p>
   <div ng-repeat="person in persons"> 
-    <img ng-src="/images/{{ person.providerKey }}/{{person.key}}/copertina.jpg" style="max-width:320px" />
-    <div>{{ person.name ? person.name : 'EMPTY' }}</div>
+    <img ng-src="{{ getShowcase(person) }}" style="max-width:320px" />
+    <div>{{ person.name ? person.name : '[empty name]' }}</div>
   </div>
 </div>

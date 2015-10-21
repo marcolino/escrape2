@@ -8,12 +8,11 @@ var imageSchema = new mongoose.Schema({
   idPerson: String, // ObjectId reference
   etag: String,
   lastModified: String,
-  pathFull: String,
-  pathSmall: String,
+  basename: String,
   dateOfFirstSync: { type: Date, default: Date.now },
   signature: String,
-  showcase: Boolean,
-  truthful: Boolean
+  isShowcase: Boolean,
+  isTruthful: Boolean
 },
 {
   autoIndex: config.debug

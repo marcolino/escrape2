@@ -74,7 +74,7 @@ config.providers = [
     key: 'TEST',
     mode: 'fake',
     type: 'persons',
-    url: 'http://localhost',
+    url: 'http://test.server.local', //http://localhost',
     language: 'it',
     //limit: 1, // don't use it aymore...
     categories: {
