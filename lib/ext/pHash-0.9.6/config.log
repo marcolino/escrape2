@@ -211,7 +211,7 @@ configure: failed program was:
 configure:4960: result: no
 configure:4858: checking whether pthreads work without any flags
 configure:4951: gcc -o conftest -g -O2   -lpthread conftest.c   >&5
-/tmp/ccxTh4Fq.o: In function `main':
+/tmp/ccCKfpgh.o: In function `main':
 /home/marco/apps/escrape2/lib/ext/pHash-0.9.6/conftest.c:18: undefined reference to `pthread_join'
 /home/marco/apps/escrape2/lib/ext/pHash-0.9.6/conftest.c:20: undefined reference to `__pthread_register_cancel'
 /home/marco/apps/escrape2/lib/ext/pHash-0.9.6/conftest.c:21: undefined reference to `pthread_create'

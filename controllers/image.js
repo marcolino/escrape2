@@ -98,6 +98,25 @@ exports.syncPersonImages = function(person, callback) {
   );
 };
 
+////////////////////////////////////////////////////////////////////////
+var pHash = require('phash-image');
+
+exports.perceptualHash = function(imageFile, callback) {
+  return pHash(imageFile, true).then(function(hash) {
+    callback(hash);
+  });
+};
+
+exports.perceptualHash('/home/marco/apps/escrape2/data/images/TOE/3553/1-828705332-3653995540.jpg', function(err, phash) {
+  if (err) {
+    //log.warn('error calculating phash: ', err);
+    log.info('phash', ' => ', err);
+  } else {
+    log.info('phash', ' => ', phash);
+  }
+});
+////////////////////////////////////////////////////////////////////////
+
 // download an image from url to destination on filesystem
 local.download = function(resource, destination, callback) {
   network.requestRetryAnonymous(
