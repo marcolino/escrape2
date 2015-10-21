@@ -50,8 +50,8 @@ exports.syncPersonImages = function(person, callback) {
         resource = {
           url: image.url,
           type: 'image',
-          //etag: img.etag,
-          //lastModified: img.lastModified
+          etag: img.etag, // comment this to force download
+          lastModified: img.lastModified // comment this to force download
         };
         local.download(resource, destination, function(err, resource) {
           if (err)  {
@@ -63,6 +63,7 @@ exports.syncPersonImages = function(person, callback) {
           }
           img.etag = resource.etag; // ETag, to handle caching
           img.lastModified = resource.lastModified; // lastModified, to handle alternative caching
+///console.log(' syncPersonImages(): resource.basename:', resource.basename);
           img.basename = resource.basename; // image base name
           img.isShowcase = resource.isShowcase; // flag to indicate if this is the showcase image
           //img.signature = ...; // TODO: calculate inage signature...
@@ -73,6 +74,7 @@ exports.syncPersonImages = function(person, callback) {
 //log.info('image ', image.url, ' saved');
               if (img.isShowcase) { // set person's showcase basename, if this image is the showcase
                 person.showcaseBasename = img.basename;
+//log.info('image is showcase, setting person.showcaseBasename to ', person.showcaseBasename);
               }
             }
             return callbackInner();
@@ -90,6 +92,7 @@ exports.syncPersonImages = function(person, callback) {
         callback(err, person);
       }
       // all tasks are successfully done
+//log.info('syncPersonImages is returning, person.showcaseBasename is ', person.showcaseBasename);
       callback(null, person);
     }
   );
@@ -110,7 +113,7 @@ local.download = function(resource, destination, callback) {
       }
       var urlBasename = path.basename(resource.url);
       mkdirp(destination, function(err, made) {
-console.log('made:', made);
+//console.log('made:', made);
         if (err) {
           log.warn('can\'t make directory ', destination)
           return callback(err);
@@ -129,7 +132,7 @@ console.log('made:', made);
             resource.isShowcase = (made !== null); // an image will be a showcase
                                                    // if it is the first one,
                                                    // i.e.: a new directory was crated
-//console.log(' $$$ resource.basename:', resource.basename);
+///console.log(' download(): resource.basename:', resource.basename);
             callback(null, resource); // success
           }
         );

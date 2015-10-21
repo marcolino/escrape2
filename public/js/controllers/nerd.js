@@ -4,7 +4,8 @@ angular.module('NerdCtrl', []).controller('NerdController', function($scope, Ner
   });
   $scope.showcaseUrls = [];
 
-  $scope.getShowcase = function(person) {
+  $scope.getShowcaseLocalUrl = function(person) {
+console.log('getShowcaseLocalUrl()', person);
     return '/images/' + person.providerKey + '/' + person.key + '/' + person.showcaseBasename;
 /*
   	Nerd.getImages(person, function(err, images) {

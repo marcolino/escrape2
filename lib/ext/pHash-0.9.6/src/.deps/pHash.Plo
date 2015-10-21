@@ -1,181 +1,228 @@
-pHash.lo: pHash.cpp pHash.h ../pHash-config.h \
- /opt/rh/devtoolset-2/root/usr/lib/gcc/x86_64-redhat-linux/4.8.2/include/limits.h \
- /opt/rh/devtoolset-2/root/usr/lib/gcc/x86_64-redhat-linux/4.8.2/include/syslimits.h \
- /usr/include/limits.h /usr/include/features.h /usr/include/sys/cdefs.h \
- /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h \
- /usr/include/gnu/stubs-64.h /usr/include/bits/posix1_lim.h \
- /usr/include/bits/local_lim.h /usr/include/linux/limits.h \
- /usr/include/bits/posix2_lim.h /usr/include/bits/xopen_lim.h \
- /usr/include/bits/stdio_lim.h /usr/include/math.h \
- /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h \
- /usr/include/bits/huge_vall.h /usr/include/bits/inf.h \
- /usr/include/bits/nan.h /usr/include/bits/mathdef.h \
- /usr/include/bits/mathcalls.h /usr/include/bits/mathinline.h \
- /usr/include/dirent.h /usr/include/bits/types.h \
- /usr/include/bits/typesizes.h /usr/include/bits/dirent.h \
- /opt/rh/devtoolset-2/root/usr/lib/gcc/x86_64-redhat-linux/4.8.2/include/stddef.h \
- /usr/include/unistd.h /usr/include/bits/posix_opt.h \
- /usr/include/bits/environments.h /usr/include/bits/confname.h \
- /usr/include/getopt.h /usr/include/errno.h /usr/include/bits/errno.h \
- /usr/include/linux/errno.h /usr/include/asm/errno.h \
- /usr/include/asm-generic/errno.h /usr/include/asm-generic/errno-base.h \
- /usr/include/sys/types.h /usr/include/time.h /usr/include/endian.h \
- /usr/include/bits/endian.h /usr/include/bits/byteswap.h \
- /usr/include/sys/select.h /usr/include/bits/select.h \
- /usr/include/bits/sigset.h /usr/include/bits/time.h \
- /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h \
- /usr/include/sys/stat.h /usr/include/bits/stat.h /usr/include/sys/mman.h \
- /usr/include/bits/mman.h /usr/include/fcntl.h /usr/include/bits/fcntl.h \
- /usr/include/bits/uio.h /usr/include/string.h /usr/include/xlocale.h \
+pHash.lo: pHash.cpp /usr/include/stdc-predef.h pHash.h ../pHash-config.h \
+ /usr/lib/gcc/i686-linux-gnu/4.9/include-fixed/limits.h \
+ /usr/lib/gcc/i686-linux-gnu/4.9/include-fixed/syslimits.h \
+ /usr/include/limits.h /usr/include/features.h \
+ /usr/include/i386-linux-gnu/sys/cdefs.h \
+ /usr/include/i386-linux-gnu/bits/wordsize.h \
+ /usr/include/i386-linux-gnu/gnu/stubs.h \
+ /usr/include/i386-linux-gnu/gnu/stubs-32.h \
+ /usr/include/i386-linux-gnu/bits/posix1_lim.h \
+ /usr/include/i386-linux-gnu/bits/local_lim.h /usr/include/linux/limits.h \
+ /usr/include/i386-linux-gnu/bits/posix2_lim.h \
+ /usr/include/i386-linux-gnu/bits/xopen_lim.h \
+ /usr/include/i386-linux-gnu/bits/stdio_lim.h /usr/include/math.h \
+ /usr/include/i386-linux-gnu/bits/huge_val.h \
+ /usr/include/i386-linux-gnu/bits/huge_valf.h \
+ /usr/include/i386-linux-gnu/bits/huge_vall.h \
+ /usr/include/i386-linux-gnu/bits/inf.h \
+ /usr/include/i386-linux-gnu/bits/nan.h \
+ /usr/include/i386-linux-gnu/bits/mathdef.h \
+ /usr/include/i386-linux-gnu/bits/mathcalls.h \
+ /usr/include/i386-linux-gnu/bits/mathinline.h \
+ /usr/include/i386-linux-gnu/bits/math-finite.h /usr/include/dirent.h \
+ /usr/include/i386-linux-gnu/bits/types.h \
+ /usr/include/i386-linux-gnu/bits/typesizes.h \
+ /usr/include/i386-linux-gnu/bits/dirent.h \
+ /usr/lib/gcc/i686-linux-gnu/4.9/include/stddef.h /usr/include/unistd.h \
+ /usr/include/i386-linux-gnu/bits/posix_opt.h \
+ /usr/include/i386-linux-gnu/bits/environments.h \
+ /usr/include/i386-linux-gnu/bits/confname.h /usr/include/getopt.h \
+ /usr/include/i386-linux-gnu/bits/unistd.h /usr/include/errno.h \
+ /usr/include/i386-linux-gnu/bits/errno.h /usr/include/linux/errno.h \
+ /usr/include/i386-linux-gnu/asm/errno.h /usr/include/asm-generic/errno.h \
+ /usr/include/asm-generic/errno-base.h \
+ /usr/include/i386-linux-gnu/sys/types.h /usr/include/time.h \
+ /usr/include/endian.h /usr/include/i386-linux-gnu/bits/endian.h \
+ /usr/include/i386-linux-gnu/bits/byteswap.h \
+ /usr/include/i386-linux-gnu/bits/byteswap-16.h \
+ /usr/include/i386-linux-gnu/sys/select.h \
+ /usr/include/i386-linux-gnu/bits/select.h \
+ /usr/include/i386-linux-gnu/bits/sigset.h \
+ /usr/include/i386-linux-gnu/bits/time.h \
+ /usr/include/i386-linux-gnu/bits/select2.h \
+ /usr/include/i386-linux-gnu/sys/sysmacros.h \
+ /usr/include/i386-linux-gnu/bits/pthreadtypes.h \
+ /usr/include/i386-linux-gnu/sys/stat.h \
+ /usr/include/i386-linux-gnu/bits/stat.h \
+ /usr/include/i386-linux-gnu/sys/mman.h \
+ /usr/include/i386-linux-gnu/bits/mman.h \
+ /usr/include/i386-linux-gnu/bits/mman-linux.h /usr/include/fcntl.h \
+ /usr/include/i386-linux-gnu/bits/fcntl.h \
+ /usr/include/i386-linux-gnu/bits/fcntl-linux.h \
+ /usr/include/i386-linux-gnu/bits/uio.h \
+ /usr/include/i386-linux-gnu/bits/fcntl2.h /usr/include/string.h \
+ /usr/include/xlocale.h /usr/include/i386-linux-gnu/bits/string3.h \
  /usr/include/stdio.h /usr/include/libio.h /usr/include/_G_config.h \
- /usr/include/wchar.h \
- /opt/rh/devtoolset-2/root/usr/lib/gcc/x86_64-redhat-linux/4.8.2/include/stdarg.h \
- /usr/include/bits/sys_errlist.h /usr/include/bits/stdio.h \
- /usr/include/stdlib.h /usr/include/bits/waitflags.h \
- /usr/include/bits/waitstatus.h /usr/include/alloca.h \
- /opt/rh/devtoolset-2/root/usr/lib/gcc/x86_64-redhat-linux/4.8.2/include/stdint.h \
- /usr/include/stdint.h /usr/include/bits/wchar.h CImg.h \
- /opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/cstdio \
- /opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/x86_64-redhat-linux/bits/c++config.h \
- /opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/x86_64-redhat-linux/bits/os_defines.h \
- /opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/x86_64-redhat-linux/bits/cpu_defines.h \
- /opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/cstdlib \
- /opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/cstdarg \
- /opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/cstring \
- /opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/cmath \
- /opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/bits/cpp_type_traits.h \
- /opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/ext/type_traits.h \
- /opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/climits \
- /opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/ctime \
- /opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/exception \
- /opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/bits/atomic_lockfree_defines.h \
- /usr/include/sys/time.h /usr/include/fnmatch.h /usr/include/png.h \
- /usr/include/zlib.h /usr/include/zconf.h /usr/include/pngconf.h \
- /usr/include/setjmp.h /usr/include/bits/setjmp.h /usr/include/jpeglib.h \
- /usr/include/jconfig.h /usr/include/jmorecfg.h /usr/include/pthread.h \
- /usr/include/sched.h /usr/include/bits/sched.h ../config.h
+ /usr/include/wchar.h /usr/lib/gcc/i686-linux-gnu/4.9/include/stdarg.h \
+ /usr/include/i386-linux-gnu/bits/sys_errlist.h \
+ /usr/include/i386-linux-gnu/bits/stdio.h \
+ /usr/include/i386-linux-gnu/bits/stdio2.h /usr/include/stdlib.h \
+ /usr/include/i386-linux-gnu/bits/waitflags.h \
+ /usr/include/i386-linux-gnu/bits/waitstatus.h /usr/include/alloca.h \
+ /usr/include/i386-linux-gnu/bits/stdlib-bsearch.h \
+ /usr/include/i386-linux-gnu/bits/stdlib-float.h \
+ /usr/include/i386-linux-gnu/bits/stdlib.h \
+ /usr/lib/gcc/i686-linux-gnu/4.9/include/stdint.h /usr/include/stdint.h \
+ /usr/include/i386-linux-gnu/bits/wchar.h CImg.h \
+ /usr/include/c++/4.9/cstdio \
+ /usr/include/i386-linux-gnu/c++/4.9/bits/c++config.h \
+ /usr/include/i386-linux-gnu/c++/4.9/bits/os_defines.h \
+ /usr/include/i386-linux-gnu/c++/4.9/bits/cpu_defines.h \
+ /usr/include/c++/4.9/cstdlib /usr/include/c++/4.9/cstdarg \
+ /usr/include/c++/4.9/cstring /usr/include/c++/4.9/cmath \
+ /usr/include/c++/4.9/bits/cpp_type_traits.h \
+ /usr/include/c++/4.9/ext/type_traits.h /usr/include/c++/4.9/climits \
+ /usr/include/c++/4.9/ctime /usr/include/i386-linux-gnu/bits/timex.h \
+ /usr/include/c++/4.9/exception \
+ /usr/include/c++/4.9/bits/atomic_lockfree_defines.h \
+ /usr/include/i386-linux-gnu/sys/time.h /usr/include/fnmatch.h \
+ /usr/include/png.h /usr/include/zlib.h \
+ /usr/include/i386-linux-gnu/zconf.h /usr/include/pngconf.h \
+ /usr/include/setjmp.h /usr/include/i386-linux-gnu/bits/setjmp.h \
+ /usr/include/i386-linux-gnu/bits/setjmp2.h /usr/include/jpeglib.h \
+ /usr/include/i386-linux-gnu/jconfig.h /usr/include/jmorecfg.h \
+ /usr/include/fftw3.h /usr/include/pthread.h /usr/include/sched.h \
+ /usr/include/i386-linux-gnu/bits/sched.h ../config.h
+
+/usr/include/stdc-predef.h:
 
 pHash.h:
 
 ../pHash-config.h:
 
-/opt/rh/devtoolset-2/root/usr/lib/gcc/x86_64-redhat-linux/4.8.2/include/limits.h:
+/usr/lib/gcc/i686-linux-gnu/4.9/include-fixed/limits.h:
 
-/opt/rh/devtoolset-2/root/usr/lib/gcc/x86_64-redhat-linux/4.8.2/include/syslimits.h:
+/usr/lib/gcc/i686-linux-gnu/4.9/include-fixed/syslimits.h:
 
 /usr/include/limits.h:
 
 /usr/include/features.h:
 
-/usr/include/sys/cdefs.h:
+/usr/include/i386-linux-gnu/sys/cdefs.h:
 
-/usr/include/bits/wordsize.h:
+/usr/include/i386-linux-gnu/bits/wordsize.h:
 
-/usr/include/gnu/stubs.h:
+/usr/include/i386-linux-gnu/gnu/stubs.h:
 
-/usr/include/gnu/stubs-64.h:
+/usr/include/i386-linux-gnu/gnu/stubs-32.h:
 
-/usr/include/bits/posix1_lim.h:
+/usr/include/i386-linux-gnu/bits/posix1_lim.h:
 
-/usr/include/bits/local_lim.h:
+/usr/include/i386-linux-gnu/bits/local_lim.h:
 
 /usr/include/linux/limits.h:
 
-/usr/include/bits/posix2_lim.h:
+/usr/include/i386-linux-gnu/bits/posix2_lim.h:
 
-/usr/include/bits/xopen_lim.h:
+/usr/include/i386-linux-gnu/bits/xopen_lim.h:
 
-/usr/include/bits/stdio_lim.h:
+/usr/include/i386-linux-gnu/bits/stdio_lim.h:
 
 /usr/include/math.h:
 
-/usr/include/bits/huge_val.h:
+/usr/include/i386-linux-gnu/bits/huge_val.h:
 
-/usr/include/bits/huge_valf.h:
+/usr/include/i386-linux-gnu/bits/huge_valf.h:
 
-/usr/include/bits/huge_vall.h:
+/usr/include/i386-linux-gnu/bits/huge_vall.h:
 
-/usr/include/bits/inf.h:
+/usr/include/i386-linux-gnu/bits/inf.h:
 
-/usr/include/bits/nan.h:
+/usr/include/i386-linux-gnu/bits/nan.h:
 
-/usr/include/bits/mathdef.h:
+/usr/include/i386-linux-gnu/bits/mathdef.h:
 
-/usr/include/bits/mathcalls.h:
+/usr/include/i386-linux-gnu/bits/mathcalls.h:
 
-/usr/include/bits/mathinline.h:
+/usr/include/i386-linux-gnu/bits/mathinline.h:
+
+/usr/include/i386-linux-gnu/bits/math-finite.h:
 
 /usr/include/dirent.h:
 
-/usr/include/bits/types.h:
+/usr/include/i386-linux-gnu/bits/types.h:
 
-/usr/include/bits/typesizes.h:
+/usr/include/i386-linux-gnu/bits/typesizes.h:
 
-/usr/include/bits/dirent.h:
+/usr/include/i386-linux-gnu/bits/dirent.h:
 
-/opt/rh/devtoolset-2/root/usr/lib/gcc/x86_64-redhat-linux/4.8.2/include/stddef.h:
+/usr/lib/gcc/i686-linux-gnu/4.9/include/stddef.h:
 
 /usr/include/unistd.h:
 
-/usr/include/bits/posix_opt.h:
+/usr/include/i386-linux-gnu/bits/posix_opt.h:
 
-/usr/include/bits/environments.h:
+/usr/include/i386-linux-gnu/bits/environments.h:
 
-/usr/include/bits/confname.h:
+/usr/include/i386-linux-gnu/bits/confname.h:
 
 /usr/include/getopt.h:
 
+/usr/include/i386-linux-gnu/bits/unistd.h:
+
 /usr/include/errno.h:
 
-/usr/include/bits/errno.h:
+/usr/include/i386-linux-gnu/bits/errno.h:
 
 /usr/include/linux/errno.h:
 
-/usr/include/asm/errno.h:
+/usr/include/i386-linux-gnu/asm/errno.h:
 
 /usr/include/asm-generic/errno.h:
 
 /usr/include/asm-generic/errno-base.h:
 
-/usr/include/sys/types.h:
+/usr/include/i386-linux-gnu/sys/types.h:
 
 /usr/include/time.h:
 
 /usr/include/endian.h:
 
-/usr/include/bits/endian.h:
+/usr/include/i386-linux-gnu/bits/endian.h:
 
-/usr/include/bits/byteswap.h:
+/usr/include/i386-linux-gnu/bits/byteswap.h:
 
-/usr/include/sys/select.h:
+/usr/include/i386-linux-gnu/bits/byteswap-16.h:
 
-/usr/include/bits/select.h:
+/usr/include/i386-linux-gnu/sys/select.h:
 
-/usr/include/bits/sigset.h:
+/usr/include/i386-linux-gnu/bits/select.h:
 
-/usr/include/bits/time.h:
+/usr/include/i386-linux-gnu/bits/sigset.h:
 
-/usr/include/sys/sysmacros.h:
+/usr/include/i386-linux-gnu/bits/time.h:
 
-/usr/include/bits/pthreadtypes.h:
+/usr/include/i386-linux-gnu/bits/select2.h:
 
-/usr/include/sys/stat.h:
+/usr/include/i386-linux-gnu/sys/sysmacros.h:
 
-/usr/include/bits/stat.h:
+/usr/include/i386-linux-gnu/bits/pthreadtypes.h:
 
-/usr/include/sys/mman.h:
+/usr/include/i386-linux-gnu/sys/stat.h:
 
-/usr/include/bits/mman.h:
+/usr/include/i386-linux-gnu/bits/stat.h:
+
+/usr/include/i386-linux-gnu/sys/mman.h:
+
+/usr/include/i386-linux-gnu/bits/mman.h:
+
+/usr/include/i386-linux-gnu/bits/mman-linux.h:
 
 /usr/include/fcntl.h:
 
-/usr/include/bits/fcntl.h:
+/usr/include/i386-linux-gnu/bits/fcntl.h:
 
-/usr/include/bits/uio.h:
+/usr/include/i386-linux-gnu/bits/fcntl-linux.h:
+
+/usr/include/i386-linux-gnu/bits/uio.h:
+
+/usr/include/i386-linux-gnu/bits/fcntl2.h:
 
 /usr/include/string.h:
 
 /usr/include/xlocale.h:
+
+/usr/include/i386-linux-gnu/bits/string3.h:
 
 /usr/include/stdio.h:
 
@@ -185,57 +232,67 @@ pHash.h:
 
 /usr/include/wchar.h:
 
-/opt/rh/devtoolset-2/root/usr/lib/gcc/x86_64-redhat-linux/4.8.2/include/stdarg.h:
+/usr/lib/gcc/i686-linux-gnu/4.9/include/stdarg.h:
 
-/usr/include/bits/sys_errlist.h:
+/usr/include/i386-linux-gnu/bits/sys_errlist.h:
 
-/usr/include/bits/stdio.h:
+/usr/include/i386-linux-gnu/bits/stdio.h:
+
+/usr/include/i386-linux-gnu/bits/stdio2.h:
 
 /usr/include/stdlib.h:
 
-/usr/include/bits/waitflags.h:
+/usr/include/i386-linux-gnu/bits/waitflags.h:
 
-/usr/include/bits/waitstatus.h:
+/usr/include/i386-linux-gnu/bits/waitstatus.h:
 
 /usr/include/alloca.h:
 
-/opt/rh/devtoolset-2/root/usr/lib/gcc/x86_64-redhat-linux/4.8.2/include/stdint.h:
+/usr/include/i386-linux-gnu/bits/stdlib-bsearch.h:
+
+/usr/include/i386-linux-gnu/bits/stdlib-float.h:
+
+/usr/include/i386-linux-gnu/bits/stdlib.h:
+
+/usr/lib/gcc/i686-linux-gnu/4.9/include/stdint.h:
 
 /usr/include/stdint.h:
 
-/usr/include/bits/wchar.h:
+/usr/include/i386-linux-gnu/bits/wchar.h:
 
 CImg.h:
 
-/opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/cstdio:
+/usr/include/c++/4.9/cstdio:
 
-/opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/x86_64-redhat-linux/bits/c++config.h:
+/usr/include/i386-linux-gnu/c++/4.9/bits/c++config.h:
 
-/opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/x86_64-redhat-linux/bits/os_defines.h:
+/usr/include/i386-linux-gnu/c++/4.9/bits/os_defines.h:
 
-/opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/x86_64-redhat-linux/bits/cpu_defines.h:
+/usr/include/i386-linux-gnu/c++/4.9/bits/cpu_defines.h:
 
-/opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/cstdlib:
+/usr/include/c++/4.9/cstdlib:
 
-/opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/cstdarg:
+/usr/include/c++/4.9/cstdarg:
 
-/opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/cstring:
+/usr/include/c++/4.9/cstring:
 
-/opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/cmath:
+/usr/include/c++/4.9/cmath:
 
-/opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/bits/cpp_type_traits.h:
+/usr/include/c++/4.9/bits/cpp_type_traits.h:
 
-/opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/ext/type_traits.h:
+/usr/include/c++/4.9/ext/type_traits.h:
 
-/opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/climits:
+/usr/include/c++/4.9/climits:
 
-/opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/ctime:
+/usr/include/c++/4.9/ctime:
 
-/opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/exception:
+/usr/include/i386-linux-gnu/bits/timex.h:
 
-/opt/rh/devtoolset-2/root/usr/include/c++/4.8.2/bits/atomic_lockfree_defines.h:
+/usr/include/c++/4.9/exception:
 
-/usr/include/sys/time.h:
+/usr/include/c++/4.9/bits/atomic_lockfree_defines.h:
+
+/usr/include/i386-linux-gnu/sys/time.h:
 
 /usr/include/fnmatch.h:
 
@@ -243,24 +300,28 @@ CImg.h:
 
 /usr/include/zlib.h:
 
-/usr/include/zconf.h:
+/usr/include/i386-linux-gnu/zconf.h:
 
 /usr/include/pngconf.h:
 
 /usr/include/setjmp.h:
 
-/usr/include/bits/setjmp.h:
+/usr/include/i386-linux-gnu/bits/setjmp.h:
+
+/usr/include/i386-linux-gnu/bits/setjmp2.h:
 
 /usr/include/jpeglib.h:
 
-/usr/include/jconfig.h:
+/usr/include/i386-linux-gnu/jconfig.h:
 
 /usr/include/jmorecfg.h:
+
+/usr/include/fftw3.h:
 
 /usr/include/pthread.h:
 
 /usr/include/sched.h:
 
-/usr/include/bits/sched.h:
+/usr/include/i386-linux-gnu/bits/sched.h:
 
 ../config.h:

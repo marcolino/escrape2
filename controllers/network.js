@@ -20,8 +20,8 @@ exports.requestRetryAnonymous = function(resource, error, success) {
   //log.debug('!!!!! setting header If-Modified-Since to', resource.lastModified);
   var options = {
     url: resource.url,
-    maxAttempts: 12, // retry for 2 attempts more after the first one
-    retryDelay: 10 * 1000, // wait for 10" before trying again
+    maxAttempts: 3, // retry for 3 attempts more after the first one
+    retryDelay: 60 * 1000, // wait for 60" before trying again
     retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
     headers: {
       'User-Agent': randomUseragent.generate()

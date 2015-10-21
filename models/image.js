@@ -6,13 +6,13 @@ var imageSchema = new mongoose.Schema({
   url: { type: String, required: true },
   providerKey: String,
   idPerson: String, // ObjectId reference
-  etag: String,
-  lastModified: String,
-  basename: String,
-  dateOfFirstSync: { type: Date, default: Date.now },
-  signature: String,
-  isShowcase: Boolean,
-  isTruthful: Boolean
+  etag: String, // ETag
+  lastModified: String, // last modified tag
+  basename: String, // image file base name
+  dateOfFirstSync: { type: Date, default: Date.now }, // date of creation
+  signature: String, // image signature (TODO)
+  isShowcase: Boolean, // this image is the person showcase
+  isTruthful: Boolean // this image is to be considered thruthful
 },
 {
   autoIndex: config.debug

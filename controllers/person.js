@@ -67,6 +67,7 @@ exports.sync = function(req, res) { // sync persons
             }
             $ = cheerio.load(contents);
             var list = local.getList(provider, $);
+            //list = list.slice(0, 1); // to debug: limit lists to one element
             //log.info('list:', list);
             async.each(
               list, // 1st param is the array of items
@@ -126,37 +127,21 @@ exports.sync = function(req, res) { // sync persons
                     person.dateOfLastSync = new Date();
                     person._imageUrls = local.getDetailsImageUrls($, provider);
                     
-                    // save this person to database
-/*
-                    // TODO: swap order of upsert and syncPersonImages...
-                    local.upsert(person, function(err) {
-                      if (err) {
-                        // ignore this person error to continue with other persons
-                        callbackInner();
-                      } else {
-                        retrievedPersonsCount++;
-                        image.syncPersonImages(person, function(err, person) {
-                          if (err) {
-                            // ignore this person images error to continue with other persons
-                          } else {
-                            log.info('person ', person.providerKey, ' ', person.key, ' sync\'d');
-                          }
-                          callbackInner(); // this person is done
-                        });
-                      }
-                    });
-*/
-                    // DONE: swap order of upsert and syncPersonImages...
+                    // sync this person images
                     image.syncPersonImages(person, function(err, person) {
                       if (err) {
                         // ignore this person images error to continue with person save
                         log.warn('error in sync person images:', err);
                       }
+//log.info('persons.sync, syncPersonImages returned, person.showcaseBasename is ', person.showcaseBasename);
+
+                      // save this person to database
                       local.upsert(person, function(err) {
                         if (err) {
                           // ignore this person error to continue with other persons
-                          callbackInner();
+//log.warn('can\'t upsert person person ', person.providerKey, ' ', person.key);
                         } else {
+                          retrievedPersonsCount++;
                           log.info('person ', person.providerKey, ' ', person.key, ' sync\'d');
                         }
                         callbackInner(); // this person is done
@@ -213,6 +198,7 @@ local.upsert = function(person, callback) {
         if (doc) { // person did already exist
           isNew = false;
           doc.dateOfLastSync = person.dateOfLastSync;
+_.merge(doc, person); // to set new fields... TODO: keep this? does this impacts on performance?
         } else { // person did not exist before
           isNew = true;
           doc = new Person();
@@ -801,7 +787,7 @@ exports.getAll = function(req, res) { // get all persons
       console.error('Error retrieving persons:', err);
       res.json({ error: err });
     } else {
-      console.log('persons.getAll: ' + persons);
+      //console.log('persons.getAll: ' + persons);
       res.json(persons);
     }
   });
@@ -813,7 +799,7 @@ exports.getById = function(req, res) { // get person
       console.error('Error retrieving persons by id:', err);
       res.json({ error: err });
     } else {
-      console.log('persons.getById: ' + person);
+      //console.log('persons.getById: ' + person);
       res.json(persons);
     }
   });
@@ -825,7 +811,7 @@ exports.getByPhone = function(req, res) { // get person
       console.error('Error retrieving persons by phone:', err);
       res.json({ error: err });
     } else {
-      console.log('persons.getByPhone: ' + person);
+      //console.log('persons.getByPhone: ' + person);
       res.json(persons);
     }
   });
