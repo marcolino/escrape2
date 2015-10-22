@@ -98,8 +98,14 @@ exports.syncPersonImages = function(person, callback) {
   );
 };
 
+/*
 ////////////////////////////////////////////////////////////////////////
 var pHash = require('phash-image');
+var hammingDistance = require('hamming-distance');
+var imageA = 'data/images/FORBES/Angela Merkel/225px-Angela_Merkel_Security_Conference_February_2015_%28cropped%29.jpg';
+var imageB = 'data/images/FORBES/Michelle Obama/225px-Michelle_Obama_2013_official_portrait.jpg';
+var imageC = 'data/images/FORBES/Shakira/250px-Shakira_2014.jpg';
+var pHashes = {};
 
 exports.perceptualHash = function(imageFile, callback) {
   return pHash(imageFile, true).then(function(hash) {
@@ -107,15 +113,29 @@ exports.perceptualHash = function(imageFile, callback) {
   });
 };
 
-exports.perceptualHash('/home/marco/apps/escrape2/data/images/TOE/3553/1-828705332-3653995540.jpg', function(err, phash) {
-  if (err) {
-    //log.warn('error calculating phash: ', err);
-    log.info('phash', ' => ', err);
-  } else {
-    log.info('phash', ' => ', phash);
-  }
+exports.perceptualHash(imageA, function(phash) {
+  log.info('phash A', ' => ', phash);
+  pHashes[imageA] = phash;
+
+  exports.perceptualHash(imageB, function(phash) {
+    log.info('phash B', ' => ', phash);
+    pHashes[imageB] = phash;
+
+    exports.perceptualHash(imageC, function(phash) {
+      log.info('phash C', ' => ', phash);
+      pHashes[imageC] = phash;
+
+      var hammingAA = hammingDistance(pHashes[imageA], pHashes[imageA]);
+      var hammingAB = hammingDistance(pHashes[imageA], pHashes[imageB]);
+      var hammingAC = hammingDistance(pHashes[imageA], pHashes[imageC]);
+      log.info('Hamming distance A => A is ', hammingAA.toString());
+      log.info('Hamming distance A => B is ', hammingAB);
+      log.info('Hamming distance A => C is ', hammingAC);
+    });
+  });
 });
 ////////////////////////////////////////////////////////////////////////
+*/
 
 // download an image from url to destination on filesystem
 local.download = function(resource, destination, callback) {

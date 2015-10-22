@@ -1,4 +1,11 @@
 <div class="jumbotron text-center">
-  <h1>Home page</h1>
-  <p>{{ tagline }}</p>
+  <h1>Persons</h1>
+  <div ng-repeat="person in persons"> 
+    <a ng-href="http://it.wikipedia.org{{ person.url }}" target="_blank"><img ng-src="{{ getShowcaseLocalUrl(person) }}" style="width:240px" />
+    <!--
+    <a ng-href="http://it.wikipedia.org{{ person.url }}" target="_blank"><img ng-src="{{ person.showcaseUrl }}" style="width:240px" /></a>
+-->
+    <div>{{ person.name ? person.name : '[empty name]' }}</div>
+    <p></p>
+  </div>
 </div>

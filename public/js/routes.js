@@ -1,12 +1,14 @@
+'use strict';
+
 angular.module('routes', []).config(['$routeProvider', '$locationProvider', function($routeProvider, $locationProvider) {
   $routeProvider
     .when('/', { // home page
       templateUrl: 'views/home.html',
-      controller: 'MainController'
+      controller: 'PersonController'
     })
-    .when('/nerds', {
-      templateUrl: 'views/nerd.html',
-      controller: 'NerdController'
+    .when('/about', {
+      templateUrl: 'views/about.html',
+      controller: 'AboutController'
     });
 
     $locationProvider.html5Mode(true);

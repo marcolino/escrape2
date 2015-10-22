@@ -29,6 +29,7 @@
     "delayed-request": "0.0.3",
     "express": "~4.13.1",
     "function-rate-limit": "^1.0.1",
+    "hamming-distance": "^1.0.0",
     "imagediff": "^1.0.8",
     "jade": "~1.11.0",
     "lodash": "^3.10.1",
