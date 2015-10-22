@@ -85,12 +85,14 @@ exports.requestRetryAnonymous = function(resource, error, success) {
    * @param  {Object} response
    * @return {Boolean} true if the request should be retried
    */
-  function retryStrategyForbidden(err, response) {
+  function retryStrategyForbidden(err, response) { // TODO: use a more generic name than '...Forbidden'...
     // TODO: debug only
     if (response &&
         response.statusCode !== 200 &&
         response.statusCode !== 304 &&
         response.statusCode !== 403 &&
+        response.statusCode !== 502 &&
+        response.statusCode !== 503 &&
         response.statusCode !== 524
       ) {
       log.warn('retry strategy forbidden ignored response status code ', response.statusCode);
@@ -104,6 +106,8 @@ exports.requestRetryAnonymous = function(resource, error, success) {
     var forbidden = (
       response && (
         (response.statusCode === 403) || // 403 status code (forbidden)
+        (response.statusCode === 502) || // 502 status code (bad gateway, tor proxy problem?)
+        (response.statusCode === 503) || // 503 status code (service unavailable, tor proxy problem?)
         (response.statusCode === 524) || // 524 status code (cloudfare timeout)
           (
             (response.statusCode === 200) &&
