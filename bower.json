@@ -1,6 +1,7 @@
 {
   "name": "escrape2",
   "version": "0.0.3",
+  "appPath": "public",
   "dependencies": {
     "bootstrap": "latest",
     "font-awesome": "latest",

@@ -49,13 +49,22 @@
   },
   "devDependencies": {
     "bower": "^1.6.3",
+    "grunt": "^0.4.5",
+    "grunt-cli": "^0.1.13",
+    "grunt-concurrent": "^2.0.3",
+    "grunt-contrib-clean": "^0.6.0",
+    "grunt-contrib-uglify": "^0.9.2",
+    "grunt-usemin": "^3.1.1",
+    "grunt-wiredep": "^2.0.0",
     "jscs": "~2.2.1",
     "jshint": "latest",
+    "load-grunt-tasks": "^3.3.0",
     "mocha": "^2.3.3",
     "random-ua": "0.0.6",
     "shelljs": "^0.2.6",
     "sinon": "^1.17.1",
-    "superagent": "^1.4.0"
+    "superagent": "^1.4.0",
+    "time-grunt": "^1.2.2"
   },
   "jshintConfig": {
     "laxcomma": true

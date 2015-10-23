@@ -2,13 +2,16 @@
     function inArray(arr, obj) {
       return (arr.indexOf(obj) != -1);
     }
-- user all lowercase for errors
+- use all lowercase for errors
+- adopt less
 - adopt grunt
 - use grunt-remove-logging
+- use 'use strict' everywhere
 - add mongo dependency and (http://docs.mongodb.org/manual/installation/) start it in deploy script...
-- remember to uninstall module 'socket.io', if not used for tailable cursor view...
+- remember to uninstall module 'socket.io', if not used for tailable cursor view
 - googie: how to share config among node api and angular frontend ?
-- use https://bootswatch.com/help/ for selectable themes
+- make bootswatch theme in index.html configurable (on the server only)
 
 V remove all "err.context = " lines
 V use `test.server.local` (in `/etc/hosts`) @home too
+V use https://bootswatch.com/ for bootstrap themes

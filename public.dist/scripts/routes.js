@@ -1,0 +1,2 @@
+/*! 2015-10-23 */
+"use strict";angular.module("routes",[]).config(["$routeProvider","$locationProvider",function(a,b){a.when("/",{templateUrl:"views/home.html",controller:"PersonController"}).when("/about",{templateUrl:"views/about.html",controller:"AboutController"}),b.html5Mode(!0)}]);

@@ -1,0 +1,2 @@
+/*! 2015-10-23 */
+"use strict";angular.module("PersonService",[]).factory("Person",["$http",function(a){return{get:function(b){a({method:"GET",url:"http://test.server.local:3000/persons"}).success(function(a){console.info("got persons data:",a),b(a)}).error(function(a){console.warn("error getting persons data:",a)})}}}]);
