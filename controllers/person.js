@@ -214,7 +214,7 @@ _.merge(doc, person); // to set new fields... TODO: keep this? does this impacts
       }
     }
   );
-}
+};
 
 local.setActivityStatus = function(syncStartDate, callback) {
   local.presenceReset(function(err) {

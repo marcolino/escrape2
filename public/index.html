@@ -17,7 +17,7 @@
     <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Open+Sans" />
     <!--<link rel="stylesheet" type="text/css" href="styles/navbar.css">--> 
   </head>
-  <body ng-app="escrape2">
+  <body ng-app="escrape2" ng-strict-di>
     <div class="container">
       <div class="navbar navbar-inverse DISABLE-navbar-static-top" role="navigation">
         <div class="navbar-header">
@@ -36,7 +36,7 @@
             <li><a href="/about">about</a></li>
           </ul>
       
-          <div class="col-sm-3 col-md-3 pull-right">
+          <div class="col-sm-4 col-md-4 pull-right">
             <form class="navbar-form" role="search">
               <div class="input-group">
                 <input type="text" class="form-control" placeholder="Search" name="srch-term" id="srch-term">
@@ -52,6 +52,9 @@
       <div ng-view></div>
     
     </div>
+
+    <script src="http://test.server.local:35729/livereload.js"></script>
+
     <!-- bower:js -->
     <script src="bower_components/jquery/dist/jquery.js"></script>
     <script src="bower_components/bootstrap/dist/js/bootstrap.js"></script>
@@ -59,11 +62,13 @@
     <script src="bower_components/angular-route/angular-route.js"></script>
     <!-- endbower -->
 
+    <!-- build:js({.tmp,../public.dist}) scripts/scripts.js -->
     <script src="scripts/app.js"></script>
     <script src="scripts/routes.js"></script>
     <script src="scripts/controllers/home.js"></script>
     <script src="scripts/controllers/persons.js"></script>
     <script src="scripts/controllers/about.js"></script>
     <script src="scripts/services/persons.js"></script>
+    <!-- endbuild -->
   </body>
 </html>

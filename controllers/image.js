@@ -154,7 +154,7 @@ local.download = function(resource, destination, callback) {
       mkdirp(destination, function(err, made) {
 //console.log('made:', made);
         if (err) {
-          log.warn('can\'t make directory ', destination)
+          log.warn('can\'t make directory ', destination);
           return callback(err);
         }
         destination += (destination.match('\/$') ? '' : '/') + urlBasename;

@@ -1,2 +1,0 @@
-/*! 2015-10-23 */
-"use strict";angular.module("PersonCtrl",[]).controller("PersonController",function(a,b){a.startup=function(){b.get(function(b){a.persons=b})},a.getShowcaseLocalUrl=function(a){var b;return b=a.showcaseBasename?"/images/"+a.providerKey+"/"+a.key+"/"+a.showcaseBasename:"/assets/images/person-showcase.default.png",encodeURIComponent(b)},a.startup()});

@@ -1,0 +1,24 @@
+# ignore git changes
+./.git/*
+
+# package control
+./node_modules/*
+./bower_components/*
+
+# logs
+./npm_debug.log
+
+# build artifacts
+./bin/*
+
+# deployment artifacts
+./deploy/*
+
+# os artifacts
+.DS_Store
+
+# ignore frontend js
+./public/scripts/*
+
+# ignore tests
+./test/*

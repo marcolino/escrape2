@@ -1,6 +1,7 @@
-'use strict';
-
 module.exports = function(grunt) {
+  'use strict';
+
+  grunt.log.write('Loading external tasks...');
 
   // load grunt tasks automatically
   require('load-grunt-tasks')(grunt);
@@ -21,7 +22,7 @@ module.exports = function(grunt) {
     cfg: cfg,
 
     // read package.json file
-    pkg: grunt.file.readJSON('package.json'),
+    //pkg: grunt.file.readJSON('package.json'),
 
     // empties folders to start fresh
     clean: {
@@ -38,132 +39,55 @@ module.exports = function(grunt) {
       server: '.tmp'
     },
 
-    // automatically inject bower components into the app
-    wiredep: {
-      app: {
-        src: [ '<%= cfg.app %>/index.html' ],
-        ignorePath:  /\.\.\//
+    watch: {
+      // for scripts, run jshint and uglify
+      scripts: {
+        files: '<%= jshint.build %>',
+        //files: [ 'Grunfile.js', 'routes/** /*.js', 'controllers/** /*.js', 'models/** /*.js' ],
+        tasks: [ 'jshint' ]
+      },
+      livereload: {
+        options: {
+          livereload: true
+        },
+        files: [
+          'public/**/*.{html,css,js}',
+        ]
       }
     },
 
-    // reads HTML for usemin blocks to enable smart builds that automatically
-    // concat, minify and revision files; creates configurations in memory so
-    // additional tasks can operate on them
-    useminPrepare: {
-      html: '<%= cfg.app %>/index.html',
+    // configure jshint to validate js files
+    jshint: {
       options: {
-        dest: '<%= cfg.dist %>',
-        flow: {
-          html: {
-            steps: {
-              js: [ 'concat', 'uglifyjs' ],
-              css: [ 'cssmin' ]
-            },
-            post: {}
-          }
+        laxcomma: true,
+        reporter: require('jshint-stylish') // use jshint-stylish to make our errors look and read good
+      },
+
+      // when this task is run, lint the Gruntfile and all js files in src
+      build: [ 'Gruntfile.js', 'routes/**/*.js', 'controllers/**/*.js', 'models/**/*.js' ]
+    },
+
+    nodemon: {
+      dev: {
+        options: {
+          file: 'bin/www'
         }
       }
     },
 
-    // performs rewrites based on filerev and the useminPrepare configuration
-    usemin: {
-      html: [ '<%= cfg.dist %>/{,*/}*.html' ],
-      css: [ '<%= cfg.dist %>/styles/{,*/}*.css' ],
-      options: {
-        assetsDirs: [ '<%= cfg.dist %>','<%= cfg.dist %>/assets' ] // /images
-      }
-    },
-
-    // run some tasks in parallel to speed up the build process
     concurrent: {
-      server: [
-        //'copy:styles'
-      ],
-      test: [
-        //'copy:styles'
-      ],
-      dist: [
-/*
-        //'copy:styles',
-        //'imagemin',
-        //'svgmin'
-        tasks: [ 'nodemon', 'watch' ],
+      dev: {
+        tasks: [ 'nodemon:dev', 'watch', ],
         options: {
           logConcurrentOutput: true
         }
-*/
-      ]
+      }
     },
 
-    // uglify scripts
-    uglify: {
-      options: {
-        banner: '/*! <%= grunt.template.today("yyyy-mm-dd") %> */\n',
-        //mangleProperties: true,
-        //reserveDOMCache: true
-      },
-      build: {
-        files: [{
-          expand: true,
-          cwd: '<%= cfg.app %>/scripts',
-          src: '**/*.js',
-          dest: '<%= cfg.dist %>/scripts'
-        }]
-      }
-    }
   });
 
-  // load the plugin that provides the "uglify" task
-  //grunt.loadNpmTasks('grunt-contrib-uglify');
-
-  grunt.registerTask('start', 'Compile then start a connect web server', function (target) {
-    if (target === 'dist') {
-      grunt.task.run([
-        'build',
-        'connect:dist:keepalive'
-      ]);
-    } else {
-      grunt.task.run([
-        'clean:server',
-        'wiredep',
-        'concurrent:server',
-//        'autoprefixer',
-//        'open',
-//        'connect:livereload',
-//        'watch',
-      ]);
-    }
-  });
-
-  grunt.registerTask('test', [
-    'clean:server',
-    'concurrent:test',
-//    'autoprefixer',
-//    'connect:test',
-//    'karma'
-  ]);
-
-  grunt.registerTask('build', [
-    'clean:dist',
-    'wiredep',
-    'useminPrepare',
-    'concurrent:dist',
-//    'autoprefixer',
-//    'concat',
-//    'ngAnnotate',
-//    'copy:dist',
-//    'cdnify',
-//    'cssmin',
-    'uglify',
-//    'filerev',
-//    'usemin',
-//    'htmlmin'
-  ]);
-
-  // default task(s)
   grunt.registerTask('default', [
-    //'newer:jshint',
-    //'test',
-    'build',
+    'concurrent',
   ]);
+
 };
