@@ -22,14 +22,14 @@
 // use this if you want to recursively match all subfolders:
 // 'test/spec/**/*.js'
 
-var modRewrite = require('connect-modrewrite');
+//var modRewrite = require('connect-modrewrite');
 
 module.exports = function (grunt) {
 
   //var flag = grunt.option('flag'),
 
   // load grunt tasks automatically
-  //require('load-grunt-tasks')(grunt);
+  require('load-grunt-tasks')(grunt);
 
   // time how long tasks take; can help when optimizing build times
   require('time-grunt')(grunt);
@@ -45,6 +45,23 @@ module.exports = function (grunt) {
 
     // project settings
     cfg: appConfig,
+
+    // read package.json file
+    pkg: grunt.file.readJSON('package.json'),
+
+    // empty folders to start fresh
+    cleanNEW: {
+      dist: {
+        files: [{
+          dot: true,
+          src: [
+            '.tmp',
+            '<%= cfg.dist %>',
+          ]
+        }]
+      },
+      server: '.tmp'
+    },
 
     // watches files for changes and runs tasks based on the changed files
     watch: {
@@ -63,13 +80,13 @@ module.exports = function (grunt) {
         files: [ '<%= cfg.app %>/scripts/**/*.test.js', 'test/e2e/**/*.js', 'test/karma.conf.js', 'test/protractor.conf.js' ],
         tasks: [ 'newer:jshint:test' ]
       },
-      html: {
-        files: [ '<%= cfg.app %>/**/*.html' ],
-        tasks: [ 'ngtemplates:serve' ],
-        options: {
-          livereload: true
-        }
-      },
+      //html: {
+      //  files: [ '<%= cfg.app %>/**/*.html' ],
+      //  tasks: [ 'ngtemplates:serve' ],
+      //  options: {
+      //    livereload: true
+      //  }
+      //},
       less: {
         files: [ '<%= cfg.app %>/**/*.{less}'],
         tasks: [ 'less:server', 'autoprefixer']
@@ -174,7 +191,7 @@ module.exports = function (grunt) {
       }
     },
 
-    // Empties folders to start fresh
+    // empties folders to start fresh
     clean: {
       dist: {
         files: [{
@@ -405,13 +422,13 @@ module.exports = function (grunt) {
     // Run some tasks in parallel to speed up the build process
     concurrent: {
       server: [
-        'sass:server'
+        //'sass:server'
       ],
       test: [
-        'sass'
+        //'sass'
       ],
       dist: [
-        'sass:dist',
+        //'sass:dist',
         'imagemin',
         'svgmin'
       ]
@@ -482,12 +499,12 @@ module.exports = function (grunt) {
     grunt.task.run([
       'clean:server',
       'injector',
-      'configureProxies:livereload',
+      //'configureProxies:livereload',
       'wiredep',
       'concurrent:server',
-      'ngtemplates:serve',
+      //'ngtemplates:serve',
       'autoprefixer',
-      'connect:livereload',
+      //'connect:livereload',
       'watch'
     ]);
   });
@@ -528,13 +545,13 @@ module.exports = function (grunt) {
 
   grunt.registerTask('build', [
     'clean:dist',
-    'configureProxies:dist',
+    //'configureProxies:dist',
     'wiredep',
     'ngAnnotate',
     'injector',
     'concurrent:dist',
     'useminPrepare',
-    'ngtemplates:dist',
+    //'ngtemplates:dist',
     'autoprefixer',
     'concat',
     'copy:dist',
