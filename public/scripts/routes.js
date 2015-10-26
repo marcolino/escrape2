@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('routes', []).config(['$routeProvider', '$locationProvider', function($routeProvider, $locationProvider) {
+angular.module('routes', []).config( function($routeProvider, $locationProvider) {
   $routeProvider
     .when('/', { // home page
       templateUrl: 'views/home.html',
@@ -12,4 +12,4 @@ angular.module('routes', []).config(['$routeProvider', '$locationProvider', func
     });
 
     $locationProvider.html5Mode(true);
-}]);
+});

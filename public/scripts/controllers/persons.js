@@ -13,7 +13,7 @@ angular.module('PersonCtrl', []).controller('PersonController', function($scope,
     if (person.showcaseBasename) {
       url = '/images/' + person.providerKey + '/' + person.key + '/' + person.showcaseBasename;
     } else { // no showcase basename for this persin: use default person showcase image
-      url = '/assets/images/' + 'person-showcase.default.png';
+      url = '/images/' + 'person-showcase.default.png';
     }
     return encodeURIComponent(url);
   };

@@ -8,7 +8,8 @@
 - uninstall module 'socket.io', if not used for tailable cursor view
 - googie: how to share config among node api and angular frontend? (backend buils config for frontend?)
 - make bootswatch theme in index.html configurable (on the server only)
-- add  "save_on_focus_lost": true to sublimetext - preferences - settings - user
+- add `"save_on_focus_lost": true` to sublimetext - preferences - settings - user
+- ENOSPC => echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
 
 V remove all "err.context = " lines
 V use `test.server.local` (in `/etc/hosts`) @home too
