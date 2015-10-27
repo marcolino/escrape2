@@ -19,7 +19,7 @@ var reload = browserSync.reload;
 var cfg = {
   script: './bin/www',
   url: 'http://test.server.local:3000',
-  browser: null, // @home: 'google-chrome' ...
+  browser: null, // @office: null, @home: 'google-chrome' ...
   app: './public',
   dist: './public.dist',
   glob: {

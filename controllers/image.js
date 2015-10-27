@@ -53,20 +53,21 @@ exports.syncPersonImages = function(person, callback) {
           etag: img.etag, // comment this to force download
           lastModified: img.lastModified // comment this to force download
         };
-        local.download(resource, destination, function(err, resource) {
+        local.download(resource, destination, function(err, res) {
           if (err)  {
             log.warn('can\'t download image ', image.url, ', ', 'download error:', err);
             return callbackInner();
           }
-          if (!resource) { // resurce is null, image not modified, do not save to disk
-            return callbackInner();
+          if (!res) { // res is null, image not modified, do not save to disk
+            //return callbackInner(); // TODO: if we don't save image here, we do not fix db persons with no associated image...
+            res = resource; // TODO: we will save image just to fix db persons with no associated image... Try to save only if really needed... (and it's not suficient: debug "RENATA"...)
           }
-          img.etag = resource.etag; // ETag, to handle caching
-          img.lastModified = resource.lastModified; // lastModified, to handle alternative caching
-///console.log(' syncPersonImages(): resource.basename:', resource.basename);
-          img.basename = resource.basename; // image base name
-          img.isShowcase = resource.isShowcase; // flag to indicate if this is the showcase image
-          //img.signature = ...; // TODO: calculate inage signature...
+          img.etag = res.etag; // ETag, to handle caching
+          img.lastModified = res.lastModified; // lastModified, to handle alternative caching
+///console.log(' syncPersonImages(): res.basename:', resource.basename);
+          img.basename = res.basename; // image base name
+          img.isShowcase = res.isShowcase; // flag to indicate if this is the showcase image
+          //img.signature = ...; // TODO: calculate image signature...
           img.save(function(err) { // , path // TODO...
             if (err) {
               log.warn('can\'t save image', image.url, ':', err);
