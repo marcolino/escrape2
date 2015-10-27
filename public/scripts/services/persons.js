@@ -23,5 +23,5 @@ angular.module('PersonService', []).factory('Person', ['$http', function($http) 
       return $http.delete('/api/persons/' + id);
     }
 */
-  }
+  };
 }]);

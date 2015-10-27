@@ -10,6 +10,7 @@
 - make bootswatch theme in index.html configurable (on the server only)
 - add `"save_on_focus_lost": true` to sublimetext - preferences - settings - user
 - ENOSPC => echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
+- use `handlebars` for html templating
 
 V remove all "err.context = " lines
 V use `test.server.local` (in `/etc/hosts`) @home too

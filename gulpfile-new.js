@@ -4,20 +4,21 @@ var gulp = require('gulp');
 var jshint = require('gulp-jshint');
 var babel = require('gulp-babel');
 var uglify = require('gulp-uglify');
-var concat = require('gulp-concat');
 var sass = require('gulp-sass');
-var sourcemaps = require('gulp-sourcemaps');
+var sourcemaps = require("gulp-sourcemaps");
 var postcss = require('gulp-postcss');
 var autoprefixer = require('autoprefixer');
 var cssnano = require('cssnano');
 var minifyHtml = require('gulp-minify-html');
 var nodemon = require('gulp-nodemon');
 var path = require('path');
+var concat = require('gulp-concat');
 var browserSync = require('browser-sync').create();
 var reload = browserSync.reload;
 
 var cfg = {
   script: './bin/www',
+  //port: 3000,
   url: 'http://test.server.local:3000',
   browser: null, // @home: 'google-chrome' ...
   app: './public',
@@ -48,11 +49,13 @@ gulp.task('js', function() {
     .pipe(uglify())
     .pipe(sourcemaps.write('.'))
     .pipe(gulp.dest(cfg.dist + '/scripts'))
-    .pipe(reload({stream: true}));
+    .pipe(reload({stream: true}))
+  ;
 });
 
 gulp.task('sass', function() {
-  return gulp.src(cfg.app + '/styles/*.scss')
+  return gulp
+    .src(cfg.app + '/styles/*.scss')
     .pipe(concat('app.css'))
     .pipe(sass().on('error', sass.logError))
     .pipe(postcss([
@@ -60,7 +63,8 @@ gulp.task('sass', function() {
       cssnano(),
     ]))
     .pipe(gulp.dest(cfg.dist + '/styles/'))
-    .pipe(reload({stream: true}));
+    .pipe(reload({stream: true}))
+  ;
 });
 
 gulp.task('html', function() {
@@ -71,15 +75,8 @@ gulp.task('html', function() {
   return gulp
     .src([ cfg.app + '*.html', cfg.app + '/views/**/*.html' ])
     .pipe(minifyHtml(opts))
-    .pipe(gulp.dest(cfg.dist + '/'))
     .pipe(reload({stream: true}))
   ;
-/* TODO: keep structure !!!
-    gulp.dest(function(file) {
-console.log('gulp.dest('+file+') returns ' + path.join(cfg.dist, path.dirname(file.path));
-      return path.join(cfg.dist, path.dirname(file.path));
-    });
-*/
 });
 
 gulp.task('nodemon', function(cb) {
@@ -87,6 +84,7 @@ gulp.task('nodemon', function(cb) {
     script: cfg.script,
     ext: '.js',
     watch: [ '*.js', 'routes/**/*', 'controllers/**/*', 'models/**/*' ],
+    //watch: cfg.glob.backend.scripts,
     env: {
       'NODE_ENV': cfg.mode,
       //'PORT': cfg.port
@@ -101,32 +99,30 @@ gulp.task('nodemon', function(cb) {
   });
   return monitor;
 });
-
-/*
 gulp.task('reload', function() {
   return reload();
 });
-*/
 
 gulp.task('browser-sync', ['nodemon'], function() {
   browserSync.init(
     null,
     {
+      //proxy: cfg.url + ':' + cfg.port,
       proxy: cfg.url,
       files: [ cfg.app + '/**/*.*' ],
       browser: cfg.browser,
-      port: 7000, // can we comment this? what's its use???
+      //port: 7000, // can we comment this? what's its use???
     }
   );
 });
 
-//gulp.task('build', [ 'js', 'sass' ]);
-gulp.task('build', [ 'sass', 'js', 'html', ]);
 
-gulp.task('default', [ 'sass', 'js', 'html', 'browser-sync' ], function() {
+//gulp.task('build', [ 'js', 'sass' ]);
+gulp.task('build', [ 'js', 'sass', 'html' ]);
+
+gulp.task('default', [ 'js', 'sass', 'html', 'browser-sync' ], function() {
   gulp.watch(cfg.app + '/styles/**/*.scss', [ 'sass' ]);
   gulp.watch(cfg.app + '/scripts/**/*.js', [ 'js' ]);
-  gulp.watch(cfg.app + '/**/*.html', [ 'html' ]); // drop html for hbs (handlebars) ...
-  //gulp.watch(cfg.app + '/**/*.hbs', [ 'hbs' ]);
-  //gulp.watch('./views/**/*.hbs', [ 'reload' ]);
+  gulp.watch(cfg.app + '/views/**/*.html', [ 'html' ]); // drop html for hbs (handlebars) ...
+  //gulp.watch(cfg.app + '/views/**/*.hbs', [ 'reload' ]);
 });

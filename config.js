@@ -17,6 +17,10 @@ config.db = {};
 config.db.type = 'mongodb';
 config.db.host = 'localhost';
 config.db.name = 'escrape';
+//config.db.openshiftRootUser = 'admin';
+//config.db.openshiftRootPassword = 'fSnwesCwws11';
+//config.db.openshiftName = 'nodejs';
+
 config.tor = {};
 config.tor.available = (os.hostname() === 'malibox'); // TOR is available only locally, at the moment...
 config.tor.host = 'localhost';
