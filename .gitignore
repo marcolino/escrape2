@@ -1,4 +1,4 @@
-node_modules/
+node_modules
 public/bower_components
-data/
-logs/
+data
+logs
