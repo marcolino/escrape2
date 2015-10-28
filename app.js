@@ -10,7 +10,7 @@ var express = require('express') // web server
 ;
 
 // setup
-var staticPathPublic = __dirname + '/public.dist'; // path to static public directory
+var staticPathPublic = __dirname + '/public'; // path to static public directory
 var staticPathData = __dirname + '/data'; // path to static data directory
 //var pathViews = __dirname + '/views'; // path to views directory
 var engineTemplate = 'html'; // template engine name ('jade'...)

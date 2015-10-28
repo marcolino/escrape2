@@ -43,7 +43,7 @@ var cfg = {
 
 gulp.task('clean', function () {
   return del([
-    dist + '/**'
+    dist
   ]);
 });
 
