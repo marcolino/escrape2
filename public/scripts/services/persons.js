@@ -6,6 +6,7 @@ angular.module('PersonService', []).factory('Person', ['$http', function($http) 
       $http({
         method: 'GET',
         url: 'http://test.server.local:3000/persons'
+        //url: 'http://192.168.10.30:3000/persons'
       })
       .success(function(response) {
         console.info('got persons data:', response);

@@ -84,5 +84,6 @@ app.use(function(req, res, next) {
     return res.send({ error: err });
   };
 */
-  res.sendFile('index.html', { root: path.join(__dirname, './public') });
+  //res.sendFile('index.html', { root: path.join(__dirname, './public') });
+  res.sendFile('index.html', { root: staticPathPublic });
 });

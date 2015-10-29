@@ -1,11 +1,7 @@
-<!doctype html>
-<head>
-  <title>Escrape 2</title>
-</head>
 <div class="jumbotron text-center">
   <h1>Persons</h1>
-  <div data-ng-repeat="person in persons">
-    <a data-ng-href="http://it.wikipedia.org{{ person.url }}" target="_blank"><img data-ng-src="{{ getShowcaseLocalUrl(person) }}" alt="person showcase" style="width:240px"></a>
+  <div ng-repeat="person in persons"> 
+    <a ng-href="http://it.wikipedia.org{{ person.url }}" target="_blank"><img ng-src="{{ getShowcaseLocalUrl(person) }}" style="width:240px" />
     <!--
     <a ng-href="http://it.wikipedia.org{{ person.url }}" target="_blank"><img ng-src="{{ person.showcaseUrl }}" style="width:240px" /></a>
     -->

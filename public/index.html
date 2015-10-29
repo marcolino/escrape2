@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" ng-app="escrape2">
+<html lang="en" data-ng-app="escrape2">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,7 +14,7 @@
     <link rel="stylesheet" type="text/css" href="styles/main.css">
     <!--<link rel="stylesheet" type="text/css" href="styles/navbar.css">--> 
   </head>
-  <body ng-app="escrape2" ng-strict-di>
+  <body data-ng-app="escrape2" data-ng-strict-di>
     <div class="container">
       <div class="navbar navbar-inverse DISABLE-navbar-static-top" role="navigation">
         <div class="navbar-header">
@@ -24,7 +24,7 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" rel="home" href="/" title="Escrape 2"><img src="images/logo-three-ghosts.png" width="32" /></a>
+          <a class="navbar-brand" rel="home" href="/" title="Escrape 2"><img src="images/logo-three-ghosts.png" alt="logo" width="32" /></a>
         </div>
       
         <div class="collapse navbar-collapse navbar-ex1-collapse">
@@ -46,7 +46,7 @@
         </div>
       </div>
 
-      <div ng-view></div>
+      <div data-ng-view></div>
     
     </div>
 
@@ -70,9 +70,7 @@
     <script src="scripts/services/persons.js"></script>
     <!-- xendbuild -->
     
-    <!-- NObuild:js scripts/all.js -->
     <!-- inject:js -->
     <!-- endinject -->
-    <!-- NOendbuild -->
   </body>
 </html>
