@@ -8,3 +8,7 @@ var app = angular.module('escrape2', [
   'AboutCtrl',
   'PersonService'
 ]);
+
+var config = {
+  debug: true
+};

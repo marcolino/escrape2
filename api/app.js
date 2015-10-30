@@ -10,13 +10,12 @@ var express = require('express') // web server
 ;
 
 // setup
-var staticPathPublic = __dirname + '/public'; // path to static public directory
-var staticPathData = __dirname + '/data'; // path to static data directory
-//var pathViews = __dirname + '/views'; // path to views directory
+var staticPathPublic = __dirname + '/..' + '/public.dist'; // path to static public directory
+var staticPathData = __dirname + '/..' + '/data'; // path to static data directory
 var engineTemplate = 'html'; // template engine name ('jade'...)
 
 // required routes
-//var main = require('./routes/main');
+//var main = require('./api/routes/main');
 var providers = require('./routes/providers');
 var users = require('./routes/users');
 var persons = require('./routes/persons');
@@ -32,13 +31,12 @@ app.use(bodyParser.json());
 app.use(methodOverride()); // override with the X-HTTP-Method-Override header in the request
 
 // server routes (API calls, authentication, ...)
-//////////////////////app.use('/', main); // TODO...
 // TODO: /... -> /api/...
-app.use('/users', users);
-app.use('/persons', persons);
-app.use('/providers', providers);
-app.use('/places', places);
-app.use('/comments', comments);
+app.use('/api/users', users);
+app.use('/api/persons', persons);
+app.use('/api/providers', providers);
+app.use('/api/places', places);
+app.use('/api/comments', comments);
 app.use(express.static(staticPathPublic));
 app.use(express.static(staticPathData));
 //app.set('views', pathViews);

@@ -5,13 +5,18 @@ var del = require('del');
 var usemin = require('gulp-usemin');
 var wiredep = require('wiredep').stream;
 var inject = require('gulp-inject');
+var mainBowerFiles = require('main-bower-files');
 var jshint = require('gulp-jshint');
-var html5lint = require('gulp-html5-lint');
+var jscs = require('gulp-jscs');
+var validateHtml = require('gulp-html-angular-validate');
+var removeHtmlComments = require('gulp-remove-html-comments');
+var removeEmptyLines = require('gulp-remove-empty-lines');
 var babel = require('gulp-babel');
 var uglify = require('gulp-uglify');
 var concat = require('gulp-concat');
 var sass = require('gulp-sass');
 var sourcemaps = require('gulp-sourcemaps');
+var rev = require('gulp-rev');
 var postcss = require('gulp-postcss');
 var minifyHtml = require('gulp-minify-html');
 var minifyCss = require('gulp-minify-css');
@@ -22,118 +27,136 @@ var path = require('path');
 //var reload = browserSync.reload;
 var livereload = require('gulp-livereload');
 
+var api = 'api';
 var app = 'public';
 var dist = 'public.dist';
 var cfg = {
   script: './bin/www',
   url: 'http://test.server.local:3000',
   browser: 'chromium-browser', // @centos: chromim-browser, @ubuntu: 'google-chrome' ...
-  glob: {
-    backend: {
-      scripts: [ 'app.js', 'routes/**/*', 'controllers/**/*', 'models/**/*' ],
-    },
-    frontend: {
-      scripts: [ app + '/scripts/**/*.js' ],
-      styles: [ app + '/styles/**/*.scss' ],
-      views: [ app + '/index.html', app + '/views/**/*.html' ],
+  backend: {
+    scripts: [ api + '/*.js', api + '/routes/**/*', api + '/controllers/**/*', api + '/models/**/*' ],
+  },
+  frontend: {
+    scripts: [ app + '/scripts/**/*.js' ],
+    styles: [ app + '/styles/**/*.scss' ],
+    views: [ app + '/index.html', app + '/views/**/*.html' ],
+  },
+  validation: {
+    html: {
+      reportpath: 'logs/html-angular-validate-report.json',
+      relaxerror: [
+        'Element “form” does not need a “role” attribute.',
+        'Element “img” is missing required attribute “src”.',
+      ],
     },
   },
   mode: 'development',
 }
 
-//// a slight delay to reload browsers connected to browser-sync after restarting nodemon
-//var BROWSER_SYNC_RELOAD_DELAY = 500; // milliseconds
-var LIVERELOAD_DELAY = 500; // milliseconds
+// a slight delay to reload browsers connected to livereload after restarting nodemon
+var LIVERELOAD_DELAY = 0; // 500; // milliseconds
 
-/*
 gulp.task('clean', function () {
-  return del([
-    dist
-  ]);
-});
-*/
-
-gulp.task('styles-dev', function() {
-  console.log(' === task: styles-dev');
-  return gulp.src(cfg.glob.frontend.styles)
-    .pipe(sass().on('error', sass.logError))
-    .pipe(gulp.dest(app + '/styles/')) // /styles-css/ => /styles/ ...
-    .pipe(livereload({stream: true}));
-  ;
+  console.log(' !!! clean !!!');
+//  del([ dist ]);
 });
 
-gulp.task('scripts-dev', function() {
-  console.log(' === task: scripts-dev');
+gulp.task('backend-scripts-dev', function() {
+  console.log(' === task: backend-scripts-dev');
   return gulp
-    .src(app + '/scripts/**/*.js')
+    .src(cfg.backend.scripts)
     .pipe(jshint('.jshintrc'))
     .pipe(jshint.reporter('jshint-stylish'))
-    //.pipe(livereload({stream: true})); // do we need this, if we don't save anything?
 });
 
-gulp.task('views-dev', function() {
-  console.log(' === task: views-dev');
-//  var opts = {
-//    conditionals: true,
-//    spare: true,
-//  };
-//console.log('cfg.glob.frontend.views:', cfg.glob.frontend.views);
+gulp.task('backend-scripts-pro', [ 'clean' ], function() {
+  console.log(' === task: backend-scripts-pro');
   return gulp
-    .src(cfg.glob.frontend.views)
-    .pipe(html5lint()) //.on('error', function(err) { console.error(err); }))
-    //.pipe(livereload({stream: true}))
+    .src(cfg.backend.scripts)
+    .pipe(jshint('.jshintrc'))
+    .pipe(jshint.reporter('jshint-stylish'))
+});
+
+gulp.task('frontend-scripts-dev', function() {
+  console.log(' === task: frontend-scripts-dev');
+  return gulp
+    .src(cfg.frontend.scripts)
+    .pipe(jshint('.jshintrc'))
+    .pipe(jshint.reporter('jshint-stylish'))
+});
+
+gulp.task('frontend-scripts-pro', [ 'clean' ], function() {
+  console.log(' === task: frontend-scripts-pro');
+  // order matters, of course
+  return gulp
+    .src(cfg.frontend.scripts)
+    .pipe(jshint('.jshintrc'))
+    .pipe(jshint.reporter('jshint-stylish'))
+    .pipe(jscs())
+    .pipe(sourcemaps.init())
+    .pipe(concat({ path: 'custom.js', cwd: '' }))
+    .pipe(rev())
+    .pipe(sourcemaps.write('.'))
+    .pipe(gulp.dest(dist + '/scripts'))
   ;
 });
 
-gulp.task('styles-pro', function() {
-  console.log(' === task: styles-pro');
-  return gulp.src(app + '/styles/*.scss')
+gulp.task('frontend-styles-dev', function() {
+  console.log(' === task: frontend-styles-dev');
+  return gulp.src(cfg.frontend.styles)
     .pipe(sass().on('error', sass.logError))
-    .pipe(concat('app.css'))
+  ;
+});
+
+gulp.task('frontend-styles-pro', [ 'clean' ], function() {
+  console.log(' === task: frontend-styles-pro');
+  return gulp.src(cfg.frontend.styles)
+    .pipe(sass().on('error', sass.logError))
+    .pipe(concat({ path: 'custom.css', cwd: '' }))
 /*
     .pipe(postcss([
       minifyCss(),
     ]))
 */
-    .pipe(gulp.dest(dist + '/styles/'))
+    .pipe(gulp.dest(dist + '/styles'))
     //.pipe(livereload({stream: true}));
 });
 
-gulp.task('scripts-pro', function() {
-  console.log(' === task: scripts-pro');
+gulp.task('frontend-views-dev', function() {
+  console.log(' === task: frontend-views-dev');
+
   return gulp
-    .src(app + '/scripts/**/*.js')
-/*
-    .pipe(jshint('.jshintrc'))
-    .pipe(jshint.reporter('jshint-stylish'))
-    .pipe(sourcemaps.init())
-    .pipe(babel({
-      stage: 0
-    }))
-    .pipe(uglify())
-    .pipe(sourcemaps.write('.'))
-*/
-    .pipe(concat('app.js'))
-    .pipe(gulp.dest(dist + '/scripts'))
-    //.pipe(livereload({stream: true}));
+    .src(cfg.frontend.views)
+    .pipe(validateHtml(cfg.validation.html))
+  ;
 });
 
-gulp.task('views-pro', function() {
-  console.log(' === task: views-pro');
-//  var opts = {
-//    conditionals: true,
-//    spare: true,
-//  };
-//console.log('cfg.glob.frontend.views:', cfg.glob.frontend.views);
+gulp.task('vendor', function() {
+  console.log(' === task: vendor');
   return gulp
-    .src(cfg.glob.frontend.views)
-//  .pipe(minifyHtml(opts))
-    .pipe(gulp.dest(function(file) {
-      var cwd = process.cwd();
-//console.log('dist:', path.dirname(file.path).replace(cwd + '/' + app, dist) + '/');
-      return path.dirname(file.path).replace(cwd + '/' + app, dist) + '/';
+    .src(mainBowerFiles())
+    .pipe(concat({ path: 'vendor.js', cwd: '' }))
+    .pipe(rev())
+    .pipe(gulp.dest(dist + '/scripts'));
+});
+
+gulp.task('frontend-views-pro', [ 'clean', 'vendor' ], function() {
+  console.log(' === task: frontend-views-pro');
+  return gulp
+    .src(app + '/index.html')
+    .pipe(inject(gulp.src([ dist + '/scripts/custom-*.js' ], { read: false }), {
+      name: 'inject-custom',
+      removeTags: true,
     }))
-    //.pipe(livereload({stream: true}))
+    .pipe(inject(gulp.src([ dist + '/scripts/vendor-*.js' ], { read: false }), {
+      name: 'inject-vendor',
+      removeTags: true,
+    }))
+      //.pipe(removeHtmlComments())
+      //.pipe(removeEmptyLines())
+    //.pipe(minifyHtml())
+    .pipe(gulp.dest(dist))
   ;
 });
 
@@ -142,7 +165,7 @@ gulp.task('nodemon', function(cb) {
   return nodemon({
     script: cfg.script,
     ext: '.js',
-    watch: cfg.glob.backend.scripts,
+    watch: cfg.backend.scripts,
     env: {
       'NODE_ENV': cfg.mode,
     },
@@ -183,17 +206,28 @@ gulp.task('browser-sync', [ 'nodemon' ], function() {
   browserSync.notify("This message will only last <span color='green'>5</span> seconds", 5000);
 });
 
-gulp.task('build', [ 'styles-pro', 'scripts-pro', 'views-pro', ], function() {
+gulp.task('deploy', [ '...', ], function() { // TODO...
+  console.log(' === task: deploy');
+});  
+
+gulp.task('test', [ '...', ], function() { // TODO...
+  console.log(' === task: test');
+   // mocha --recursive
+   // mocha --recursive --reporter progress
+});
+
+gulp.task('build', [ 'backend-scripts-pro', 'frontend-scripts-pro', 'frontend-styles-pro', 'frontend-views-pro', ], function() {
   console.log(' === task: build');
 });  
 
-gulp.task('default', [ 'nodemon', 'styles-dev', 'scripts-dev', 'views-dev' /*'browser-sync'*/ ], function() {
+gulp.task('default', [ 'backend-scripts-dev', 'frontend-scripts-dev', 'frontend-styles-dev', 'frontend-views-dev', 'nodemon', /*'browser-sync'*/ ], function() {
   console.log(' === task: default');
   livereload.listen({
-    //quiet: true,
-    quiet: false,
+    quiet: true,
   });
-  gulp.watch(cfg.glob.frontend.styles, [ 'styles-dev' /*browserSync.reload*/ ]);
-  gulp.watch(cfg.glob.frontend.scripts, [ 'scripts-dev' ]);
-  gulp.watch(cfg.glob.frontend.views, [ 'views-dev' ]); // drop html for hbs (handlebars)...
+
+  gulp.watch(cfg.backend.scripts, [ 'backend-scripts-dev' ]);
+  gulp.watch(cfg.frontend.scripts, [ 'frontend-scripts-dev' ]);
+  gulp.watch(cfg.frontend.styles, [ 'frontend-styles-dev' /*browserSync.reload*/ ]);
+  gulp.watch(cfg.frontend.views, [ 'frontend-views-dev' ]); // drop html for hbs (handlebars)...
 });

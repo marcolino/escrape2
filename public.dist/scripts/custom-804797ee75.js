@@ -9,6 +9,9 @@ var app = angular.module('escrape2', [
   'PersonService'
 ]);
 
+var config = {
+  debug: true
+};
 'use strict';
 
 angular.module('routes', []).config( function($routeProvider, $locationProvider) {
@@ -67,8 +70,7 @@ angular.module('PersonService', []).factory('Person', ['$http', function($http) 
     get: function(callback) { // call to get all persons
       $http({
         method: 'GET',
-        url: 'http://test.server.local:3000/persons'
-        //url: 'http://192.168.10.30:3000/persons'
+        url: 'http://test.server.local:3000/api/persons'
       })
       .success(function(response) {
         console.info('got persons data:', response);
@@ -88,3 +90,4 @@ angular.module('PersonService', []).factory('Person', ['$http', function($http) 
 */
   };
 }]);
+//# sourceMappingURL=custom-804797ee75.js.map
