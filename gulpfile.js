@@ -1,233 +1,182 @@
-'use strict';
+// Gulp example configuration file for an Express + AngularJS app
+// find the complete explanation at blog.scikr.com
+//
+// usage: `gulp serve` for development and `gulp build` for production
+//
+// run the following command to get all packages needed:
+// npm install --save-dev gulp main-bower-files gulp-inject gulp-livereload gulp-watch gulp-nodemon streamqueue gulp-uglify gulp-concat gulp-ng-annotate gulp-rev gulp-rimraf run-sequence gulp-filter gulp-minify-css
 
-var gulp = require('gulp');
-var del = require('del');
-var usemin = require('gulp-usemin');
-var wiredep = require('wiredep').stream;
-var inject = require('gulp-inject');
-var mainBowerFiles = require('main-bower-files');
-var jshint = require('gulp-jshint');
-var jscs = require('gulp-jscs');
-var validateHtml = require('gulp-html-angular-validate');
-var removeHtmlComments = require('gulp-remove-html-comments');
-var removeEmptyLines = require('gulp-remove-empty-lines');
-var babel = require('gulp-babel');
-var uglify = require('gulp-uglify');
-var concat = require('gulp-concat');
-var sass = require('gulp-sass');
-var sourcemaps = require('gulp-sourcemaps');
-var rev = require('gulp-rev');
-var postcss = require('gulp-postcss');
-var minifyHtml = require('gulp-minify-html');
-var minifyCss = require('gulp-minify-css');
-var spawn = require('child_process').spawn;
-var nodemon = require('gulp-nodemon');
-var path = require('path');
-//var browserSync = require('browser-sync').create();
-//var reload = browserSync.reload;
-var livereload = require('gulp-livereload');
+// call the node packages
+var gulp = require('gulp'),
+  bowerFiles = require('main-bower-files'),
+  inject = require('gulp-inject'),
+  livereload = require('gulp-livereload'),
+  watch = require('gulp-watch'),
+  nodemon = require('gulp-nodemon'),
+  streamqueue = require('streamqueue');
 
-var api = 'api';
-var app = 'public';
-var dist = 'public.dist';
-var cfg = {
-  script: './bin/www',
-  url: 'http://test.server.local:3000',
-  browser: 'chromium-browser', // @centos: chromim-browser, @ubuntu: 'google-chrome' ...
-  backend: {
-    scripts: [ api + '/*.js', api + '/routes/**/*', api + '/controllers/**/*', api + '/models/**/*' ],
-  },
-  frontend: {
-    scripts: [ app + '/scripts/**/*.js' ],
-    styles: [ app + '/styles/**/*.scss' ],
-    views: [ app + '/index.html', app + '/views/**/*.html' ],
-  },
-  validation: {
-    html: {
-      reportpath: 'logs/html-angular-validate-report.json',
-      relaxerror: [
-        'Element “form” does not need a “role” attribute.',
-        'Element “img” is missing required attribute “src”.',
-      ],
-    },
-  },
-  mode: 'development',
+// jsfiles() streams all the js files (with exceptions) into a single stream for future injection
+function jsfiles() {
+  return streamqueue({ objectMode: true },
+    // first streams vendor files from Bower (with a filter for exceptions)
+    gulp.src(bowerFiles(), {read: false}).pipe(gulpFilter(['*.js',])), //'!bootstrap-sass-official', '!bootstrap.js', '!json3', '!es5-shim'])),
+    // then streams the app files
+    gulp.src(['./public/**/*.js'], {read: false})
+  );
 }
 
-// a slight delay to reload browsers connected to livereload after restarting nodemon
-var LIVERELOAD_DELAY = 0; // 500; // milliseconds
-
-gulp.task('clean', function () {
-  console.log(' !!! clean !!!');
-//  del([ dist ]);
-});
-
-gulp.task('backend-scripts-dev', function() {
-  console.log(' === task: backend-scripts-dev');
-  return gulp
-    .src(cfg.backend.scripts)
-    .pipe(jshint('.jshintrc'))
-    .pipe(jshint.reporter('jshint-stylish'))
-});
-
-gulp.task('backend-scripts-pro', [ 'clean' ], function() {
-  console.log(' === task: backend-scripts-pro');
-  return gulp
-    .src(cfg.backend.scripts)
-    .pipe(jshint('.jshintrc'))
-    .pipe(jshint.reporter('jshint-stylish'))
-});
-
-gulp.task('frontend-scripts-dev', function() {
-  console.log(' === task: frontend-scripts-dev');
-  return gulp
-    .src(cfg.frontend.scripts)
-    .pipe(jshint('.jshintrc'))
-    .pipe(jshint.reporter('jshint-stylish'))
-});
-
-gulp.task('frontend-scripts-pro', [ 'clean' ], function() {
-  console.log(' === task: frontend-scripts-pro');
-  // order matters, of course
-  return gulp
-    .src(cfg.frontend.scripts)
-    .pipe(jshint('.jshintrc'))
-    .pipe(jshint.reporter('jshint-stylish'))
-    .pipe(jscs())
-    .pipe(sourcemaps.init())
-    .pipe(concat({ path: 'custom.js', cwd: '' }))
-    .pipe(rev())
-    .pipe(sourcemaps.write('.'))
-    .pipe(gulp.dest(dist + '/scripts'))
-  ;
-});
-
-gulp.task('frontend-styles-dev', function() {
-  console.log(' === task: frontend-styles-dev');
-  return gulp.src(cfg.frontend.styles)
-    .pipe(sass().on('error', sass.logError))
-  ;
-});
-
-gulp.task('frontend-styles-pro', [ 'clean' ], function() {
-  console.log(' === task: frontend-styles-pro');
-  return gulp.src(cfg.frontend.styles)
-    .pipe(sass().on('error', sass.logError))
-    .pipe(concat({ path: 'custom.css', cwd: '' }))
-/*
-    .pipe(postcss([
-      minifyCss(),
-    ]))
-*/
-    .pipe(gulp.dest(dist + '/styles'))
-    //.pipe(livereload({stream: true}));
-});
-
-gulp.task('frontend-views-dev', function() {
-  console.log(' === task: frontend-views-dev');
-
-  return gulp
-    .src(cfg.frontend.views)
-    .pipe(validateHtml(cfg.validation.html))
-  ;
-});
-
-gulp.task('vendor', function() {
-  console.log(' === task: vendor');
-  return gulp
-    .src(mainBowerFiles())
-    .pipe(concat({ path: 'vendor.js', cwd: '' }))
-    .pipe(rev())
-    .pipe(gulp.dest(dist + '/scripts'));
-});
-
-gulp.task('frontend-views-pro', [ 'clean', 'vendor' ], function() {
-  console.log(' === task: frontend-views-pro');
-  return gulp
-    .src(app + '/index.html')
-    .pipe(inject(gulp.src([ dist + '/scripts/custom-*.js' ], { read: false }), {
-      name: 'inject-custom',
-      removeTags: true,
-    }))
-    .pipe(inject(gulp.src([ dist + '/scripts/vendor-*.js' ], { read: false }), {
-      name: 'inject-vendor',
-      removeTags: true,
-    }))
-      //.pipe(removeHtmlComments())
-      //.pipe(removeEmptyLines())
-    //.pipe(minifyHtml())
-    .pipe(gulp.dest(dist))
-  ;
-});
-
-gulp.task('nodemon', function(cb) {
-  console.log(' === task: nodemon');
-  return nodemon({
-    script: cfg.script,
-    ext: '.js',
-    watch: cfg.backend.scripts,
-    env: {
-      'NODE_ENV': cfg.mode,
-    },
-  })
-  .once('start', cb)
-  .on('restart', function onRestart() {
-    // also reload the browsers after a slight delay
-    /*
-    setTimeout(function reload() {
-      browserSync.reload({
-        stream: false
-      });
-      livereload();
-    }, BROWSER_SYNC_RELOAD_DELAY);
-    */
-    setTimeout(function reload() {
-      livereload();
-    }, LIVERELOAD_DELAY);
-  })
-  .on('exit', function() { // assuming a [ctrl-c] will break 
-    // to avoid double break to interrupt
-    //console.log('nodemon emitted exit');
-    ///process.exit();
-  });
-});
-
-gulp.task('browser-sync', [ 'nodemon' ], function() {
-  console.log(' === task: browser-sync');
-  browserSync.init(
-    null,
-    {
-      proxy: cfg.url,
-      files: [ app + '/**/*.*' ],
-      browser: [ cfg.browser ],
-      port: 3001, // this port must be different from the express app port
-    }
+// cssfiles() streams all the css files (with exceptions) into a single stream for future injection
+function cssfiles() {
+  return streamqueue({ objectMode: true },
+    // first streams vendor files from Bower (with a filter for exceptions)
+    gulp.src(bowerFiles(), {read: false}).pipe(gulpFilter(['*.css',])), //'!bootstrap-sass-official', '!bootstrap.js', '!json3', '!es5-shim'])),
+    // then streams the app files
+    gulp.src(['./public/**/*.css'], {read:false})
   );
-  browserSync.notify("This message will only last <span color='green'>5</span> seconds", 5000);
+}
+
+// create the inject task that inject successively ALL CSS stream, and ALL JS stream into index.html
+gulp.task('inject', function(){
+  return gulp.src('./public/index.html')
+    .pipe(inject(jsfiles(), {relative:true}))
+    .pipe(inject(cssfiles(), {relative:true}))
+    .pipe(gulp.dest('./public.dist/'));
 });
 
-gulp.task('deploy', [ '...', ], function() { // TODO...
-  console.log(' === task: deploy');
-});  
-
-gulp.task('test', [ '...', ], function() { // TODO...
-  console.log(' === task: test');
-   // mocha --recursive
-   // mocha --recursive --reporter progress
+gulp.task('watch', ['inject'], function() {
+  // start the livereload server
+  livereload.listen();
+  // reload the browser when changes to any file in ./client/
+  // dont forget to put the app.use(require('connect-livereload')()); in your express app
+  gulp.watch('./public/**').on('change', livereload.changed);
 });
 
-gulp.task('build', [ 'backend-scripts-pro', 'frontend-scripts-pro', 'frontend-styles-pro', 'frontend-views-pro', ], function() {
-  console.log(' === task: build');
-});  
-
-gulp.task('default', [ 'backend-scripts-dev', 'frontend-scripts-dev', 'frontend-styles-dev', 'frontend-views-dev', 'nodemon', /*'browser-sync'*/ ], function() {
-  console.log(' === task: default');
-  livereload.listen({
-    quiet: true,
+// the serve task that we use for development
+gulp.task('serve', ['watch'], function(){
+  // nodemon starts the node app with monitoring of all files in the server folder (livereload takes care of the client)
+  nodemon({
+    script: 'bin/www', // the app script
+    watch: ['api/**/*.js'], // file to watch for reloading
+    env: { 'PORT': 3000 } }  // any environment variables
+  ).on('restart', function () {
+    setTimeout(function() {livereload.changed();}, 2000);
+    console.log('restarted!');
   });
+});
 
-  gulp.watch(cfg.backend.scripts, [ 'backend-scripts-dev' ]);
-  gulp.watch(cfg.frontend.scripts, [ 'frontend-scripts-dev' ]);
-  gulp.watch(cfg.frontend.styles, [ 'frontend-styles-dev' /*browserSync.reload*/ ]);
-  gulp.watch(cfg.frontend.views, [ 'frontend-views-dev' ]); // drop html for hbs (handlebars)...
+var uglify = require('gulp-uglify'),
+  concat = require('gulp-concat'),
+  ngAnnotate = require('gulp-ng-annotate'),
+  rev = require('gulp-rev'),
+  rimraf = require('gulp-rimraf'),
+  runSequence = require('run-sequence'),
+  gulpFilter = require('gulp-filter'),
+  minifyCSS = require('gulp-minify-css');
+
+gulp.task('build', function(callback) {
+  // runSequence is a cool way of choosing what must run sequentially, and what in parallel
+  // here, the task clean will run first alone, then all the builds in parallel, then the copies in parallel, then the injection in html
+  runSequence(
+    'clean',
+    ['build-scripts', 'build-scripts-bower', 'build-styles', 'build-styles-bower'],
+    ['copy-server', 'copy-assets', 'copy-client'],
+    'build-html',
+    callback);
+});
+
+// clean the dist folder
+gulp.task('clean', function(){
+  return gulp.src('./dist/**/*.*', {read:false})
+    .pipe(rimraf());
+});
+
+// concatenate, annotate (for angular JS) and minify the js scripts into one single app.js file, then copy it to dist folder
+gulp.task('build-scripts', function() {
+  return gulp.src(['./public/scripts/**/*.js'])
+    .pipe(concat('app.js')) // concatenate all js files
+    .pipe(ngAnnotate()) // annotate to ensure proper dependency injection in AngularJS
+    .pipe(uglify()) // minify js
+    .pipe(rev()) // add a unique id at the end of app.js (ex: app-f4446a9c.js) to prevent browser caching when updating the website
+    .pipe(gulp.dest('./public.dist')) // copy app-**.js to the appropriate folder
+  ;
+});
+
+// same as above, with the bower files (no need to ngannotate)
+gulp.task('build-scripts-bower', function() {
+  return gulp.src(bowerFiles())
+    .pipe(gulpFilter(['*.js', '!bootstrap-sass-official', '!bootstrap.js', '!json3', '!es5-shim']))
+    .pipe(concat('vendor.js'))
+    .pipe(uglify())
+    .pipe(rev())
+    .pipe(gulp.dest('./dist/public/app'))
+  ;
+});
+
+// yet another concat/minify task, here for the CSS
+gulp.task('build-styles',function() {
+  return gulp.src(['./public/**/*.css'])
+    .pipe(concat('styles.css'))
+    .pipe(minifyCSS())
+    .pipe(rev())
+    .pipe(gulp.dest('./public.dist'))
+  ;
+});
+
+// and for vendor CSS
+gulp.task('build-styles-bower', function() {
+  return gulp.src(bowerFiles())
+    .pipe(gulpFilter(['*.css']))
+    .pipe(concat('vendor.css'))
+    .pipe(minifyCSS())
+    .pipe(rev())
+    .pipe(gulp.dest('./public.dist'))
+  ;
+});
+
+// simple task to copy the server folder to dist/server
+gulp.task('copy-server', function(){
+  return gulp.src('./api/**/*.*')
+    .pipe(gulp.dest('./public.dist/api'))
+  ;
+});
+
+// copying the assets (images, fonts, ...)
+gulp.task('copy-assets', function() {
+  return gulp.src('./public/images/**/*.*')
+    .pipe(gulp.dest('./public.dist/images'))
+  ;
+});
+
+// copying the html files
+gulp.task('copy-client', function(){
+  return gulp.src('./public/**/*.+(html|txt|ico)')
+    .pipe(gulp.dest('./public.dist'))
+  ;
+});
+
+// queues app.js and vendor.js
+function buildjs() {
+  return streamqueue({ objectMode: true },
+      gulp.src('vendor*.js', {read:false, 'cwd': __dirname + '/public.dist/'}),
+      gulp.src('scripts*.js', {read:false, 'cwd': __dirname + '/public.dist/'})
+    )
+  ;
+}
+
+// queues app.css and vendor.css
+function buildcss() {
+  return streamqueue({ objectMode: true },
+      gulp.src('vendor*.css', {read:false, 'cwd': __dirname + '/public.dist/'}),
+      gulp.src('scripts*.css', {read:false, 'cwd': __dirname + '/public.dist/'})
+    )
+  ;
+}
+
+// injection of both js files and css files in index.html
+gulp.task('build-html', function() {
+  return gulp.src('./public/index.html')
+    .pipe(inject(buildjs(), {relative:false}))
+    .pipe(inject(buildcss(), {relative:false}))
+    .pipe(gulp.dest('./public.dist'))
+  ;
 });

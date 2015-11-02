@@ -8,11 +8,14 @@
     <!--<link rel="stylesheet" type="text/css" href="/netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">-->
     <link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/bootswatch/3.3.5/slate/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Open+Sans" />
-    <!-- bower:css -->
-    <link rel="stylesheet" type="text/css" href="bower_components/animate.css/animate.css" />
-    <!-- endbower -->
-    <link rel="stylesheet" type="text/css" href="styles/main.css">
-    <!--<link rel="stylesheet" type="text/css" href="styles/navbar.css">--> 
+    <!-- inject-vendor:css -->
+    <!-- endinject -->
+    <!--<link rel="stylesheet" type="text/css" href="bower_components/animate.css/animate.css" />-->
+
+    <!-- inject-custom:css -->
+    <link rel="stylesheet" href="styles/custom-58c8a28db9.css">
+    <!-- endinject -->
+    <!--<link rel="stylesheet" type="text/css" href="styles/main.css">-->
   </head>
   <body data-ng-app="escrape2" data-ng-strict-di>
     <div class="container">
@@ -50,13 +53,31 @@
     
     </div>
 
-    <script src="http://test.server.local:35729/livereload.js"></script>
-    <!-- TEST-BEFORE-WITH-NO-NG-IF ...
-    <script ng-if="debug === 1" src="http://test.server.local:35729/livereload.js"></script>
-    -->
+    <script ng-if="true" src="http://test.server.local:35729/livereload.js"></script>
+    <!-- TODO: ng-if developing -->
 
-    <script src="/public.dist/scripts/vendor-9f5d24c364.js"></script>
+    <!-- inject-vendor:js -->
+    <script src="scripts/vendor-ff70fab07a.js"></script>
+    <!-- endinject -->
 
-    <script src="/public.dist/scripts/custom-804797ee75.js"></script>
+<!-- INJECT WORKS
+    <script src="bower_components/jquery/dist/jquery.js"></script>
+    <script src="bower_components/angular/angular.js"></script>
+    <script src="bower_components/angular-route/angular-route.js"></script>
+    <script src="bower_components/bootstrap/dist/js/bootstrap.js"></script>
+-->
+
+    <!-- inject-custom:js -->
+    <script src="scripts/custom-804797ee75.js"></script>
+    <!-- endinject -->
+
+<!-- INJECT WORKS
+    <script type="text/javascript" src="scripts/app.js"></script>
+    <script type="text/javascript" src="scripts/routes.js"></script>
+    <script type="text/javascript" src="scripts/controllers/about.js"></script>
+    <script type="text/javascript" src="scripts/controllers/home.js"></script>
+    <script type="text/javascript" src="scripts/controllers/persons.js"></script>
+    <script type="text/javascript" src="scripts/services/persons.js"></script>
+-->
   </body>
 </html>
