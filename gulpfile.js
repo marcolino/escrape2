@@ -1,182 +1,267 @@
-// Gulp example configuration file for an Express + AngularJS app
-// find the complete explanation at blog.scikr.com
-//
-// usage: `gulp serve` for development and `gulp build` for production
-//
-// run the following command to get all packages needed:
-// npm install --save-dev gulp main-bower-files gulp-inject gulp-livereload gulp-watch gulp-nodemon streamqueue gulp-uglify gulp-concat gulp-ng-annotate gulp-rev gulp-rimraf run-sequence gulp-filter gulp-minify-css
+'use strict';
 
-// call the node packages
-var gulp = require('gulp'),
-  bowerFiles = require('main-bower-files'),
-  inject = require('gulp-inject'),
-  livereload = require('gulp-livereload'),
-  watch = require('gulp-watch'),
-  nodemon = require('gulp-nodemon'),
-  streamqueue = require('streamqueue');
+var gulp = require('gulp')
+  , gutil = require('gulp-util')
+  , del = require('del')
+  , usemin = require('gulp-usemin')
+  , wiredep = require('wiredep').stream
+  , inject = require('gulp-inject')
+  , mainBowerFiles = require('main-bower-files')
+  , jshint = require('gulp-jshint')
+  , jscs = require('gulp-jscs')
+  , validateHtml = require('gulp-html-angular-validate')
+  , removeHtmlComments = require('gulp-remove-html-comments')
+  , removeEmptyLines = require('gulp-remove-empty-lines')
+  , babel = require('gulp-babel')
+  , ngAnnotate = require('gulp-ng-annotate')
+  , uglify = require('gulp-uglify')
+  , concat = require('gulp-concat')
+  , sass = require('gulp-sass')
+  , sourcemaps = require('gulp-sourcemaps')
+  , rev = require('gulp-rev')
+  , postcss = require('gulp-postcss')
+  , minifyHtml = require('gulp-minify-html')
+  , minifyCss = require('gulp-minify-css')
+  , spawn = require('child_process').spawn
+  , nodemon = require('gulp-nodemon')
+  , path = require('path')
+  , print = require('gulp-print')
+  , livereload = require('gulp-livereload')
+;
 
-// jsfiles() streams all the js files (with exceptions) into a single stream for future injection
-function jsfiles() {
-  return streamqueue({ objectMode: true },
-    // first streams vendor files from Bower (with a filter for exceptions)
-    gulp.src(bowerFiles(), {read: false}).pipe(gulpFilter(['*.js',])), //'!bootstrap-sass-official', '!bootstrap.js', '!json3', '!es5-shim'])),
-    // then streams the app files
-    gulp.src(['./public/**/*.js'], {read: false})
-  );
+var api = 'api';
+var app = 'public';
+var dist = 'public.dist';
+var cfg = {
+  script: './bin/www',
+  url: 'http://test.server.local:3000',
+  browser: 'chromium-browser', // @centos: chromim-browser, @ubuntu: 'google-chrome' ...
+  backend: {
+    scripts: [ api + '/*.js', api + '/routes/**/*', api + '/controllers/**/*', api + '/models/**/*' ],
+  },
+  frontend: {
+    scripts: [ app + '/scripts/**/*.js' ],
+    styles: [ app + '/styles/**/*.scss' ],
+    index: [ app + '/index.html' ],
+    views: [ app + '/views/**/*.html' ],
+    images: [ app + '/images/**' ],
+  },
+  validation: {
+    html: {
+      reportpath: 'logs/html-angular-validate-report.json',
+      relaxerror: [
+        'Element “form” does not need a “role” attribute.',
+        'Element “img” is missing required attribute “src”.',
+      ],
+    },
+  },
+  mode: 'development',
 }
 
-// cssfiles() streams all the css files (with exceptions) into a single stream for future injection
-function cssfiles() {
-  return streamqueue({ objectMode: true },
-    // first streams vendor files from Bower (with a filter for exceptions)
-    gulp.src(bowerFiles(), {read: false}).pipe(gulpFilter(['*.css',])), //'!bootstrap-sass-official', '!bootstrap.js', '!json3', '!es5-shim'])),
-    // then streams the app files
-    gulp.src(['./public/**/*.css'], {read:false})
-  );
+// a slight delay to reload browsers connected to livereload after restarting nodemon
+var LIVERELOAD_DELAY = 3000; // milliseconds
+
+var isProduction = false;
+
+if (gutil.env.dev === true) {
+  isProduction = false;
+}
+if (gutil.env.pro === true) {
+  isProduction = true;
 }
 
-// create the inject task that inject successively ALL CSS stream, and ALL JS stream into index.html
-gulp.task('inject', function(){
-  return gulp.src('./public/index.html')
-    .pipe(inject(jsfiles(), {relative:true}))
-    .pipe(inject(cssfiles(), {relative:true}))
-    .pipe(gulp.dest('./public.dist/'));
+gulp.task('clean', function() {
+  del.sync([ dist ]);
 });
 
-gulp.task('watch', ['inject'], function() {
-  // start the livereload server
-  livereload.listen();
-  // reload the browser when changes to any file in ./client/
-  // dont forget to put the app.use(require('connect-livereload')()); in your express app
-  gulp.watch('./public/**').on('change', livereload.changed);
-});
-
-// the serve task that we use for development
-gulp.task('serve', ['watch'], function(){
-  // nodemon starts the node app with monitoring of all files in the server folder (livereload takes care of the client)
-  nodemon({
-    script: 'bin/www', // the app script
-    watch: ['api/**/*.js'], // file to watch for reloading
-    env: { 'PORT': 3000 } }  // any environment variables
-  ).on('restart', function () {
-    setTimeout(function() {livereload.changed();}, 2000);
-    console.log('restarted!');
-  });
-});
-
-var uglify = require('gulp-uglify'),
-  concat = require('gulp-concat'),
-  ngAnnotate = require('gulp-ng-annotate'),
-  rev = require('gulp-rev'),
-  rimraf = require('gulp-rimraf'),
-  runSequence = require('run-sequence'),
-  gulpFilter = require('gulp-filter'),
-  minifyCSS = require('gulp-minify-css');
-
-gulp.task('build', function(callback) {
-  // runSequence is a cool way of choosing what must run sequentially, and what in parallel
-  // here, the task clean will run first alone, then all the builds in parallel, then the copies in parallel, then the injection in html
-  runSequence(
-    'clean',
-    ['build-scripts', 'build-scripts-bower', 'build-styles', 'build-styles-bower'],
-    ['copy-server', 'copy-assets', 'copy-client'],
-    'build-html',
-    callback);
-});
-
-// clean the dist folder
-gulp.task('clean', function(){
-  return gulp.src('./dist/**/*.*', {read:false})
-    .pipe(rimraf());
-});
-
-// concatenate, annotate (for angular JS) and minify the js scripts into one single app.js file, then copy it to dist folder
-gulp.task('build-scripts', function() {
-  return gulp.src(['./public/scripts/**/*.js'])
-    .pipe(concat('app.js')) // concatenate all js files
-    .pipe(ngAnnotate()) // annotate to ensure proper dependency injection in AngularJS
-    .pipe(uglify()) // minify js
-    .pipe(rev()) // add a unique id at the end of app.js (ex: app-f4446a9c.js) to prevent browser caching when updating the website
-    .pipe(gulp.dest('./public.dist')) // copy app-**.js to the appropriate folder
+gulp.task('backend-scripts', function() {
+  return gulp
+    .src(cfg.backend.scripts)
+    .pipe(jshint('.jshintrc'))
+    .pipe(jshint.reporter('jshint-stylish'))
+    .pipe(livereload()) // TODO: really we want to reload frontend after backend scripts did change?
   ;
 });
 
-// same as above, with the bower files (no need to ngannotate)
-gulp.task('build-scripts-bower', function() {
-  return gulp.src(bowerFiles())
-    .pipe(gulpFilter(['*.js', '!bootstrap-sass-official', '!bootstrap.js', '!json3', '!es5-shim']))
-    .pipe(concat('vendor.js'))
-    .pipe(uglify())
+gulp.task('frontend-scripts-vendor-build', function() {
+  del([ dist + '/scripts/vendor-*.js', dist + '/scripts/vendor-*.js.map' ]);
+  return gulp
+    .src(mainBowerFiles([ '**/*.js' ]))
+      .pipe(print(function(filepath) { return "main bower js file: " + filepath; }))
+    .pipe(concat({ path: 'vendor.js', cwd: '' }))
+    //bower.pipe(uglify({
+    //compress: {
+    //    negate_iife: false
+    //  }
+    //}))
     .pipe(rev())
-    .pipe(gulp.dest('./dist/public/app'))
+    .pipe(gulp.dest(dist + '/scripts'))
   ;
 });
 
-// yet another concat/minify task, here for the CSS
-gulp.task('build-styles',function() {
-  return gulp.src(['./public/**/*.css'])
-    .pipe(concat('styles.css'))
-    .pipe(minifyCSS())
+gulp.task('frontend-scripts-custom-build', function() {
+  del([ dist + '/scripts/custom-*.js', dist + '/scripts/custom-*.js.map' ]);
+  return gulp
+    .src(cfg.frontend.scripts)
+    //.pipe(gulp-strip-debug())
+    .pipe(jshint('.jshintrc'))
+    .pipe(jshint.reporter('jshint-stylish'))
+    .pipe(jscs())
+    .pipe(sourcemaps.init())
+    .pipe(concat({ path: 'custom.js', cwd: '' }))
+    .pipe(ngAnnotate())
+    .pipe(uglify({
+      compress: {
+        negate_iife: false
+      }
+    }))
     .pipe(rev())
-    .pipe(gulp.dest('./public.dist'))
+    .pipe(sourcemaps.write('.'))
+    .pipe(gulp.dest(dist + '/scripts'))
   ;
 });
 
-// and for vendor CSS
-gulp.task('build-styles-bower', function() {
-  return gulp.src(bowerFiles())
-    .pipe(gulpFilter(['*.css']))
-    .pipe(concat('vendor.css'))
-    .pipe(minifyCSS())
+gulp.task('frontend-styles-vendor-build', function() {
+  del([ dist + '/styles/vendor-*.css' ]);
+  return gulp
+    .src(mainBowerFiles([ '**/*.css' ]))
+    .pipe(print(function(filepath) { return "main bower css file: " + filepath; }))
+    //.pipe(postcss([ minifyCss(), ]))
+    .pipe(concat({ path: 'vendor.css', cwd: '' }))
     .pipe(rev())
-    .pipe(gulp.dest('./public.dist'))
+    .pipe(gulp.dest(dist + '/styles'))
   ;
 });
 
-// simple task to copy the server folder to dist/server
-gulp.task('copy-server', function(){
-  return gulp.src('./api/**/*.*')
-    .pipe(gulp.dest('./public.dist/api'))
+gulp.task('frontend-styles-custom-build', function() {
+  del([ dist + '/styles/custom-*.css' ]);
+  return gulp
+    .src(cfg.frontend.styles)
+    //.pipe(print(function(filepath) { return "main custom css files: " + filepath; }))
+    .pipe(sass()
+    .on('error', function (err) {
+      console.error(err);
+      this.emit('end');
+    }))
+    //.pipe(postcss([ minifyCss(), ]))
+    .pipe(concat({ path: 'custom.css', cwd: '' }))
+    .pipe(rev())
+    .pipe(gulp.dest(dist + '/styles'))
+    //.pipe(livereload({stream: true}))
   ;
 });
 
-// copying the assets (images, fonts, ...)
-gulp.task('copy-assets', function() {
-  return gulp.src('./public/images/**/*.*')
-    .pipe(gulp.dest('./public.dist/images'))
+gulp.task('frontend-scripts', [ 'frontend-scripts-vendor-build', 'frontend-scripts-custom-build' ], function() {
+  return gulp
+    .src(cfg.frontend.index, { base: app })
+    .pipe(inject(gulp.src([ dist + '/scripts/vendor-*.js' ], { read: false }), {
+      name: 'inject-vendor',
+      ignorePath: dist,
+      addRootSlash: false
+    }))
+    .pipe(inject(gulp.src([ dist + '/scripts/custom-*.js' ], { read: false }), {
+      name: 'inject-custom',
+      ignorePath: dist,
+      addRootSlash: false
+    }))
+    .pipe(inject(gulp.src([ dist + '/styles/vendor-*.css' ], { read: false }), {
+      name: 'inject-vendor',
+      ignorePath: dist,
+      addRootSlash: false
+    }))
+    .pipe(inject(gulp.src([ dist + '/styles/custom-*.css' ], { read: false }), {
+      name: 'inject-custom',
+      ignorePath: dist,
+      addRootSlash: false
+    }))
+    .pipe(gulp.dest(dist + '/'))
+    .pipe(livereload())
   ;
 });
 
-// copying the html files
-gulp.task('copy-client', function(){
-  return gulp.src('./public/**/*.+(html|txt|ico)')
-    .pipe(gulp.dest('./public.dist'))
+gulp.task('frontend-styles', [ 'frontend-styles-vendor-build', 'frontend-styles-custom-build' ], function() {
+  return gulp
+    .src(cfg.frontend.index, { base: app })
+    .pipe(inject(gulp.src([ dist + '/scripts/vendor-*.js' ], { read: false }), {
+      name: 'inject-vendor',
+      ignorePath: dist,
+      addRootSlash: false
+    }))
+    .pipe(inject(gulp.src([ dist + '/scripts/custom-*.js' ], { read: false }), {
+      name: 'inject-custom',
+      ignorePath: dist,
+      addRootSlash: false
+    }))
+    .pipe(inject(gulp.src([ dist + '/styles/vendor-*.css' ], { read: false }), {
+      name: 'inject-vendor',
+      ignorePath: dist,
+      addRootSlash: false
+    }))
+    .pipe(inject(gulp.src([ dist + '/styles/custom-*.css' ], { read: false }), {
+      name: 'inject-custom',
+      ignorePath: dist,
+      addRootSlash: false
+    }))
+    .pipe(gulp.dest(dist + '/'))
+    .pipe(livereload())
   ;
 });
 
-// queues app.js and vendor.js
-function buildjs() {
-  return streamqueue({ objectMode: true },
-      gulp.src('vendor*.js', {read:false, 'cwd': __dirname + '/public.dist/'}),
-      gulp.src('scripts*.js', {read:false, 'cwd': __dirname + '/public.dist/'})
-    )
+gulp.task('frontend-views', function() {
+  return gulp
+    .src(cfg.frontend.views)
+    //  //.pipe(removeHtmlComments())
+    //  //.pipe(removeEmptyLines())
+    //.pipe(minifyHtml())
+    .pipe(gulp.dest(dist + '/views'))
+    .pipe(livereload(/*{stream: true}*/))
   ;
-}
+});
 
-// queues app.css and vendor.css
-function buildcss() {
-  return streamqueue({ objectMode: true },
-      gulp.src('vendor*.css', {read:false, 'cwd': __dirname + '/public.dist/'}),
-      gulp.src('scripts*.css', {read:false, 'cwd': __dirname + '/public.dist/'})
-    )
+gulp.task('frontend-images', [ ], function() {
+  return gulp
+    .src(cfg.frontend.images)
+    .pipe(gulp.dest(dist + '/images'))
+    .pipe(livereload(/*{stream: true}*/))
   ;
-}
+});
 
-// injection of both js files and css files in index.html
-gulp.task('build-html', function() {
-  return gulp.src('./public/index.html')
-    .pipe(inject(buildjs(), {relative:false}))
-    .pipe(inject(buildcss(), {relative:false}))
-    .pipe(gulp.dest('./public.dist'))
-  ;
+gulp.task('nodemon', function(cb) {
+  return nodemon({
+    script: cfg.script,
+    ext: '.js',
+    watch: cfg.backend.scripts,
+    env: {
+      'NODE_ENV': cfg.mode,
+    },
+  })
+  .once('start', function onStart() {
+    livereload();
+    cb();
+  })
+  .on('restart', function onRestart() {
+      livereload();
+  })
+  .on('exit', function() { // assuming a [ctrl-c] will break 
+    // to avoid double break to interrupt
+    ///process.exit(); // this hides some errors...
+  })
+});
+
+gulp.task('development', [ 'backend-scripts', 'frontend-scripts', 'frontend-styles', 'frontend-views', 'nodemon', /*'browser-sync'*/ ], function() {
+  livereload.listen({ quiet: false });
+  gulp.watch(cfg.backend.scripts, [ 'backend-scripts' ]);
+  gulp.watch(cfg.frontend.index, [ 'frontend-scripts', 'frontend-syles' ]);
+  gulp.watch(cfg.frontend.scripts, [ 'frontend-scripts' ]);
+  gulp.watch(cfg.frontend.styles, [ 'frontend-styles' ]);
+  gulp.watch(cfg.frontend.views, [ 'frontend-views' ]); // drop html for hbs (handlebars)...
+});
+
+gulp.task('build', [ 'clean', 'development', ], function() {
+});  
+
+gulp.task('deploy', [ 'build' ], function() { // TODO: deploy to github pages / openshift ?
+});  
+
+gulp.task('default', [ 'development' ], function() {
 });

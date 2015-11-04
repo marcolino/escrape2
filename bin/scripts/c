@@ -1,0 +1,10 @@
+#!/bin/sh
+#
+# curl wrap script
+
+path="api/""${1}"
+verb="${2:-GET}"
+host="${3:-http://localhost:3000/}"
+header="${3:-Accept: application/json}"
+
+curl -X "${verb}" -H "${header}" -s -S "${host}${path}" | json

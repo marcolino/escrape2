@@ -10,5 +10,10 @@ var app = angular.module('escrape2', [
 ]);
 
 var config = {
-  debug: true
+  debug: true,
+  devel: false,
 };
+
+app.run([ '$rootScope', function($rootScope) {
+  $rootScope.config = config;
+}]);
