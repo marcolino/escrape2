@@ -1,5 +1,6 @@
 var os = require("os")
-  , simpleLogger = require('simple-node-logger')
+//  , simpleLogger = require('simple-node-logger')
+  , winston = require('winston') // handle logging
 ;
 
 var config = {};
@@ -8,11 +9,12 @@ config.debug = true;
 config.mode = ((os.hostname() === 'linux-backup') ? 'fake' : 'normal');
 config.category = 'women'; // TODO: will get it from req, this will be a default value (?)
 config.city = 'torino'; // TODO: will get it from req, this will be a default value (?)
-config.imagesPath = './data/images';
+config.imagesPath = __dirname + '/..' + '/data/images';
 config.logger = {};
-config.logger.level = 'trace';
+config.logger.levelConsole = 'silly'; // 'error' to production
+config.logger.levelFile = 'debug'; // 'info' to production
 config.logger.logFilePath = 'logs/escrape.log';
-config.logger.timestampFormat = 'YYYY-MM-DD HH:mm:ss.SSS';
+config.logger.timestamp = function() { return (new Date()).toISOString(); };
 config.db = {};
 config.db.type = 'mongodb';
 config.db.host = 'localhost';
@@ -26,11 +28,34 @@ config.tor.available = (os.hostname() === 'malibox'); // TOR is available only l
 config.tor.host = 'localhost';
 config.tor.port = 9050;
 
-log = simpleLogger.createSimpleLogger(config.logger); // create a simple logger
-log.setLevel(config.logger.level);
-config.log = log;
+// set up logging
+var logger = new (winston.Logger)({
+  transports: [
+    new (winston.transports.Console)({
+      silent: false,
+      level: config.logger.levelConsole,
+      prettyPrint: true,
+      colorize: true,
+      showlevel: false,
+      timestamp: config.logger.timestamp,
+    }),
+    new (winston.transports.File)({
+      silent: false,
+      level: config.logger.levelFile,
+      prettyPrint: false,
+      colorize: false,
+      showlevel: true,
+      timestamp: config.logger.timestamp,
+      filename: config.logger.logFilePath,
+      maxsize: 100000,
+      maxFiles: 10,
+      json: false,
+    }),
+  ]
+});
+config.log = logger;
 
-// development only
+// development only (?)
 config.providers = [
   {
     key: 'SGI',
@@ -38,10 +63,10 @@ config.providers = [
     type: 'persons',
     url: 'http://www.sexyguidaitalia.com',
     language: 'it',
-    //limit: 5 * 1000, // don't use it aymore...
     categories: {
       women: {
-        path: '/escort', // list path (TODO: use a better name...)
+        pathList: '/escort',
+        pathDetails: '/escort',
       },
     },
   },
@@ -51,10 +76,10 @@ config.providers = [
     type: 'persons',
     url: 'http://www.torinoerotica.com',
     language: 'it',
-    //limit: 5 * 1000, // don't use it aymore...
     categories: {
       women: {
-        path: '/annunci-escort-donna', // list path (TODO: use a better name...)
+        pathList: '/annunci-escort-donna',
+        pathDetails: ''
       },
     },
   },
@@ -64,13 +89,14 @@ config.providers = [
     type: 'persons',
     url: 'http://it.wikipedia.org',
     language: 'it',
-    //limit: 1, // don't use it aymore...
     categories: {
       overall: {
-        path: '/wiki/Lista_delle_persone_pi%C3%B9_potenti_del_mondo_secondo_Forbes#2014.5B2.5D', // list path (TODO: use a better name...)
+        pathList: '/wiki/Lista_delle_persone_pi%C3%B9_potenti_del_mondo_secondo_Forbes#2014.5B2.5D',
+        pathDetails: ''
       },
       women: { 
-        path: '/wiki/Lista_delle_100_donne_pi%C3%B9_potenti_del_mondo_secondo_Forbes#2015', // list path (TODO: use a better name...)
+        pathList: '/wiki/Lista_delle_100_donne_pi%C3%B9_potenti_del_mondo_secondo_Forbes#2015',
+        pathDetails: ''
       },
     },
   },
@@ -80,10 +106,10 @@ config.providers = [
     type: 'persons',
     url: 'http://test.server.local', //http://localhost',
     language: 'it',
-    //limit: 1, // don't use it aymore...
     categories: {
       women: { 
-        path: '/test/list.zero'
+        pathList: '/test/list.zero',
+        pathDetails: ''
       },
     },
   },

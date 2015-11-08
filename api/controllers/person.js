@@ -67,13 +67,14 @@ exports.sync = function(req, res) { // sync persons
             }
             $ = cheerio.load(contents);
             var list = local.getList(provider, $);
-            //list = list.slice(0, 1); // to debug: limit lists to one element
+            //list = list.slice(0, 10); // to debug: limit lists to one element
             //log.info('list:', list);
             async.each(
               list, // 1st param is the array of items
               function(element, callbackInner) { // 3nd param is the function that each item is passed to
                 var person = {}; // create person object
-                person.url = element.url;
+                //person.url = local.getUrl(element.url);
+                person.url = local.buildDetailsUrl(provider, element.url, config);
                 if (!person.url) {
                   log.warn(
                     'error syncing provider ', provider.key, ', ',
@@ -90,7 +91,8 @@ exports.sync = function(req, res) { // sync persons
                   return callbackInner(); // skip this inner loop
                 }
                 resource = {
-                  url: local.buildDetailsUrl(provider, person, config),
+                  //url: local.buildDetailsUrl(provider, person.url, config),
+                  url: person.url,
                   type: 'text'
                   //etag: null,
                 };
@@ -98,9 +100,11 @@ exports.sync = function(req, res) { // sync persons
                   resource,
                   function(err) {
                     log.warn(
-                      'syncing person ', provider.key, '', person.key, ':',
+                      'syncing person ', provider.key, ' ', person.key, ':',
                       err, ', ', 'skipping'
                     );
+                    // TODO: log MUST resolve objects!
+                    console.log('err:', err);
                     return callbackInner(); // skip this inner loop
                   },
                   function(contents) {
@@ -116,8 +120,9 @@ exports.sync = function(req, res) { // sync persons
                     $ = cheerio.load(contents);
                     person.name = local.getDetailsName($, provider);
                     if (!person.name) { // should not happen...
-                      log.warn('person', person.key, 'name is empty');
-                      return callbackOuter();
+                      log.warn('person ', person.key, ' name is empty', ', ', 'skipping');
+                      //log.debug('THIS IS CONTENTS FOR EMPTY PERSON:', contents.toString('utf8'));
+                      return callbackInner(); // skip this inner loop
                     }
                     person.zone = local.getDetailsZone($, provider);
                     person.description = local.getDetailsDescription($, provider);
@@ -139,10 +144,9 @@ exports.sync = function(req, res) { // sync persons
                       local.upsert(person, function(err) {
                         if (err) {
                           // ignore this person error to continue with other persons
-//log.warn('can\'t upsert person person ', person.providerKey, ' ', person.key);
                         } else {
                           retrievedPersonsCount++;
-                          log.info('person ', person.providerKey, ' ', person.key, ' sync\'d');
+                          //log.info('person ', person.providerKey, ' ', person.key, ' sync\'d');
                         }
                         callbackInner(); // this person is done
                       });
@@ -188,30 +192,29 @@ exports.sync = function(req, res) { // sync persons
 
 local.upsert = function(person, callback) {
   Person.findOne(
-    { providerKey: person.providerKey, key: person.key }, // query
+    { providerKey: person.providerKey, key: person.key },
     function(err, doc) {
       if (err) {
         log.warn('could not find person ', person.name, ':', err, ', ', 'skipping');
-        callback(err);
-      } else {
-        var isNew;
-        if (doc) { // person did already exist
-          isNew = false;
-          doc.dateOfLastSync = person.dateOfLastSync;
-_.merge(doc, person); // to set new fields... TODO: keep this? does this impacts on performance?
-        } else { // person did not exist before
-          isNew = true;
-          doc = new Person();
-          _.merge(doc, person);
-        }
-        doc.save(function(err) {
-          if (err) {
-            log.warn('could not save person ', doc.providerKey, ' ', doc.key, ':', err, ', ', 'skipping');
-            return callback(err);
-          }
-          callback(null);
-        });
+        return callback(err);
       }
+      var isNew;
+      if (doc) { // person did already exist
+        isNew = false;
+        doc.dateOfLastSync = person.dateOfLastSync;
+      } else { // person did not exist before
+        isNew = true;
+        doc = new Person();
+      }
+      _.merge(doc, person);
+      doc.save(function(err) {
+        if (err) {
+          log.warn('could not save person ', doc.providerKey, ' ', doc.key, ':', err, ', ', 'skipping');
+          return callback(err);
+        }
+        log.info('person', person.providerKey, person.key, (isNew ? 'inserted' : 'updated'));
+        callback(null); // success
+      });
     }
   );
 };
@@ -304,36 +307,32 @@ local.getList = function(provider, $) {
 local.buildListUrl = function(provider, config) {
   var val;
   if (provider.key === 'SGI') {
-    val = provider.url + provider.categories[config.category].path + '/' + config.city;
+    val = provider.url + provider.categories[config.category].pathList + '/' + config.city;
   }
   if (provider.key === 'TOE') {
-    val = provider.url + provider.categories[config.category].path;
+    val = provider.url + provider.categories[config.category].pathList;
   }
   if (provider.key === 'FORBES') {
-    val = provider.url + provider.categories[config.category].path;
+    val = provider.url + provider.categories[config.category].pathList;
   }
   if (provider.key === 'TEST') {
-    val = provider.url + provider.categories[config.category].path;
+    val = provider.url + provider.categories[config.category].pathList;
   }
   return val;
 };
 
-local.buildDetailsUrl = function(provider, person, config) {
+local.buildDetailsUrl = function(provider, url, config) {
   var val;
-  if (provider.key === 'SGI') {
-    val = provider.url + provider.categories[config.category].path + '/' + person.url;
-  }
-  if (provider.key === 'TOE') {
-    val = provider.url + '/' + person.url;
-  }
-  if (provider.key === 'FORBES') {
-    val = provider.url + person.url;
-  }
-  if (provider.key === 'TEST') {
-    val = provider.url + person.url;
-  }
+  url = url.replace(/^\.\//, ''); // remove local parts from url, if any
+  val = provider.url + provider.categories[config.category].pathDetails + '/' + url;
   return val;
 };
+
+/*
+local.getUrl = function(url) {
+  return url.replace(/^\.\//, ''); // remove local parts from url, if any
+};
+*/
 
 local.getDetailsName = function($, provider) {
   var val, element;
@@ -445,7 +444,8 @@ local.getDetailsPhone = function($, provider) {
       val = null;
     }
     if (val) {
-      val = val.replace(/[^\d]/, '');
+      val = val.replace(/^\s*\+/, '00');
+      val = val.replace(/[^\d]+/g, '');
     }
   }
   if (provider.key === 'TOE') {
@@ -458,7 +458,8 @@ local.getDetailsPhone = function($, provider) {
       val = null;
     }
     if (val) {
-      val = val.replace(/[^\d]/, '');
+      val = val.replace(/^\s*\+/, '00');
+      val = val.replace(/[^\d]+/g, '');
     }
   }
   if (provider.key === 'FORBES') {

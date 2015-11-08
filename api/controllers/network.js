@@ -17,6 +17,7 @@ exports.requestRetryAnonymous = function(resource, error, success) {
     (resource.type === 'image') ? 'binary' :
     null
   ;
+  //log.debug('netror - requesting url ', resource.url);
   //log.debug('!!!!! setting header If-Modified-Since to', resource.lastModified);
   var options = {
     url: resource.url,
@@ -91,6 +92,7 @@ exports.requestRetryAnonymous = function(resource, error, success) {
         response.statusCode !== 200 &&
         response.statusCode !== 304 &&
         response.statusCode !== 403 &&
+        response.statusCode !== 404 &&
         response.statusCode !== 502 &&
         response.statusCode !== 503 &&
         response.statusCode !== 524
@@ -106,6 +108,7 @@ exports.requestRetryAnonymous = function(resource, error, success) {
     var forbidden = (
       response && (
         (response.statusCode === 403) || // 403 status code (forbidden)
+        (response.statusCode === 404) || // 404 status code (not found)
         (response.statusCode === 502) || // 502 status code (bad gateway, tor proxy problem?)
         (response.statusCode === 503) || // 503 status code (service unavailable, tor proxy problem?)
         (response.statusCode === 524) || // 524 status code (cloudfare timeout)
@@ -113,10 +116,16 @@ exports.requestRetryAnonymous = function(resource, error, success) {
             (response.statusCode === 200) &&
             (response.body && (
               response.body.toString().match(
-                /<title>.*?A timeout occurred.*?<\/title>/ // SGI provider timeout signature
+                /<title>404 - .*?<\/title>/ // TOE page not found
               ) ||
               response.body.toString().match(
-                /<title>Attention Required!\s*\|\s*CloudFlare<\/title>/ // SGI provider cloud warning
+                /<title>.*?A timeout occurred.*?<\/title>/ // SGI timeout signature
+              ) ||
+              response.body.toString().match(
+                /<title>Attention Required!\s*\|\s*CloudFlare<\/title>/ // SGI CloudFlare warning
+              ) ||
+              response.body.toString().match(
+                /<title>.*?\| 522: Connection timed out<\/title>/ // SGI connection timed out
               )
             )
           )
@@ -124,7 +133,7 @@ exports.requestRetryAnonymous = function(resource, error, success) {
       )
     );
     if (forbidden) {
-      log.warn('request was forbidden; will retry in ', (options.retryDelay / 1000), ' seconds...');
+      log.warn('request was forbidden (' + response.statusCode + '); will retry in ', (options.retryDelay / 1000), ' seconds...');
     }
     return forbidden;
   }

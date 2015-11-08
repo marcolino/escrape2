@@ -4,10 +4,7 @@
 <div class="jumbotron text-center">
   <h1>Persons</h1>
   <div data-ng-repeat="person in persons">
-    <a data-ng-href="http://it.wikipedia.org{{ person.url }}" target="_blank"><img data-ng-src="{{ getShowcaseLocalUrl(person) }}" alt="person showcase" style="width:240px"></a>
-    <!--
-    <a ng-href="http://it.wikipedia.org{{ person.url }}" target="_blank"><img ng-src="{{ person.showcaseUrl }}" style="width:240px" /></a>
-    -->
+    <a ng-href="{{ person.url }}" target="_blank"><img data-ng-src="{{ getShowcaseUrl(person) }}" class="showcase" alt="person showcase"></a>
     <h3>{{ person.name ? person.name : '[empty name]' }}</h3>
     <p>&nbsp;</p>
   </div>

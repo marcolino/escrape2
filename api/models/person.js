@@ -2,25 +2,18 @@ var mongoose = require('mongoose')
   , config = require('../config'); // application configuration
 
 var personSchema = new mongoose.Schema({
-  /*
-  name: String,
-  vote: Number,
-  dateofcreation: { type: Date, default: Date.now },
-  isloved: Boolean,
-  */
-  idUser: String, // ObjectId reference
-  key: String,
-  //key: String, TODO: define a compound key from: key, providerKey
   providerKey: String,
+  key: String,
+  //idUser: String,
   url: String,
   name: String,
-  //sex: String,
+  sex: String,
   addressZone: String,
   addressStreet: String,
   addressCity: String,
   description: String,
   notes: String,
-  phone: Number,
+  phone: String,
   nationality: String,
   age: Number,
   vote: Number,
@@ -29,9 +22,9 @@ var personSchema = new mongoose.Schema({
   dateOfFirstSync: { type: Date, default: Date.now /*(?)*/ },
   dateOfLastSync: { type: Date, default: Date.now },
   isPresent: Boolean,
-  aliasPrev: String, // ObjectId reference
-  aliasNext: String, // ObjectId reference
-  showcaseBasename: String // showcase image base name
+  aliasPrev: String,
+  aliasNext: String,
+  showcaseUrl: String // showcase image (local) url
 },
 {
   autoIndex: config.debug,
@@ -39,7 +32,11 @@ var personSchema = new mongoose.Schema({
 });
 personSchema.index({ providerKey: 1, key: 1 }, { unique: true });
 
-personSchema.methods.xSave = function(callback) {
+personSchema.virtual('keyFull').get(function() {
+  return this.providerKey + '/' + this.key;
+});
+
+personSchema.methods.ToDo_Save = function(callback) {
   return this.model('Person').savefind({ type: this.type }, callback);
 };
 

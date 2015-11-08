@@ -6,7 +6,7 @@ var express = require('express') // express
   , person = require('../controllers/person') // person's controller
   , config = require('../config') // global configuration
 ;
-
+var log = config.log;
 var router = express.Router(); // express router
 router.use(bodyParser.urlencoded({ extended: true })); // already in app.js (is it sufficient???)
 

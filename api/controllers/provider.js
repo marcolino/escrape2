@@ -15,13 +15,25 @@ mongoose.connection.on('open', function() {
   });
 });
 
-exports.getAll = function(filter, callback) { // GET all providers
+exports.getAll = function(filter, callback) { // get all providers
   Provider.getAll(filter, function(err, providers) {
     if (err) {
       console.error('Error retrieving providers:', err);
       callback(err);
     } else {
       callback(null, providers);
+    }
+  });
+};
+
+exports.getUrl = function(key, category, callback) { // get provider URL
+  Provider.model.findOne({ key: key }, function(err, provider) {
+    if (err) {
+      console.error('Error retrieving provider with key', key, ' :', err);
+      callback(err);
+    } else {
+      //console.log('getUrl() - key:', key, 'category:', category, ' => ', provider);
+      callback(null, provider ? (provider.url + provider.categories[category].pathDetails) : null);
     }
   });
 };

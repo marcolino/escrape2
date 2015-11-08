@@ -9,7 +9,7 @@ var express = require('express') // web server
   , db = require('./models/db') // database wiring
 ;
 
-// setup
+// setup (TODO: define these in config.js)
 var staticPathPublic = __dirname + '/..' + '/public.dist'; // path to static public directory
 var staticPathData = __dirname + '/..' + '/data'; // path to static data directory
 var engineTemplate = 'html'; // template engine name ('jade'...)
