@@ -33,26 +33,26 @@ exports.sync = function(req, res) { // sync persons
    */
   provider.getAll({ type: 'persons', mode: config.mode, key: /.*/ }, function(err, providers) {
     if (err) {
-      return log.error('error getting providers: ', err);
+      return log.error('error getting providers:', err);
     }
 
     // loop to get list page from all providers
     async.each(
       providers, // 1st param in async.each() is the array of items
       function(provider, callbackOuter) { // 2nd param is the function that each item is passed to
-        //log.info('provider: ', provider.key);
+        //log.info('provider:', provider.key);
         resource = {
           url: local.buildListUrl(provider, config),
           type: 'text',
           etag: null
         };
-        log.info('list resource.url: ', resource.url);
+        log.info('list resource.url:', resource.url);
         network.requestRetryAnonymous(
           resource,
           function(err) { // error
             log.warn(
-              'error syncing provider ', provider.key, ': ',
-              err, ', ', 'skipping'
+              'error syncing provider ', provider.key, ':',
+              err, ',', 'skipping'
             );
             return callbackOuter(); // skip this outer loop
           },
@@ -60,14 +60,14 @@ exports.sync = function(req, res) { // sync persons
             //log.info('contents lenght is ', contents.length);
             if (!contents) {
               log.warn(
-                'error syncing provider ', provider.key, ': ',
+                'error syncing provider ', provider.key, ':',
                 'empty contents', ', ', 'skipping'
               );
               return callbackOuter(); // skip this outer loop
             }
             $ = cheerio.load(contents);
             var list = local.getList(provider, $);
-            //list = list.slice(0, 10); // to debug: limit lists to one element
+            //list = list.slice(0, 1); // to debug: limit lists to one element
             //log.info('list:', list);
             async.each(
               list, // 1st param is the array of items
@@ -85,7 +85,7 @@ exports.sync = function(req, res) { // sync persons
                 person.key = element.key;
                 if (!person.key) {
                   log.warn(
-                    'error syncing provider ', provider.key, ', ',
+                    'error syncing provider ', provider.key, ',',
                     'person with no key', ', ', 'skipping'
                   );
                   return callbackInner(); // skip this inner loop
@@ -103,12 +103,9 @@ exports.sync = function(req, res) { // sync persons
                       'syncing person ', provider.key, ' ', person.key, ':',
                       err, ', ', 'skipping'
                     );
-                    // TODO: log MUST resolve objects!
-                    console.log('err:', err);
                     return callbackInner(); // skip this inner loop
                   },
                   function(contents) {
-                    //console.log('content of page of person', person.key, 'is long', contents.length);
                     if (!contents) {
                       log.warn(
                         'syncing provider ', provider.key, ',',
@@ -158,11 +155,11 @@ exports.sync = function(req, res) { // sync persons
                 if (err) {
                   log.warn(
                     'some error in the final inner async callback:', err,
-                    'one of the iterations produced an error: ', 'skipping this iteration'
+                    'one of the iterations produced an error:', 'skipping this iteration'
                   );
                 }
                 callbackOuter(); // signal this inner loop is finished
-                log.info('finished persons sync for provider ', provider.key);
+                log.info('finished persons sync for provider', provider.key);
               }
             );
           }
@@ -172,7 +169,7 @@ exports.sync = function(req, res) { // sync persons
         if (err) {
           return log.error(
             'some error in the final outer async callback:', err,
-            'one of the iterations produced an error: ', 'all further processing will now stop'
+            'one of the iterations produced an error:', 'all further processing will now stop'
           );
         }
         log.info('finished persons sync for all providers');
@@ -182,7 +179,7 @@ exports.sync = function(req, res) { // sync persons
           if (err) {
             return log.error('error setting activity status:', err);
           }
-          log.info('persons sync finished: ', retrievedPersonsCount.toString(), ' persons found');
+          log.info('persons sync finished:', retrievedPersonsCount.toString(), ' persons found');
         });
 
       }
@@ -323,7 +320,8 @@ local.buildListUrl = function(provider, config) {
 
 local.buildDetailsUrl = function(provider, url, config) {
   var val;
-  url = url.replace(/^\.\//, ''); // remove local parts from url, if any
+  // TODO: added '?', below... test again @HOME!!!
+  url = url.replace(/^\.?\//, ''); // remove local parts from url, if any
   val = provider.url + provider.categories[config.category].pathDetails + '/' + url;
   return val;
 };
@@ -475,7 +473,7 @@ local.getDetailsImageUrls = function($, provider) {
   var val = [];
   if (provider.key === 'SGI') {
     $('a[rel="group"][class="fancybox"]').each(function(index, element) {
-      href = $(element).attr('href');
+      var href = $(element).attr('href');
       if (href) {
         href = href
           .replace(/\.\.\//g, '')
@@ -488,14 +486,14 @@ local.getDetailsImageUrls = function($, provider) {
   }
   if (provider.key === 'TOE') {
     $('div[id="links"]').find('a').each(function(index, element) {
-      href = $(element).attr('href');
+      var href = $(element).attr('href');
       href = provider.url + '/' + href;
       val.push(href);
     });
   }
   if (provider.key === 'FORBES') {
     $('table[class="sinottico"]').find('tr').eq(1).find('a > img').each(function(index, element) {
-      href = 'http:' + $(element).attr('src'); // TODO: do not add 'http', make network.request work without schema...
+      var href = 'http:' + $(element).attr('src'); // TODO: do not add 'http', make network.request work without schema...
       val.push(href);
     });
   }
@@ -788,7 +786,6 @@ exports.getAll = function(req, res) { // get all persons
       console.error('Error retrieving persons:', err);
       res.json({ error: err });
     } else {
-      //console.log('persons.getAll: ' + persons);
       res.json(persons);
     }
   });
@@ -800,7 +797,6 @@ exports.getById = function(req, res) { // get person
       console.error('Error retrieving persons by id:', err);
       res.json({ error: err });
     } else {
-      //console.log('persons.getById: ' + person);
       res.json(persons);
     }
   });
@@ -812,7 +808,6 @@ exports.getByPhone = function(req, res) { // get person
       console.error('Error retrieving persons by phone:', err);
       res.json({ error: err });
     } else {
-      //console.log('persons.getByPhone: ' + person);
       res.json(persons);
     }
   });

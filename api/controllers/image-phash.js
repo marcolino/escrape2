@@ -3,10 +3,9 @@ var fs = require('fs') // file-system handling
   , path = require('path') // path handling
   , async = require('async') // to call many async functions in a loop
   , crypto = require('crypto') // to create hashes
-  //, pHash = require('phash-image') // perceptual hash
-  //, hammingDistance = require('hamming-distance') // calculate hamming distance
-  , Jimp = require('jimp') // image manipulation
-  //, _ = require('lodash') // lo-dash utilities
+  , pHash = require('phash-image') // perceptual hash
+  , hammingDistance = require('hamming-distance') // calculate hamming distance
+  , _ = require('lodash') // lo-dash utilities
   , network = require('../controllers/network') // network handling
   , Image = require('../models/image') // images handling
   , config = require('../config') // global configuration
@@ -14,25 +13,26 @@ var fs = require('fs') // file-system handling
 var local = {};
 var log = config.log;
 
-/// DEBUG ONLY /////////////////////////////////////
+/// DEBUG ONLY ///////////////////////////////////
 var db = require('../models/db'); // database wiring
-////////////////////////////////////////////////////
+//////////////////////////////////////////////////
 
 // syncronize all images for person
 exports.syncPersonImages = function(person, callback) {
   if (!person) {
     return callback('no person to sync images for');
   }
-
+  //var destination = config.imagesPath + '/' + person.providerKey + '/' + person.key;
   var destination = config.imagesPath;
   var resource;
-  var keyFull = person.providerKey + '/' + person.key;
 
   if (!person._imageUrls) {
-    return callback('empty image urls for person ' + keyFull, person);
+    log.warn('empty image urls for person ', person.keyFull);
+    return callback(true);
   }
   if (person._imageUrls.length <= 0) {
-    return callback('no image urls for person ' + keyFull, person);
+    log.warn('no image urls for person ', person.keyFull);
+    return callback(true);
   }
 
   async.each(
@@ -41,7 +41,7 @@ exports.syncPersonImages = function(person, callback) {
       var image = {};
       image.url = element;
       if (!image.url) {
-        log.warn('can\'t sync image for person', keyFull, ', ', 'image with no url, ', 'skipping');
+        log.warn('can\'t sync image for person', person.keyFull, ', ', 'image with no url, ', 'skipping');
         return callbackInner(); // skip this inner loop
       }
       // set first image flag based on indexOf this element in person imageUrls
@@ -58,7 +58,7 @@ exports.syncPersonImages = function(person, callback) {
           img.url = image.url;
         }
         img.isFirst = image.isFirst; // TODO: debug this: is image coupled with img???
-//log.debug('keyFull:', keyFull);
+//log.debug('person.keyFull:', person.providerKey + '/' + person.key);
         resource = {
           personKey: person.providerKey + '/' + person.key,
           //personProviderKey: person.providerKey,
@@ -85,14 +85,10 @@ exports.syncPersonImages = function(person, callback) {
           //img.isShowcase = res.isShowcase; // flag to indicate if this is the showcase image
           img.basename = res.basename; // image base name
           var imagePath = destination + '/' + img.basename;
-          //log.debug('calculating signature of', imagePath);
-          exports.signature(imagePath, function(err, signature) {
-            if (err) {
-              log.warn('can\'t calculate signature of image', image.url, ':', err);
-            } else {
-              img.signature = signature;
-            }
-            //log.debug('SAVING...');
+log.debug('calculating perceptual hash of', imagePath);
+          exports.perceptualHash(imagePath, function(perceptualHash) {
+            img.perceptualHash = perceptualHash;
+log.debug('SAVING...');
             img.save(function(err) { // , path // TODO...
               if (err) {
                 log.warn('can\'t save image', image.url, ':', err);
@@ -132,6 +128,7 @@ local.download = function(resource, destination, callback) {
         return callback(null, null);
       }
       var destinationDir = destination + '/' + resource.personKey;
+//log.debug('destinationDir:', destinationDir);
       mkdirp(destinationDir, function(err, made) {
         if (err) {
           log.warn('can\'t make directory ', destinationDir);
@@ -154,7 +151,12 @@ local.download = function(resource, destination, callback) {
               return callback(err);
             }
             resource.basename = resource.personKey + '/' + basename;
-            //log.debug('resource.basename:', resource.basename);
+//log.debug('resource.basename:', resource.basename);
+/*
+            resource.isShowcase = (made !== null); // an image will be a showcase
+                                                   // if it is the first one,
+                                                   // i.e.: a new directory was crated
+*/
             callback(null, resource); // success
           }
         );
@@ -163,8 +165,40 @@ local.download = function(resource, destination, callback) {
   );
 };
 
-exports.findSimilar = function(signature, thresholdDistance, callback) {
-  Image.find({}, '_id signature url', function(err, images) {
+/*
+exports.buildPerceptualHashes = function(callback) {
+log.debug('buildPerceptualHashes()');
+  Image.find({ _id: '563cdc17087c58a40ef833c1' }, function(err, images) {
+    if (err) {
+      return callback('can\'t find images');
+    }
+log.info('#images:', images.length);
+    for (var i = 0, len = images.length; i < len; i++) {
+log.debug('for');
+      var image = images[i];
+log.debug('image:', image);
+      var imageName = __dirname + '/../..' + '/data' + '/images' + '/' + image.providerKey + '/' + image.key + '/' + image.basename;
+log.debug('image name:', imageName);
+      exports.perceptualHash(imageName, function(hash) {
+log.debug('pHash is ', hash);
+        image.save(function(err) { // , path // TODO...
+          if (err) {
+            callback('can\'t save image', image.url, ':', err);
+          } else {
+log.debug('pHash saved for image', image.basename, '(person ', person.providerKey, ' ', person.key, ')');
+            callback(null); // success
+          }
+        }); 
+      });
+    }
+  });
+};
+*/
+
+exports.findNearest = function(perceptualHash, thresholdDistance, callback) {
+log.info('findNearest():', perceptualHash);
+  Image.find({}, 'idPerson perceptualHash url', function(err, images) {
+log.info('findNearest():', 'find');
     if (err) {
 log.warn('can\'t find images');
       return callback('can\'t find images');
@@ -172,75 +206,51 @@ log.warn('can\'t find images');
 log.info('#images:', images.length);
     var minDistance = 1;
     var id = null;
-    images.forEach(function(image, i) {
-      //log.info('i:', i);
-      //log.info('image:', image.url);
-      if (!image.signature) {
-        return; // skip this image without signature
-      }        
-      var distance = local.distance(image.signature, signature);
-      log.info('distance for hash', image.signature, 'is', distance);
+    for (var i = 0, len = images.length; i < images; i++) {
+      var image = images[i];
+      log.info('image:', image.url);
+      var distance = local.hammingDistance(image.perceptualHash, perceptualHash);
+      log.info('Hamming distance is ', hamming);
       if (distance <= minDistance) {
         minDistance = distance;
-        id = image._id.toString(); // TODO: toString ???
+        id = image._id;
       }
-    });
+    }
     if (minDistance <= thresholdDistance) {
-      return callback(null, true, minDistance, id);
+      return callback(null, true, id);
     } else {
-      return callback(null, false, minDistance, null);
+      return callback(null, false, null);
     }
   });
 };
 
-exports.signature = function(imageName, callback) {
-  //log.debug('image name:', imageName);
-  //var img = new Jimp(imageName);
-  Jimp.read(imageName, function(err, image) {
-    if (err) {
-      return callback(err, null);
-    }
-    var hash = image.hash(2);
-    if (hash.length !== 64) {
-      return callback('wrong hash length: ' + hash.length, null);
-    }
-    //console.log('hash:', hash);
-    callback(null, hash); // success
+exports.perceptualHash = function(imageName, callback) {
+  pHash(imageName, true).then(function(hash) {
+console.debug('image ' + imageName + ' hash:', hash, ', length is', hash.length);
+    hash = _.padRight(hash, 20, '0');
+    callback(hash);
   });
 };
 
-/*
 local.hammingDistance = function(hash1, hash2) {
   return hammingDistance(hash1, hash2) / 80; // phash lenght is 20 bytes, each byte is 4 bits long
-};
-*/
-
-local.distance = function (hash1, hash2) {
-  var counter = 0;
-  for (var k = 0; k < hash1.length; k++) {
-    if (hash1[k] != hash2[k]) {
-      counter++;
-    }
-  }
-  return (counter / hash1.length);
 };
 
 module.exports = exports;
 
-/// DEBUG ONLY /////////////////////////////////////
-var imageName = __dirname + '/../../' + 'img2.jpg';
-var thresholdDistance = 0.10;
-exports.signature(imageName, function(err, signature) {
-  log.debug(imageName, 'signature is', signature);
-  exports.findSimilar(signature, thresholdDistance, function(err, found, distance, id) {
-    if (err) {
-      return log.warn('can\'t find similar images:', err);
-    }
-    if (found) {
-      log.info('most similar image found (distance is', distance + ') has id', id);
-    } else {
-      log.info('no similar images found');
+
+
+/*
+exports.perceptualHash('api/PHASH-TEST/jlo-1.jpg', function(hash) {
+  log.info(hash);
+  exports.findNearest(hash, 0.28, function(err, result, imageId) {
+    if (!err) {
+      if (result) {      
+        log.info('image jlo-1.jpg is similar to image by id:', imageId);
+      } else {
+        log.info('image jlo-1.jpg has no similar images in db');  
+      }
     }
   });
 });
-////////////////////////////////////////////////////
+*/

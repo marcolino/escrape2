@@ -100,6 +100,7 @@ config.providers = [
       },
     },
   },
+/*
   {
     key: 'TEST',
     mode: 'fake',
@@ -113,6 +114,7 @@ config.providers = [
       },
     },
   },
+*/
   {
     key: 'GF',
     mode: 'normal',

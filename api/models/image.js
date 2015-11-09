@@ -10,7 +10,8 @@ var imageSchema = new mongoose.Schema({
   lastModified: String, // last modified tag
   basename: String, // image file base name
   dateOfFirstSync: { type: Date, default: Date.now }, // date of creation
-  perceptualHash: String, // perceptual hash
+  //perceptualHash: String, // perceptual hash
+  signature: String, // 4(?) base-64 bytes signature (perceptual hash ?)
   //isShowcase: Boolean, // this image is the person showcase
   isTruthful: Boolean // this image is to be considered thruthful
 },
