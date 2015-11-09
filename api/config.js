@@ -14,7 +14,7 @@ config.logger = {};
 config.logger.levelConsole = 'silly'; // 'error' to production
 config.logger.levelFile = 'debug'; // 'info' to production
 config.logger.logFilePath = 'logs/escrape.log';
-config.logger.timestamp = function() { return (new Date()).toISOString(); };
+config.logger.timestamp = function() { return (new Date()).toISOString().replace('T', ' ').replace('Z', ''); };
 config.db = {};
 config.db.type = 'mongodb';
 config.db.host = 'localhost';
@@ -47,8 +47,8 @@ var logger = new (winston.Logger)({
       showlevel: true,
       timestamp: config.logger.timestamp,
       filename: config.logger.logFilePath,
-      maxsize: 100000,
-      maxFiles: 10,
+      maxsize: 10000000,
+      maxFiles: 1,
       json: false,
     }),
   ]

@@ -24,6 +24,7 @@ exports.syncPersonImages = function(person, callback) {
     return callback('no person to sync images for');
   }
 
+  //var forceImageSaveToDbEvenIfNotChanged = true; // TODO: set this from options...
   var destination = config.imagesPath;
   var resource;
   var keyFull = person.providerKey + '/' + person.key;
@@ -57,7 +58,7 @@ exports.syncPersonImages = function(person, callback) {
           img = new Image();
           img.url = image.url;
         }
-        img.isFirst = image.isFirst; // TODO: debug this: is image coupled with img???
+        img._isFirst = image.isFirst; // TODO: debug this: is image coupled with img???
 //log.debug('keyFull:', keyFull);
         resource = {
           personKey: person.providerKey + '/' + person.key,
@@ -76,9 +77,14 @@ exports.syncPersonImages = function(person, callback) {
           }
           if (!res) { // res is null, image not modified, do not save to disk
             // we don't return callbackInner() here: if we don't save image to DB, we can't fix DB persons with no associated image, for whatever reason
-            // no, if no chane on image, no change on db... (DEBUG IT)
+            // no, if no change on image, no change on db... (DEBUG IT)
             //res = resource; // TODO: we will save image just to fix db persons with no associated image... Try to save only if really needed...
-            return callbackInner();
+            //if (forceImageSaveToDbEvenIfNotChanged) {
+            //  // force image save to DB even if not changed
+                //log.warn('force image save to DB even if not changed');
+            //} else {
+            return callbackInner(); // image not changed, do not save to DB
+            //}
           }
           img.etag = res.etag; // ETag, to handle caching
           img.lastModified = res.lastModified; // lastModified, to handle alternative caching
@@ -88,7 +94,7 @@ exports.syncPersonImages = function(person, callback) {
           //log.debug('calculating signature of', imagePath);
           exports.signature(imagePath, function(err, signature) {
             if (err) {
-              log.warn('can\'t calculate signature of image', image.url, ':', err);
+              log.warn('can\'t calculate signature of image', image.basename, ':', err);
             } else {
               img.signature = signature;
             }
@@ -97,7 +103,7 @@ exports.syncPersonImages = function(person, callback) {
               if (err) {
                 log.warn('can\'t save image', image.url, ':', err);
               } else {
-                if (img.isFirst) { // if this image is the first set person's showcase url
+                if (img._isFirst) { // if this image is the first set person's showcase url
                   person.showcaseUrl = img.basename;
                 }
                 log.info('image ', img.basename, ' inserted');
@@ -143,6 +149,8 @@ local.download = function(resource, destination, callback) {
         var hash = crypto.createHash('md5').update(resource.url + Date.now()).digest('hex');
         var basename = hash + ext;
         destinationDir += '/' + basename;
+        resource.basename = resource.personKey + '/' + basename;
+
         //console.log('download() saving to: ', destinationDir);
         fs.writeFile(
           destinationDir,
@@ -153,7 +161,6 @@ local.download = function(resource, destination, callback) {
               log.warn('can\'t write file to file system:', err);
               return callback(err);
             }
-            resource.basename = resource.personKey + '/' + basename;
             //log.debug('resource.basename:', resource.basename);
             callback(null, resource); // success
           }
@@ -173,7 +180,7 @@ log.info('#images:', images.length);
     var minDistance = 1;
     var id = null;
     images.forEach(function(image, i) {
-      //log.info('i:', i);
+      log.info('i:', i);
       //log.info('image:', image.url);
       if (!image.signature) {
         return; // skip this image without signature
@@ -194,8 +201,8 @@ log.info('#images:', images.length);
 };
 
 exports.signature = function(imageName, callback) {
+return callback(null, '1111111111111111111111111111111111111111111111111111111111111111'); // simulate success
   //log.debug('image name:', imageName);
-  //var img = new Jimp(imageName);
   Jimp.read(imageName, function(err, image) {
     if (err) {
       return callback(err, null);
@@ -204,7 +211,7 @@ exports.signature = function(imageName, callback) {
     if (hash.length !== 64) {
       return callback('wrong hash length: ' + hash.length, null);
     }
-    //console.log('hash:', hash);
+    //log.info('hash:', hash);
     callback(null, hash); // success
   });
 };
@@ -227,8 +234,9 @@ local.distance = function (hash1, hash2) {
 
 module.exports = exports;
 
+/*
 /// DEBUG ONLY /////////////////////////////////////
-var imageName = __dirname + '/../../' + 'img2.jpg';
+var imageName = __dirname + '/../../' + 'img-SGI-ads1dl-1.jpg';
 var thresholdDistance = 0.10;
 exports.signature(imageName, function(err, signature) {
   log.debug(imageName, 'signature is', signature);
@@ -244,3 +252,4 @@ exports.signature(imageName, function(err, signature) {
   });
 });
 ////////////////////////////////////////////////////
+*/
