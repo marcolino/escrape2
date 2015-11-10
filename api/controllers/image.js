@@ -279,12 +279,11 @@ Jimp.read(imageName, function(err, image) {
 ////////////////////////////////////////////////////
 */
 
-/*
 /// DEBUG ONLY /////////////////////////////////////
 var db = require('../models/db'); // database wiring
-var thresholdDistance = 0.12;
+var thresholdDistance = 0.05;
 log.info('start');
-Image.find({}, '_id personKey signature basename', check);
+Image.find({}, '_id personKey signature basename url', check);
 function check(err, images) {
   if (err) {
     return log.error('can\'t find images');
@@ -294,12 +293,17 @@ function check(err, images) {
   var personKey = null;
   var found = false;
   for (var i = 0, len = images.length; i < len; i++) {
-    for (var j = i + 1; j < len; j++) {
+    var printed = false;
+    for (var j = i + 1; j < images.length; j++) {
       var distance = local.distance(images[i].signature, images[j].signature);
       if (distance <= thresholdDistance) {
         found = true;
-        log.info('similar images found (distance is', distance + ') :', images[i].personKey, '<=>', images[j].personKey);
+        //log.info('similar images found (distance is', distance + ') :', images[i].personKey, '<=>', images[j].personKey);
+        if (!printed) console.log('<hr>', i, images[i].personKey + ': <img src="' + images[i].url + '" width="128" />');
+        printed = true;
+        console.log(' ', j, images[j].personKey, ': <img src="', images[j].url, '" width="128" /> ', distance, '<br>');
       }
+      //break;
     }
   }
   if (!found) {
@@ -308,4 +312,3 @@ function check(err, images) {
   log.info('finish');
 }
 ////////////////////////////////////////////////////
-*/

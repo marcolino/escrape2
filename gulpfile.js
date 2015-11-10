@@ -263,9 +263,10 @@ gulp.task('check', function() {
 gulp.task('development', [ 'backend-scripts', 'frontend-scripts', 'frontend-styles', 'frontend-views', 'nodemon' ], function() {
   livereload.listen({ quiet: false });
   gulp.watch(cfg.backend.scripts, [ 'backend-scripts' ]);
-  gulp.watch(cfg.frontend.index, [ 'frontend-scripts', 'frontend-syles' ]);
+  gulp.watch(cfg.frontend.index, [ 'frontend-scripts', 'frontend-styles' ]);
   gulp.watch(cfg.frontend.scripts, [ 'frontend-scripts' ]);
   gulp.watch(cfg.frontend.styles, [ 'frontend-styles' ]);
+  gulp.watch(cfg.frontend.images, [ 'frontend-images' ]);
   gulp.watch(cfg.frontend.views, [ 'frontend-views' ]); // drop html for hbs (handlebars)...
 });
 
