@@ -1,5 +1,4 @@
 var os = require("os")
-//  , simpleLogger = require('simple-node-logger')
   , winston = require('winston') // handle logging
 ;
 
@@ -9,7 +8,9 @@ config.debug = true;
 config.mode = ((os.hostname() === 'linux-backup') ? 'fake' : 'normal');
 config.category = 'women'; // TODO: will get it from req, this will be a default value (?)
 config.city = 'torino'; // TODO: will get it from req, this will be a default value (?)
-config.imagesPath = __dirname + '/..' + '/data/images';
+config.images = {};
+config.images.path = __dirname + '/..' + '/data/images';
+config.images.thresholdDistance = 0.12;
 config.logger = {};
 config.logger.levelConsole = 'silly'; // 'error' to production
 config.logger.levelFile = 'debug'; // 'info' to production

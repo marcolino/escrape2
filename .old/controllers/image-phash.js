@@ -22,8 +22,8 @@ exports.syncPersonImages = function(person, callback) {
   if (!person) {
     return callback('no person to sync images for');
   }
-  //var destination = config.imagesPath + '/' + person.providerKey + '/' + person.key;
-  var destination = config.imagesPath;
+  //var destination = config.images.path + '/' + person.providerKey + '/' + person.key;
+  var destination = config.images.path;
   var resource;
 
   if (!person._imageUrls) {

@@ -4,7 +4,6 @@
  * Module dependencies
  */
 var app = require('../api/app');
-var debug = require('debug')('http'); // TODO: doesn't work???
 var http = require('http');
 
 /**

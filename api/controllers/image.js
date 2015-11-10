@@ -3,10 +3,7 @@ var fs = require('fs') // file-system handling
   , path = require('path') // path handling
   , async = require('async') // to call many async functions in a loop
   , crypto = require('crypto') // to create hashes
-  //, pHash = require('phash-image') // perceptual hash
-  //, hammingDistance = require('hamming-distance') // calculate hamming distance
   , Jimp = require('jimp') // image manipulation
-  //, _ = require('lodash') // lo-dash utilities
   , network = require('../controllers/network') // network handling
   , Image = require('../models/image') // images handling
   , config = require('../config') // global configuration
@@ -14,18 +11,13 @@ var fs = require('fs') // file-system handling
 var local = {};
 var log = config.log;
 
-/// DEBUG ONLY /////////////////////////////////////
-var db = require('../models/db'); // database wiring
-////////////////////////////////////////////////////
-
 // syncronize all images for person
 exports.syncPersonImages = function(person, callback) {
   if (!person) {
     return callback('no person to sync images for');
   }
 
-  //var forceImageSaveToDbEvenIfNotChanged = true; // TODO: set this from options...
-  var destination = config.imagesPath;
+  var destination = config.images.path;
   var resource;
   var keyFull = person.providerKey + '/' + person.key;
 
@@ -59,11 +51,8 @@ exports.syncPersonImages = function(person, callback) {
           img.url = image.url;
         }
         img._isFirst = image.isFirst; // TODO: debug this: is image coupled with img???
-//log.debug('keyFull:', keyFull);
         resource = {
           personKey: person.providerKey + '/' + person.key,
-          //personProviderKey: person.providerKey,
-          //personKey: person.key,
           url: image.url,
           type: 'image',
           etag: img.etag, // comment this to force download
@@ -75,42 +64,36 @@ exports.syncPersonImages = function(person, callback) {
             console.log('err:', err);
             return callbackInner();
           }
-          if (!res) { // res is null, image not modified, do not save to disk
-            // we don't return callbackInner() here: if we don't save image to DB, we can't fix DB persons with no associated image, for whatever reason
-            // no, if no change on image, no change on db... (DEBUG IT)
-            //res = resource; // TODO: we will save image just to fix db persons with no associated image... Try to save only if really needed...
-            //if (forceImageSaveToDbEvenIfNotChanged) {
-            //  // force image save to DB even if not changed
-                //log.warn('force image save to DB even if not changed');
-            //} else {
-            return callbackInner(); // image not changed, do not save to DB
-            //}
+          if (!res) {
+            return callbackInner(); // res is null, image not modified, do not save to disk
           }
+          img.personKey = res.personKey;
           img.etag = res.etag; // ETag, to handle caching
           img.lastModified = res.lastModified; // lastModified, to handle alternative caching
-          //img.isShowcase = res.isShowcase; // flag to indicate if this is the showcase image
           img.basename = res.basename; // image base name
           var imagePath = destination + '/' + img.basename;
-          //log.debug('calculating signature of', imagePath);
-          exports.signature(imagePath, function(err, signature) {
+
+          // calculate image signature from contents and save it
+          local.signatureFromContents(res._contents, function(err, signature) {
             if (err) {
-              log.warn('can\'t calculate signature of image', image.basename, ':', err);
+              log.warn('can\'t calculate signature of image', img.basename, ':', err);
             } else {
               img.signature = signature;
+              //log.debug('got signature of', imagePath, ';', signature);
             }
-            //log.debug('SAVING...');
-            img.save(function(err) { // , path // TODO...
+            img.save(function(err) {
               if (err) {
                 log.warn('can\'t save image', image.url, ':', err);
               } else {
                 if (img._isFirst) { // if this image is the first set person's showcase url
                   person.showcaseUrl = img.basename;
                 }
-                log.info('image ', img.basename, ' inserted');
+                log.info('image', img.basename, 'added');
               }
               return callbackInner();
             });
           });
+
         });
       });
     },
@@ -123,6 +106,31 @@ exports.syncPersonImages = function(person, callback) {
       callback(null, person);
     }
   );
+};
+
+exports.findSimilar = function(image, thresholdDistance, callback) {
+  // try with image signature as-is
+  local.findSimilarSimple(image, thresholdDistance, function(err, found, distance, personKey) {
+    if (err) {
+      return callback(err);
+    }
+    if (found) {
+      return callback(err, found, distance, personKey);
+    }
+  
+    // image not found; try with mirrored signature
+    image.mirror(true, false, function(err, image) {
+      if (err) {
+        return callback(err);
+      }
+      local.findSimilarSimple(image, thresholdDistance, function(err, found, distance, personKey) {
+        if (err) {
+          return callback(err);
+        }
+        return callback(err, found, distance, personKey);
+      });
+    });
+  });
 };
 
 // download an image from url to destination on filesystem
@@ -150,8 +158,9 @@ local.download = function(resource, destination, callback) {
         var basename = hash + ext;
         destinationDir += '/' + basename;
         resource.basename = resource.personKey + '/' + basename;
+        resource._contents = contents;
 
-        //console.log('download() saving to: ', destinationDir);
+        //log.info('download() saving to: ', destinationDir);
         fs.writeFile(
           destinationDir,
           contents,
@@ -170,86 +179,133 @@ local.download = function(resource, destination, callback) {
   );
 };
 
-exports.findSimilar = function(signature, thresholdDistance, callback) {
-  Image.find({}, '_id signature url', function(err, images) {
+local.signature = function(image, callback) {
+  var signature = image.hash(2);
+  if (signature.length !== 64) { // ( 11 = ceil(64 / log₂(64)) )
+    return callback('wrong signature length: ' + signature.length, signature);
+  }
+  //log.info('signature:', signature);
+  callback(null, signature); // success
+};
+
+local.findSimilarSimple = function(image, thresholdDistance, callback) {
+  local.signature(image, function(err, signature) {
     if (err) {
-log.warn('can\'t find images');
+      return callback(err);
+    }
+    local.findSimilarSignature(signature, thresholdDistance, function(err, found, distance, personKey) {
+      if (err) {
+        return callback(err);
+      }
+      return callback(err, found, distance, personKey);
+    });
+  });
+};
+
+local.findSimilarSignature = function(signature, thresholdDistance, callback) {
+  Image.find({}, '_id personKey signature url', function(err, images) {
+    if (err) {
       return callback('can\'t find images');
     }
-log.info('#images:', images.length);
     var minDistance = 1;
-    var id = null;
+    var personKey = null;
     images.forEach(function(image, i) {
-      log.info('i:', i);
       //log.info('image:', image.url);
       if (!image.signature) {
         return; // skip this image without signature
       }        
       var distance = local.distance(image.signature, signature);
-      log.info('distance for hash', image.signature, 'is', distance);
       if (distance <= minDistance) {
         minDistance = distance;
-        id = image._id.toString(); // TODO: toString ???
+        personKey = image.personKey;
       }
+      //log.info(i, images[i].personKey, 'distance is', distance);        
     });
     if (minDistance <= thresholdDistance) {
-      return callback(null, true, minDistance, id);
+      return callback(null, true, minDistance, personKey);
     } else {
       return callback(null, false, minDistance, null);
     }
   });
 };
 
-exports.signature = function(imageName, callback) {
-return callback(null, '1111111111111111111111111111111111111111111111111111111111111111'); // simulate success
-  //log.debug('image name:', imageName);
-  Jimp.read(imageName, function(err, image) {
-    if (err) {
-      return callback(err, null);
-    }
-    var hash = image.hash(2);
-    if (hash.length !== 64) {
-      return callback('wrong hash length: ' + hash.length, null);
-    }
-    //log.info('hash:', hash);
-    callback(null, hash); // success
-  });
-};
-
-/*
-local.hammingDistance = function(hash1, hash2) {
-  return hammingDistance(hash1, hash2) / 80; // phash lenght is 20 bytes, each byte is 4 bits long
-};
-*/
-
-local.distance = function (hash1, hash2) {
+local.distance = function(signature1, signature2) {
   var counter = 0;
-  for (var k = 0; k < hash1.length; k++) {
-    if (hash1[k] != hash2[k]) {
+  for (var k = 0; k < signature1.length; k++) {
+    if (signature1[k] != signature2[k]) {
       counter++;
     }
   }
-  return (counter / hash1.length);
+  return (counter / signature1.length);
+};
+
+local.signatureFromContents = function(contents, callback) {
+  Jimp.read(new Buffer(contents, "ascii"), function(err, image) {
+    if (err) {
+      callback('can\'t read image contents:', err);
+    }
+    local.signature(image, function(err, signature) {
+      if (err) {
+        log.warn('can\'t calculate signature of image', img.basename, ':', err);
+      } else {
+        callback(null, signature);
+      }
+    });
+  });
 };
 
 module.exports = exports;
 
 /*
 /// DEBUG ONLY /////////////////////////////////////
-var imageName = __dirname + '/../../' + 'img-SGI-ads1dl-1.jpg';
-var thresholdDistance = 0.10;
-exports.signature(imageName, function(err, signature) {
-  log.debug(imageName, 'signature is', signature);
-  exports.findSimilar(signature, thresholdDistance, function(err, found, distance, id) {
+var db = require('../models/db'); // database wiring
+var imageName = __dirname + '/../../.old/images.test/' + 'img2.jpg';
+var thresholdDistance = 0.12;
+Jimp.read(imageName, function(err, image) {
+  if (err) {
+    return log.error('Jimp can\'t read image', imageName, ':', err);
+  }
+  exports.findSimilar(image, thresholdDistance, function(err, found, distance, personKey) {
     if (err) {
       return log.warn('can\'t find similar images:', err);
     }
     if (found) {
-      log.info('most similar image found (distance is', distance + ') has id', id);
+      log.info('most similar image found (distance is', distance + ') has person key', personKey);
     } else {
       log.info('no similar images found');
     }
   });
 });
+////////////////////////////////////////////////////
+*/
+
+/*
+/// DEBUG ONLY /////////////////////////////////////
+var db = require('../models/db'); // database wiring
+var thresholdDistance = 0.12;
+log.info('start');
+Image.find({}, '_id personKey signature basename', check);
+function check(err, images) {
+  if (err) {
+    return log.error('can\'t find images');
+  }
+  log.debug('#images:', images.length);
+  var minDistance = 1;
+  var personKey = null;
+  var found = false;
+  for (var i = 0, len = images.length; i < len; i++) {
+    for (var j = i + 1; j < len; j++) {
+      var distance = local.distance(images[i].signature, images[j].signature);
+      if (distance <= thresholdDistance) {
+        found = true;
+        log.info('similar images found (distance is', distance + ') :', images[i].personKey, '<=>', images[j].personKey);
+      }
+    }
+  }
+  if (!found) {
+    log.info('no similar images found');
+  }
+  log.info('finish');
+}
 ////////////////////////////////////////////////////
 */

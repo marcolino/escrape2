@@ -27,6 +27,8 @@ var gulp = require('gulp')
   , path = require('path')
   , print = require('gulp-print')
   , livereload = require('gulp-livereload')
+  , exec = require('child_process').exec
+  , depcheck = require('gulp-depcheck')
 ;
 
 var api = 'api';
@@ -248,7 +250,17 @@ gulp.task('nodemon', function(cb) {
   })
 });
 
-gulp.task('development', [ 'backend-scripts', 'frontend-scripts', 'frontend-styles', 'frontend-views', 'nodemon', /*'browser-sync'*/ ], function() {
+gulp.task('check', function() {
+  exec('npm-check', function(err, stdout, stderr) {
+    console.log(stdout);
+    console.log(stderr);
+    if (err) {
+      console.error(err);
+    }
+  });
+});
+
+gulp.task('development', [ 'backend-scripts', 'frontend-scripts', 'frontend-styles', 'frontend-views', 'nodemon' ], function() {
   livereload.listen({ quiet: false });
   gulp.watch(cfg.backend.scripts, [ 'backend-scripts' ]);
   gulp.watch(cfg.frontend.index, [ 'frontend-scripts', 'frontend-syles' ]);
@@ -257,10 +269,12 @@ gulp.task('development', [ 'backend-scripts', 'frontend-scripts', 'frontend-styl
   gulp.watch(cfg.frontend.views, [ 'frontend-views' ]); // drop html for hbs (handlebars)...
 });
 
-gulp.task('build', [ 'clean', 'development', ], function() {
-});  
+gulp.task('build', [ 'check', 'clean', 'development', ], function() {
+  // TODO: ...
+});
 
 gulp.task('deploy', [ 'build' ], function() { // TODO: deploy to github pages / openshift ?
+  // TODO: ...
 });  
 
 gulp.task('default', [ 'development' ], function() {
