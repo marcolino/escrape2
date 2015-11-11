@@ -4,8 +4,12 @@
 <div class="jumbotron text-center">
   <h1>Persons</h1>
   <div data-ng-repeat="person in persons">
-    <a ng-href="{{ person.url }}" target="_blank"><img data-ng-src="{{ getShowcaseUrl(person) }}" class="showcase" alt="person showcase"></a>
-    <h3>{{ person.name ? person.name : '[empty name]' }}</h3>
-    <p>&nbsp;</p>
+    <a ng-href="{{ person.url }}" target="_blank">
+      <img data-ng-src="{{ getShowcaseUrl(person) }}" class="showcase" data-ng-class="{'absent': !person.isPresent}" alt="person showcase" />
+    </a>
+    <h5 class="showcase-caption" data-ng-class="{'absent': !person.isPresent}">
+      {{ person.name ? person.name : '[empty name]' }}
+    </h5>
+    <span class="showcase-separator"></span>
   </div>
 </div>

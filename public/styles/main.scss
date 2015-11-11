@@ -1,21 +1,43 @@
 html {
    overflow-y: scroll;
 }
+
 body {
   font-family: 'Open Sans' !important; /* TODO: use scss ... */
   padding: 1.0em;
 }
+
 h1, h2, h3, h4, h5, h6 {
   color: yellow !important;
   font-family: 'Open Sans' !important; /* TODO: use scss ... */
 }
+
 a:hover, a:visited, a:link, a:active {
   text-decoration: none !important;
   color: #eee;
 }
+
 img.showcase {
   width: 240px;
   border-radius: 0.8em;
   border: 1px solid #111;
   overflow: hidden	
+}
+.showcase-caption {
+  margin-top: .5em;
+}
+.showcase-separator {
+  margin-top: 2.0em;
+}
+.absent {
+  opacity: 0.4;
+  filter: alpha(opacity=40);
+}
+img.absent {
+  border: 1px dotted #aaa;
+  opacity: 0.4;
+  filter: alpha(opacity=40);
+  background: repeating-linear-gradient(
+    135deg, #eee, #eee 8px, #fff 8px, #fff 16px
+  );
 }

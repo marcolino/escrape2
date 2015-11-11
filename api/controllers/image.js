@@ -77,9 +77,22 @@ exports.syncPersonImages = function(person, callback) {
           local.signatureFromContents(res._contents, function(err, signature) {
             if (err) {
               log.warn('can\'t calculate signature of image', img.basename, ':', err);
-            } else {
-              img.signature = signature;
-              //log.debug('got signature of', imagePath, ';', signature);
+            } else { // got signature
+              // check image signature is not duplicated in person
+              local.findSimilarSignature(signature, { personKey: img.personKey }, config.images.thresholdDistance, function(err, found, distance, personKey) {
+                if (err) {
+                  log.warn('can\'t check signature of image', img.basename, ':', err);
+                  img.signature = '';
+                  // don't return, do save image with fake signature
+                } else {
+                  if (found) {
+                    return log.info('image', img.basename, 'already present in person', img.personKey, ', not added');
+                    // return, don't save image
+                  }
+                  img.signature = signature; // signature is not duplicated in person
+                  // do save image
+                }
+              });
             }
             img.save(function(err) {
               if (err) {
@@ -108,9 +121,14 @@ exports.syncPersonImages = function(person, callback) {
   );
 };
 
-exports.findSimilar = function(image, thresholdDistance, callback) {
+exports.areSimilar = function(image1, image2, thresholdDistance) {
+  thresholdDistance = thresholdDistance ? thresholdDistance : config.images.thresholdDistance;
+  return (local.distance(image1.signature, image2.signature) <= thresholdDistance);
+};
+
+exports.findSimilar = function(image, filter, thresholdDistance, callback) {
   // try with image signature as-is
-  local.findSimilarSimple(image, thresholdDistance, function(err, found, distance, personKey) {
+  exports.findSimilarFixed(image, filter, thresholdDistance, function(err, found, distance, personKey) {
     if (err) {
       return callback(err);
     }
@@ -123,12 +141,127 @@ exports.findSimilar = function(image, thresholdDistance, callback) {
       if (err) {
         return callback(err);
       }
-      local.findSimilarSimple(image, thresholdDistance, function(err, found, distance, personKey) {
+      exports.findSimilarFixed(image, filter, thresholdDistance, function(err, found, distance, personKey) {
         if (err) {
           return callback(err);
         }
         return callback(err, found, distance, personKey);
       });
+    });
+  });
+};
+
+exports.findSimilarFixed = function(image, filter, thresholdDistance, callback) {
+  local.signature(image, function(err, signature) {
+    if (err) {
+      return callback(err);
+    }
+    local.findSimilarSignature(signature, filter, thresholdDistance, function(err, found, distance, personKey) {
+      if (err) {
+        return callback(err);
+      }
+      return callback(err, found, distance, personKey);
+    });
+  });
+};
+
+/**
+ * print to console html with a list of all similar images
+ */
+exports.findSimilarAll = function(thresholdDistance, callback) {
+  var filter = {};
+  log.info('start');
+  Image.find(filter, '_id personKey signature url', function(err, images) {
+    if (err) {
+      return callback('can\'t find images');
+    }
+    check(images, callback);
+  });
+  function check(images, callback) {
+    log.debug('#images:', images.length);
+    var minDistance = 1;
+    var personKey = null;
+    var found = false;
+    for (var i = 0, len = images.length; i < len; i++) {
+      var printed = false;
+      for (var j = i + 1; j < images.length; j++) {
+        var distance = local.distance(images[i].signature, images[j].signature);
+        if (distance <= thresholdDistance) {
+          found = true;
+          //log.info('similar images found (distance is', distance + ') :', images[i].personKey, '<=>', images[j].personKey);
+          if (!printed) console.log('<hr>', i, images[i].personKey + ': <img src="' + images[i].url + '" width="64" />');
+          printed = true;
+          console.log('', j, images[j].personKey, ': <img src="', images[j].url, '" width="64" /> ', distance, '<br>');
+        }
+      }
+    }
+    if (!found) {
+      console.log('no similar images found');
+    }
+    log.info('finish');
+  }
+};
+
+local.findSimilarSignature = function(signature, filter, thresholdDistance, callback) {
+  Image.find(filter, '_id personKey signature url', function(err, images) {
+    if (err) {
+      return callback('can\'t find images');
+    }
+    var minDistance = 1; // maximum distance possible
+    var personKey = null;
+    images.forEach(function(image, i) {
+      //log.info('image:', image.url);
+      if (!image.signature) {
+        return; // skip this image without signature
+      }        
+      var distance = local.distance(image.signature, signature);
+      if (distance <= minDistance) {
+        minDistance = distance;
+        personKey = image.personKey;
+      }
+      //log.info(i, images[i].personKey, 'distance is', distance);        
+    });
+    if (minDistance <= thresholdDistance) {
+      return callback(null, true, minDistance, personKey);
+    } else {
+      return callback(null, false, minDistance, null);
+    }
+  });
+};
+
+local.signature = function(image, callback) {
+  var signature = image.hash(2);
+  if (signature.length !== 64) { // ( 11 = ceil(64 / log₂(64)) )
+    return callback('wrong signature length: ' + signature.length, signature);
+  }
+  //log.info('signature:', signature);
+  callback(null, signature); // success
+};
+
+local.distance = function(signature1, signature2) {
+  if (!signature1 || !signature2) {
+    return 1; // maximum possible distance
+  }
+  var counter = 0;
+  for (var k = 0; k < signature1.length; k++) {
+    if (signature1[k] != signature2[k]) {
+      counter++;
+    }
+  }
+  return (counter / signature1.length);
+};
+
+local.signatureFromContents = function(contents, callback) {
+  Jimp.read(new Buffer(contents, "ascii"), function(err, image) {
+    if (err) {
+      callback('can\'t read image contents:', err);
+    }
+    local.signature(image, function(err, signature) {
+      if (err) {
+        log.warn('can\'t calculate signature of image', img.basename, ':', err);
+      } else {
+        callback(null, signature);
+      }
     });
   });
 };
@@ -179,81 +312,6 @@ local.download = function(resource, destination, callback) {
   );
 };
 
-local.signature = function(image, callback) {
-  var signature = image.hash(2);
-  if (signature.length !== 64) { // ( 11 = ceil(64 / log₂(64)) )
-    return callback('wrong signature length: ' + signature.length, signature);
-  }
-  //log.info('signature:', signature);
-  callback(null, signature); // success
-};
-
-local.findSimilarSimple = function(image, thresholdDistance, callback) {
-  local.signature(image, function(err, signature) {
-    if (err) {
-      return callback(err);
-    }
-    local.findSimilarSignature(signature, thresholdDistance, function(err, found, distance, personKey) {
-      if (err) {
-        return callback(err);
-      }
-      return callback(err, found, distance, personKey);
-    });
-  });
-};
-
-local.findSimilarSignature = function(signature, thresholdDistance, callback) {
-  Image.find({}, '_id personKey signature url', function(err, images) {
-    if (err) {
-      return callback('can\'t find images');
-    }
-    var minDistance = 1;
-    var personKey = null;
-    images.forEach(function(image, i) {
-      //log.info('image:', image.url);
-      if (!image.signature) {
-        return; // skip this image without signature
-      }        
-      var distance = local.distance(image.signature, signature);
-      if (distance <= minDistance) {
-        minDistance = distance;
-        personKey = image.personKey;
-      }
-      //log.info(i, images[i].personKey, 'distance is', distance);        
-    });
-    if (minDistance <= thresholdDistance) {
-      return callback(null, true, minDistance, personKey);
-    } else {
-      return callback(null, false, minDistance, null);
-    }
-  });
-};
-
-local.distance = function(signature1, signature2) {
-  var counter = 0;
-  for (var k = 0; k < signature1.length; k++) {
-    if (signature1[k] != signature2[k]) {
-      counter++;
-    }
-  }
-  return (counter / signature1.length);
-};
-
-local.signatureFromContents = function(contents, callback) {
-  Jimp.read(new Buffer(contents, "ascii"), function(err, image) {
-    if (err) {
-      callback('can\'t read image contents:', err);
-    }
-    local.signature(image, function(err, signature) {
-      if (err) {
-        log.warn('can\'t calculate signature of image', img.basename, ':', err);
-      } else {
-        callback(null, signature);
-      }
-    });
-  });
-};
-
 module.exports = exports;
 
 /*
@@ -265,7 +323,7 @@ Jimp.read(imageName, function(err, image) {
   if (err) {
     return log.error('Jimp can\'t read image', imageName, ':', err);
   }
-  exports.findSimilar(image, thresholdDistance, function(err, found, distance, personKey) {
+  exports.findSimilar(image, {}, thresholdDistance, function(err, found, distance, personKey) {
     if (err) {
       return log.warn('can\'t find similar images:', err);
     }
@@ -279,6 +337,7 @@ Jimp.read(imageName, function(err, image) {
 ////////////////////////////////////////////////////
 */
 
+/*
 /// DEBUG ONLY /////////////////////////////////////
 var db = require('../models/db'); // database wiring
 var thresholdDistance = 0.05;
@@ -312,3 +371,4 @@ function check(err, images) {
   log.info('finish');
 }
 ////////////////////////////////////////////////////
+*/

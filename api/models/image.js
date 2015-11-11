@@ -4,7 +4,7 @@ var mongoose = require('mongoose')
 
 var imageSchema = new mongoose.Schema({
   url: { type: String, required: true },
-  providerKey: String,
+  //providerKey: String, // TODO: do we need this? (no...)
   personKey: String, // person.providerKey + '/' + person.key
   etag: String, // ETag
   lastModified: String, // last modified tag

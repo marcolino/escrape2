@@ -260,7 +260,7 @@ gulp.task('check', function() {
   });
 });
 
-gulp.task('development', [ 'backend-scripts', 'frontend-scripts', 'frontend-styles', 'frontend-views', 'nodemon' ], function() {
+gulp.task('development', [ 'backend-scripts', 'frontend-scripts', 'frontend-styles', 'frontend-views', 'frontend-images', 'nodemon' ], function() {
   livereload.listen({ quiet: false });
   gulp.watch(cfg.backend.scripts, [ 'backend-scripts' ]);
   gulp.watch(cfg.frontend.index, [ 'frontend-scripts', 'frontend-styles' ]);

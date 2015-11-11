@@ -7,6 +7,7 @@ var mongoose = require('mongoose') // mongo abstraction
   , image = require('../controllers/image') // network handling
   , provider = require('./provider') // provider's controller
   , Person = require('../models/person') // model of person
+  , Image = require('../models/image') // model of image
   , config = require('../config') // global configuration
 ;
 var local = {};
@@ -182,6 +183,95 @@ exports.sync = function(req, res) { // sync persons
           log.info('persons sync finished:', retrievedPersonsCount.toString(), ' persons found');
         });
 
+      }
+    );
+  });
+};
+
+exports.buildAliases = function(callback) {
+  var results = {};
+  results.groupsCount = 0;
+  Person.find({}, '_id providerKey key', function(err, persons) {
+    if (err) {
+      return callback('can\'t find persons:', err);
+    }
+    //log.info('buildAliases() - persons # is', persons.length);
+    async.each(
+      persons, // 1st param in async.each() is the array of items
+      function(person, cb) { // 2nd param is the function that each item is passed to
+        //.forEach(function(person, i) {
+        exports.findSimilarPersonsByImages(person.providerKey, person.key, function(err, result) {
+          if (err) {
+            log.warn('can\'t find similar persons by images:', err);
+          } else {
+            //log.info('found', result.groupsCount, 'groups with similar persons, with a median size of', result.medianSize);
+            results.groupsCount += result.groupsCount;
+          }
+          cb();
+        });
+      },
+      function(err) { // 3rd param is the function to call when everything's done (outer callback)
+        if (err) {
+          console.log('a person failed to async process');
+        } else {
+          console.log('all persons have been async processed successfully');
+          return callback(null, results);
+        }
+      }
+    );
+  });
+};
+
+exports.findSimilarPersonsByImages = function(providerKey, key, callback) {
+  //log.info('findSimilarPersonsByImages() - evaluating person', providerKey + '/' + key);
+  var result = {};
+  result.groupsCount = 0;
+  result.medianSize = 0;
+  Image.find({ personKey: providerKey + '/' + key }, '_id personKey signature basename', function(err, imagesOwn) {
+    if (err) {
+      return callback('can\'t find images for person', providerKey + '/' + key);
+    }
+    //log.info('findSimilarPersonsByImages() - person', providerKey + '/' + key, 'found', imagesOwn.length, 'images');
+    Person.find(
+      {
+        $or: [
+          { providerKey: { $ne: providerKey } },
+          { key: { $ne: key } },
+        ]
+      },
+      '_id providerKey key',
+      function(err, persons) {
+        if (err) {
+          return callback('can\'t find persons other than ' + providerKey + '/' + key + ': ' + err.toString());
+        }
+        //log.info('found', persons.length, 'persons other than', providerKey + '/' + key);
+        // foreach person other than current one, find all images
+// TODO: async(), here, not forEach() !!!
+        persons.forEach(function(personOther, i) {
+          //log.info('findSimilarPersonsByImages() - evaluating', i+'th', 'other person', personOther.providerKey + '/' + personOther.key);
+          Image.find({ personKey: personOther.providerKey + '/' + personOther.key }, '_id personKey signature basename', function(err, imagesOther) {
+            if (err) {
+              return callback('can\'t find images for person', personOther.providerKey + '/' + personOther.key, ':', err);
+            }
+            //log.info('findSimilarPersonsByImages() - found', imagesOther.length, 'images for other person', personOther.providerKey + '/' + personOther.key);
+            //log.info('findSimilarPersonsByImages() - going to compare own images with other images');
+            compare(imagesOwn, imagesOther, callback);
+          });
+        });
+        function compare(imagesOwn, imagesOther, callback) {
+          for (var i = 0, lenOther = imagesOther.length; i < lenOther; i++) {
+            for (var j = 0, lenOwn = imagesOwn.length; j < lenOwn; j++) {
+              log.info('compare() - checking if other image', imagesOther[i].basename, 'is similar to own image', imagesOwn[j].basename);
+              if (image.areSimilar(imagesOther[i], imagesOwn[j])) {
+                log.warn('person', imagesOther[i].personKey, 'and', imagesOwn[j].personKey, 'are similar by images');
+                result.groupsCount++;
+                //result.medianSize = 2; // TODO: ...
+                break; // break images own loop
+              }
+            }
+          }
+        }
+        callback(null, result);
       }
     );
   });
@@ -832,3 +922,10 @@ if (config.env === 'development') {
 }
 
 module.exports = exports;
+
+/// DEBUG ONLY /////////////////////////////////////
+var db = require('../models/db'); // database wiring
+var thresholdDistance = 0.05;
+exports.buildAliases(function(err, result) {
+  log.info('buildAliases result:', result);
+});
