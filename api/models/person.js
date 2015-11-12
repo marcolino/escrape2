@@ -2,7 +2,6 @@ var mongoose = require('mongoose')
   , config = require('../config'); // application configuration
 
 var personSchema = new mongoose.Schema({
-  providerKey: String,
   key: String,
   //idUser: String,
   url: String,
@@ -22,19 +21,14 @@ var personSchema = new mongoose.Schema({
   dateOfFirstSync: { type: Date, default: Date.now /*(?)*/ },
   dateOfLastSync: { type: Date, default: Date.now },
   isPresent: Boolean,
-  aliasPrev: String,
-  aliasNext: String,
+  isAliasFor: { type: Array, default: [] },
   showcaseUrl: String // showcase image (local) url
 },
 {
   autoIndex: config.debug,
   collection: 'persons'
 });
-personSchema.index({ providerKey: 1, key: 1 }, { unique: true });
-
-personSchema.virtual('keyFull').get(function() {
-  return this.providerKey + '/' + this.key;
-});
+personSchema.index({ key: 1 }, { unique: true });
 
 personSchema.methods.ToDo_Save = function(callback) {
   return this.model('Person').savefind({ type: this.type }, callback);

@@ -4,15 +4,12 @@ var mongoose = require('mongoose')
 
 var imageSchema = new mongoose.Schema({
   url: { type: String, required: true },
-  //providerKey: String, // TODO: do we need this? (no...)
   personKey: String, // person.providerKey + '/' + person.key
   etag: String, // ETag
   lastModified: String, // last modified tag
   basename: String, // image file base name
   dateOfFirstSync: { type: Date, default: Date.now }, // date of creation
-  //perceptualHash: String, // perceptual hash
-  signature: String, // 4(?) base-64 bytes signature (perceptual hash ?)
-  //isShowcase: Boolean, // this image is the person showcase
+  signature: String, // 64) binary ([0-1])bytes signature (perceptual hash)
   isTruthful: Boolean // this image is to be considered thruthful
 },
 {

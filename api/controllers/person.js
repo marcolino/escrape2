@@ -16,16 +16,11 @@ var log = config.log;
 /**
  * sync persons from providers
  */
-exports.sync = function(req, res) { // sync persons
+exports.sync = function() { // sync persons
   var retrievedPersonsCount = 0;
   var syncStartDate = new Date(); // start of this sync date
   var resource;
   
-  // return immedately, log progress to db
-  var message = 'persons sync started';
-  res.json(message);
-  log.info(message);
-
   /**
    * get all providers
    *
@@ -83,14 +78,14 @@ exports.sync = function(req, res) { // sync persons
                   );
                   return callbackInner(); // skip this inner loop
                 }
-                person.key = element.key;
-                if (!person.key) {
+                if (!element.key) {
                   log.warn(
                     'error syncing provider ', provider.key, ',',
                     'person with no key', ', ', 'skipping'
                   );
                   return callbackInner(); // skip this inner loop
                 }
+                person.key = provider.key + '/' + element.key; // set person key as the sum of provider key and element key
                 resource = {
                   //url: local.buildDetailsUrl(provider, person.url, config),
                   url: person.url,
@@ -101,7 +96,7 @@ exports.sync = function(req, res) { // sync persons
                   resource,
                   function(err) {
                     log.warn(
-                      'syncing person ', provider.key, ' ', person.key, ':',
+                      'syncing person ', person.key, ':',
                       err, ', ', 'skipping'
                     );
                     return callbackInner(); // skip this inner loop
@@ -109,8 +104,7 @@ exports.sync = function(req, res) { // sync persons
                   function(contents) {
                     if (!contents) {
                       log.warn(
-                        'syncing provider ', provider.key, ',',
-                        'person ', person.key, ':',
+                        'syncing person ', person.key, ':',
                         'empty contents', ', ', 'skipping'
                       );
                       return callbackInner(); // skip this inner loop
@@ -126,7 +120,7 @@ exports.sync = function(req, res) { // sync persons
                     person.description = local.getDetailsDescription($, provider);
                     person.phone = local.getDetailsPhone($, provider);
                     person.nationality = local.detectNationality(person, provider, config);
-                    person.providerKey = provider.key;
+                    //person.providerKey = provider.key;
                     person.dateOfLastSync = new Date();
                     person._imageUrls = local.getDetailsImageUrls($, provider);
                     
@@ -134,9 +128,8 @@ exports.sync = function(req, res) { // sync persons
                     image.syncPersonImages(person, function(err, person) {
                       if (err) {
                         // ignore this person images error to continue with person save
-                        log.warn('error in sync person images:', err);
+                        log.warn(err);
                       }
-//log.info('persons.sync, syncPersonImages returned, person.showcaseBasename is ', person.showcaseBasename);
 
                       // save this person to database
                       local.upsert(person, function(err) {
@@ -144,8 +137,18 @@ exports.sync = function(req, res) { // sync persons
                           // ignore this person error to continue with other persons
                         } else {
                           retrievedPersonsCount++;
-                          //log.info('person ', person.providerKey, ' ', person.key, ' sync\'d');
+                          //log.info('person ', person.key, ' sync\'d');
                         }
+
+                        /* TODO: ...
+                        // re-build aliases after having inserted this person images
+                        exports.buildAliases({ personKey: person.key }, function(err, result) {
+                          if (err) {
+                            log.warn(err);
+                          }
+                        });
+                        */
+
                         callbackInner(); // this person is done
                       });
                     });
@@ -188,98 +191,111 @@ exports.sync = function(req, res) { // sync persons
   });
 };
 
-exports.buildAliases = function(callback) {
-  var results = {};
-  results.groupsCount = 0;
-  Person.find({}, '_id providerKey key', function(err, persons) {
-    if (err) {
-      return callback('can\'t find persons:', err);
-    }
-    //log.info('buildAliases() - persons # is', persons.length);
-    async.each(
-      persons, // 1st param in async.each() is the array of items
-      function(person, cb) { // 2nd param is the function that each item is passed to
-        //.forEach(function(person, i) {
-        exports.findSimilarPersonsByImages(person.providerKey, person.key, function(err, result) {
-          if (err) {
-            log.warn('can\'t find similar persons by images:', err);
-          } else {
-            //log.info('found', result.groupsCount, 'groups with similar persons, with a median size of', result.medianSize);
-            results.groupsCount += result.groupsCount;
-          }
-          cb();
-        });
-      },
-      function(err) { // 3rd param is the function to call when everything's done (outer callback)
-        if (err) {
-          console.log('a person failed to async process');
-        } else {
-          console.log('all persons have been async processed successfully');
-          return callback(null, results);
-        }
-      }
-    );
-  });
-};
+exports.buildAliases = function(filter, callback) {
+  console.time('buildAliases');
+  log.info('starting buildAliases()');
+  var thresholdDistance = 0.05;
+  var similar = {};
+  similar.count = 0;
 
-exports.findSimilarPersonsByImages = function(providerKey, key, callback) {
-  //log.info('findSimilarPersonsByImages() - evaluating person', providerKey + '/' + key);
-  var result = {};
-  result.groupsCount = 0;
-  result.medianSize = 0;
-  Image.find({ personKey: providerKey + '/' + key }, '_id personKey signature basename', function(err, imagesOwn) {
+  // TODO: we do not need 'basename' property @production...
+  Image.find(filter, '_id personKey signature basename', function(err, images) {
     if (err) {
-      return callback('can\'t find images for person', providerKey + '/' + key);
+      return callback(err);
     }
-    //log.info('findSimilarPersonsByImages() - person', providerKey + '/' + key, 'found', imagesOwn.length, 'images');
-    Person.find(
-      {
-        $or: [
-          { providerKey: { $ne: providerKey } },
-          { key: { $ne: key } },
-        ]
-      },
-      '_id providerKey key',
-      function(err, persons) {
-        if (err) {
-          return callback('can\'t find persons other than ' + providerKey + '/' + key + ': ' + err.toString());
+    log.info('found #', images.length, 'images, for all persons');
+    var personImages = {};
+    for (var i = 0, len = images.length; i < len; i++) {
+      var personKey = images[i].personKey;
+      if (personImages[personKey] === undefined) {
+        personImages[personKey] = []; // create hash for person if not yet present
+      }
+      personImages[personKey].push(i); // push this image index onto this person images array
+    }
+    log.info('found #', Object.keys(personImages).length, 'persons with at least one image');
+    var imagesPerPersonMedianCount = images.length / Object.keys(personImages).length;
+    log.info('images per person median count:', imagesPerPersonMedianCount);
+    //log.info('personImages:', personImages);
+
+     // loop through all person images
+     Object.keys(personImages).forEach(function(personKey) {
+      log.debug('personKey:', personKey);
+
+      // loop through all images of this person
+      for (var ii = 0, lenOwn = personImages[personKey].length; ii < lenOwn; ii++) {
+        var i = personImages[personKey][ii]; // index of this image in images array
+
+        /**/
+        if (images[i] === null) { // TODO: this should never happen...
+          log.error('IMAGE #', i, 'IS NULL, IT SHOULD NOT BE HAPPENING!');
+          continue; // image was canceled because already processed
         }
-        //log.info('found', persons.length, 'persons other than', providerKey + '/' + key);
-        // foreach person other than current one, find all images
-// TODO: async(), here, not forEach() !!!
-        persons.forEach(function(personOther, i) {
-          //log.info('findSimilarPersonsByImages() - evaluating', i+'th', 'other person', personOther.providerKey + '/' + personOther.key);
-          Image.find({ personKey: personOther.providerKey + '/' + personOther.key }, '_id personKey signature basename', function(err, imagesOther) {
-            if (err) {
-              return callback('can\'t find images for person', personOther.providerKey + '/' + personOther.key, ':', err);
-            }
-            //log.info('findSimilarPersonsByImages() - found', imagesOther.length, 'images for other person', personOther.providerKey + '/' + personOther.key);
-            //log.info('findSimilarPersonsByImages() - going to compare own images with other images');
-            compare(imagesOwn, imagesOther, callback);
-          });
-        });
-        function compare(imagesOwn, imagesOther, callback) {
-          for (var i = 0, lenOther = imagesOther.length; i < lenOther; i++) {
-            for (var j = 0, lenOwn = imagesOwn.length; j < lenOwn; j++) {
-              log.info('compare() - checking if other image', imagesOther[i].basename, 'is similar to own image', imagesOwn[j].basename);
-              if (image.areSimilar(imagesOther[i], imagesOwn[j])) {
-                log.warn('person', imagesOther[i].personKey, 'and', imagesOwn[j].personKey, 'are similar by images');
-                result.groupsCount++;
-                //result.medianSize = 2; // TODO: ...
-                break; // break images own loop
-              }
-            }
+        log.debug('evaluating image', images[i].basename);
+        /**/
+
+        // loop through all images of all persons
+        for (var j = 0, lenAll = images.length; j < lenAll; j++) {
+          if (j === i) {
+            continue; // avoid comparing an image to itself
+          }
+          if (images[j] === null) {
+            continue; // avoid comparing an image already processed
+          }
+          if (images[j].personKey === personKey) {
+            log.info('skipping comparison of images for this same person', personKey);
+            continue; // avoid comparing an image to images of the same person
+          }
+          //log.debug('j:', j);
+          if (areSimilar(images[i], images[j], thresholdDistance)) {
+            log.info('found persons with similar images (i:', i, ', j:', j, '):', images[i].basename, images[j].basename);
+            similar.count++;
+            // set person i in the same alias group of person j
+            updateAlias(images, i, j);
           }
         }
-        callback(null, result);
+        // finished checking this image, cancel this image in images array
+        //log.debug('canceling image #', i, '...');
+        images[i] = null;
+      }
+
+    });
+    //log.debug('here we are finish, forEach is blocking, that's good...');
+    similar.median = (images.length > 0) ? (similar.count / images.length) : undefined;
+    console.timeEnd('buildAliases');
+    callback(null, similar);
+  });
+
+  // compare signatures inline, for improved speed... (TODO: evalulate if this is worth...)
+  function areSimilar(image1, image2, thresholdDistance) {
+    var bitsOn = 0;
+    // assuming all images *do* have a signature...
+    for (var k = 0, len = image1.signature.length; k < len; k++) {
+      if (image1.signature[k] != image2.signature[k]) {
+        bitsOn++;
+      }
+    }
+    //log.warn('distance:', bitsOn / len);
+    return ((bitsOn / len) <= thresholdDistance);
+  }
+
+  // update person isAliasFor property
+  function updateAlias(images, i, j) {
+    Person.update(
+      { key: images[j].personKey },
+      { $push: { isAliasFor: images[i].personKey } },
+      { upsert: true },
+      function(err) {
+        if (err) {
+          log.warn('can\'t update alias on person', + images[j].personKey, ':', err);
+        }
       }
     );
-  });
+  }
 };
 
 local.upsert = function(person, callback) {
   Person.findOne(
-    { providerKey: person.providerKey, key: person.key },
+    { key: person.key },
     function(err, doc) {
       if (err) {
         log.warn('could not find person ', person.name, ':', err, ', ', 'skipping');
@@ -296,10 +312,10 @@ local.upsert = function(person, callback) {
       _.merge(doc, person);
       doc.save(function(err) {
         if (err) {
-          log.warn('could not save person ', doc.providerKey, ' ', doc.key, ':', err, ', ', 'skipping');
+          log.warn('could not save person ', doc.key, ':', err, ', ', 'skipping');
           return callback(err);
         }
-        log.info('person', person.providerKey, person.key, (isNew ? 'inserted' : 'updated'));
+        log.info('person', person.key, (isNew ? 'inserted' : 'updated'));
         callback(null); // success
       });
     }
@@ -871,7 +887,7 @@ local.detectNationality = function(person, provider, config) {
 };
 
 exports.getAll = function(req, res) { // get all persons
-  local.get({}, function(err, persons) {
+  local.get(filter, function(err, persons) {
     if (err) {
       console.error('Error retrieving persons:', err);
       res.json({ error: err });
@@ -922,10 +938,3 @@ if (config.env === 'development') {
 }
 
 module.exports = exports;
-
-/// DEBUG ONLY /////////////////////////////////////
-var db = require('../models/db'); // database wiring
-var thresholdDistance = 0.05;
-exports.buildAliases(function(err, result) {
-  log.info('buildAliases result:', result);
-});

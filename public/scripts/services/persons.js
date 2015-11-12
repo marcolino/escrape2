@@ -8,7 +8,7 @@ angular.module('PersonService', []).factory('Person', ['$rootScope', '$http', fu
         url: $rootScope.config.api.url + $rootScope.config.api.path + '/persons'
       })
       .success(function(response) {
-        console.info('got persons data:', response);
+        console.info('got persons data (size is', response.length + '):', response);
         callback(response);        
       })
       .error(function(err) {

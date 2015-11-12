@@ -10,11 +10,19 @@ var log = config.log;
 var router = express.Router(); // express router
 router.use(bodyParser.urlencoded({ extended: true })); // already in app.js (is it sufficient???)
 
-router.get('/sync', person.sync);
+router.get('/sync', function(req, res) { // sync all persons
+  // return immedately, log progress
+  var message = 'persons sync started';
+  res.json(message);
+  log.info(message);
+  person.sync();
+});
 
 router.route('/').get(function(req, res) { // get all persons
+  //var filter = {};
+  var filter = { isPresent: true, isAliasFor: { $size: 0 } };
   // retrieve all persons from mongo database
-  mongoose.model('Person').find({}, function(err, persons) {
+  mongoose.model('Person').find(filter, function(err, persons) {
     if (err) {
       log.error('error retrieving persons:', err);
       res.json({ error: err });
@@ -71,6 +79,17 @@ router.route('/:id/getImages').get(function(req, res) { // get person by ID
       }
       res.json(images);
     }
+  });
+});
+
+router.route('/buildAliases').get(function(req, res) { // get person by ID
+  person.buildAliases({}, function(err, result) {
+    if (err) {
+      log.error('error building aliases:', err);
+      return res.json({ error: err });
+    }
+    log.info('result:', result);
+    res.json(result);
   });
 });
 

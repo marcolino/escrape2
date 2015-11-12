@@ -19,13 +19,14 @@ exports.syncPersonImages = function(person, callback) {
 
   var destination = config.images.path;
   var resource;
-  var keyFull = person.providerKey + '/' + person.key;
+  //var keyFull = person.providerKey + '/' + person.key;
 
   if (!person._imageUrls) {
-    return callback('empty image urls for person ' + keyFull, person);
+    //return callback('empty image urls for person ' + keyFull, person);
+    return callback('empty image urls for person ' + person.key, person);
   }
   if (person._imageUrls.length <= 0) {
-    return callback('no image urls for person ' + keyFull, person);
+    return callback('no image urls for person ' + person.key, person);
   }
 
   async.each(
@@ -34,7 +35,7 @@ exports.syncPersonImages = function(person, callback) {
       var image = {};
       image.url = element;
       if (!image.url) {
-        log.warn('can\'t sync image for person', keyFull, ', ', 'image with no url, ', 'skipping');
+        log.warn('can\'t sync image for person', person.key, ', ', 'image with no url, ', 'skipping');
         return callbackInner(); // skip this inner loop
       }
       // set first image flag based on indexOf this element in person imageUrls
@@ -52,7 +53,7 @@ exports.syncPersonImages = function(person, callback) {
         }
         img._isFirst = image.isFirst; // TODO: debug this: is image coupled with img???
         resource = {
-          personKey: person.providerKey + '/' + person.key,
+          personKey: person.key,
           url: image.url,
           type: 'image',
           etag: img.etag, // comment this to force download
@@ -78,6 +79,7 @@ exports.syncPersonImages = function(person, callback) {
             if (err) {
               log.warn('can\'t calculate signature of image', img.basename, ':', err);
             } else { // got signature
+              //log.debug('found signature for image:', signature);
               // check image signature is not duplicated in person
               local.findSimilarSignature(signature, { personKey: img.personKey }, config.images.thresholdDistance, function(err, found, distance, personKey) {
                 if (err) {
@@ -85,26 +87,30 @@ exports.syncPersonImages = function(person, callback) {
                   img.signature = '';
                   // don't return, do save image with fake signature
                 } else {
+                  //log.debug('found similar signature for image:', signature, '?', found);
                   if (found) {
                     return log.info('image', img.basename, 'already present in person', img.personKey, ', not added');
                     // return, don't save image
                   }
+                  //log.debug('setting signature', signature, 'in img');
                   img.signature = signature; // signature is not duplicated in person
-                  // do save image
                 }
+
+                // do save image
+                img.save(function(err) {
+                  if (err) {
+                    log.warn('can\'t save image', image.url, ':', err);
+                  } else {
+                    if (img._isFirst) { // if this image is the first set person's showcase url
+                      person.showcaseUrl = img.basename;
+                    }
+                    log.info('image', img.basename, 'added');
+                  }
+                  return callbackInner();
+                });
+
               });
             }
-            img.save(function(err) {
-              if (err) {
-                log.warn('can\'t save image', image.url, ':', err);
-              } else {
-                if (img._isFirst) { // if this image is the first set person's showcase url
-                  person.showcaseUrl = img.basename;
-                }
-                log.info('image', img.basename, 'added');
-              }
-              return callbackInner();
-            });
           });
 
         });
