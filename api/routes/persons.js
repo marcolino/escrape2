@@ -82,14 +82,34 @@ router.route('/:id/getImages').get(function(req, res) { // get person by ID
   });
 });
 
-router.route('/buildAliases').get(function(req, res) { // get person by ID
-  person.buildAliases({}, function(err, result) {
+router.route('/buildAliases').get(function(req, res) { // build aliases
+  person.buildAliases(null, function(err, result) {
     if (err) {
       log.error('error building aliases:', err);
       return res.json({ error: err });
     }
     log.info('result:', result);
     res.json(result);
+  });
+});
+
+router.route('/checkImages').get(function(req, res) { // check images db/fs sync
+  person.checkImages(function(err) {
+    if (err) {
+      log.error('error checking images:', err);
+      return res.json({ error: err });
+    }
+    res.json();
+  });
+});
+
+router.route('/listImagesAliases').get(function(req, res) { // list images duplicates
+  person.listImagesAliases(function(err) {
+    if (err) {
+      log.error('error listing images aliases:', err);
+      return res.json({ error: err });
+    }
+    res.json();
   });
 });
 

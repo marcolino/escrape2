@@ -66,7 +66,7 @@ exports.syncPersonImages = function(person, callback) {
             return callbackInner();
           }
           if (!res) {
-            return callbackInner(); // res is null, image not modified, do not save to disk
+            return callbackInner(); // res is null, image not modified, do not save it to disk
           }
           img.personKey = res.personKey;
           img.etag = res.etag; // ETag, to handle caching
@@ -81,7 +81,7 @@ exports.syncPersonImages = function(person, callback) {
             } else { // got signature
               //log.debug('found signature for image:', signature);
               // check image signature is not duplicated in person
-              local.findSimilarSignature(signature, { personKey: img.personKey }, config.images.thresholdDistanceSameImage, function(err, found, distance, personKey) {
+              local.findSimilarSignature(signature, { personKey: img.personKey }, config.images.thresholdDistanceSamePerson, function(err, found, distance, personKey) {
                 if (err) {
                   log.warn('can\'t check signature of image', img.basename, ':', err);
                   img.signature = '';
@@ -266,7 +266,7 @@ local.signatureFromContents = function(contents, callback) {
     }
     local.signature(image, function(err, signature) {
       if (err) {
-        log.warn('can\'t calculate signature of image', img.basename, ':', err);
+        callback(err);
       } else {
         callback(null, signature);
       }

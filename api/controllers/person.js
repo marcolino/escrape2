@@ -2,6 +2,7 @@ var mongoose = require('mongoose') // mongo abstraction
   , cheerio = require('cheerio') // to parse fetched DOM data
   , async = require('async') // to call many async functions in a loop
   , fs = require('fs') // file-system handling
+  , path = require('path') // paths handling
   , _ = require('lodash') // lo-dash utilities
   , network = require('../controllers/network') // network handling
   , image = require('../controllers/image') // network handling
@@ -47,7 +48,7 @@ exports.sync = function() { // sync persons
           resource,
           function(err) { // error
             log.warn(
-              'error syncing provider ', provider.key, ':',
+              'error syncing provider', provider.key, ':',
               err, ',', 'skipping'
             );
             return callbackOuter(); // skip this outer loop
@@ -56,8 +57,8 @@ exports.sync = function() { // sync persons
             //log.info('contents lenght is ', contents.length);
             if (!contents) {
               log.warn(
-                'error syncing provider ', provider.key, ':',
-                'empty contents', ', ', 'skipping'
+                'error syncing provider', provider.key, ':',
+                'empty contents', ',', 'skipping'
               );
               return callbackOuter(); // skip this outer loop
             }
@@ -73,15 +74,15 @@ exports.sync = function() { // sync persons
                 person.url = local.buildDetailsUrl(provider, element.url, config);
                 if (!person.url) {
                   log.warn(
-                    'error syncing provider ', provider.key, ', ',
+                    'error syncing provider', provider.key, ',',
                     'person with no url', ', ', 'skipping'
                   );
                   return callbackInner(); // skip this inner loop
                 }
                 if (!element.key) {
                   log.warn(
-                    'error syncing provider ', provider.key, ',',
-                    'person with no key', ', ', 'skipping'
+                    'error syncing provider', provider.key, ',',
+                    'person with no key', ',', 'skipping'
                   );
                   return callbackInner(); // skip this inner loop
                 }
@@ -96,8 +97,8 @@ exports.sync = function() { // sync persons
                   resource,
                   function(err) {
                     log.warn(
-                      'syncing person ', person.key, ':',
-                      err, ', ', 'skipping'
+                      'syncing person', person.key, ':',
+                      err, ',', 'skipping'
                     );
                     return callbackInner(); // skip this inner loop
                   },
@@ -112,7 +113,7 @@ exports.sync = function() { // sync persons
                     $ = cheerio.load(contents);
                     person.name = local.getDetailsName($, provider);
                     if (!person.name) { // should not happen...
-                      log.warn('person', person.key, 'name is empty', ',', 'skipping');
+                      log.warn('person', person.key, 'name not found', ',', 'skipping');
                       //log.debug('THIS IS CONTENTS FOR EMPTY PERSON:', contents.toString('utf8'));
                       return callbackInner(); // skip this inner loop
                     }
@@ -120,7 +121,6 @@ exports.sync = function() { // sync persons
                     person.description = local.getDetailsDescription($, provider);
                     person.phone = local.getDetailsPhone($, provider);
                     person.nationality = local.detectNationality(person, provider, config);
-                    //person.providerKey = provider.key;
                     person.dateOfLastSync = new Date();
                     person._imageUrls = local.getDetailsImageUrls($, provider);
                     
@@ -129,6 +129,7 @@ exports.sync = function() { // sync persons
                       if (err) {
                         // ignore this person images error to continue with person save
                         log.warn(err);
+                        // TODO: can't continue, person is null...
                       }
 
                       // save this person to database
@@ -140,15 +141,16 @@ exports.sync = function() { // sync persons
                           //log.info('person ', person.key, ' sync\'d');
                         }
 
-                        /* TODO: ...
+/*
+                        // TO BE TESTED!
                         // re-build aliases after having inserted this person images
-                        exports.buildAliases({ personKey: person.key }, function(err, result) {
+                        exports.buildAliases(person.key, function(err, result) {
                           if (err) {
                             log.warn(err);
                           }
+                          callbackInner(); // this person is done
                         });
-                        */
-
+*/
                         callbackInner(); // this person is done
                       });
                     });
@@ -191,30 +193,31 @@ exports.sync = function() { // sync persons
   });
 };
 
-exports.buildAliases = function(filter, callback) {
+exports.buildAliases = function(personKey, callback) {
   console.time('buildAliases');
   log.info('starting buildAliases()');
-  var thresholdDistance = 0.05;
   var similar = {};
   similar.count = 0;
 
   // TODO: we do not need 'basename' property @production...
-  Image.find(filter, '_id personKey signature basename', function(err, images) {
+  Image.find({}, '_id personKey signature basename', function(err, images) {
     if (err) {
       return callback(err);
     }
     log.info('found #', images.length, 'images, for all persons');
     var personImages = {};
     for (var i = 0, len = images.length; i < len; i++) {
-      var personKey = images[i].personKey;
-      if (personImages[personKey] === undefined) {
-        personImages[personKey] = []; // create hash for person if not yet present
+      if (personKey && (images[i].personKey !== personKey)) {
+        continue; // if a personKey was specified, ignore all other person keys
       }
-      personImages[personKey].push(i); // push this image index onto this person images array
+      var key = images[i].personKey;
+      if (personImages[key] === undefined) {
+        personImages[key] = []; // create hash for person if not yet present
+      }
+      personImages[key].push(i); // push this image index onto this person images array
     }
     log.info('found #', Object.keys(personImages).length, 'persons with at least one image');
-    var imagesPerPersonMedianCount = images.length / Object.keys(personImages).length;
-    log.info('images per person median count:', imagesPerPersonMedianCount);
+    //log.info('images per person median count:', images.length / Object.keys(personImages).length);
     //log.info('personImages:', personImages);
 
      // loop through all person images
@@ -246,7 +249,8 @@ exports.buildAliases = function(filter, callback) {
             continue; // avoid comparing an image to images of the same person
           }
           //log.debug('j:', j);
-          if (areSimilar(images[i], images[j], thresholdDistance)) {
+          //log.info('comparing image', i, 'and', j);
+          if (areSimilar(images[i], images[j], config.images.thresholdDistance)) {
             log.info('found persons with similar images (i:', i, ', j:', j, '):', images[i].basename, images[j].basename);
             similar.count++;
             // set person i in the same alias group of person j
@@ -293,12 +297,185 @@ exports.buildAliases = function(filter, callback) {
   }
 };
 
+exports.checkImages = function(callback) {
+  console.time('checkImages');
+  log.info('starting checkImages()');
+
+  // check all images in database have a matching file on disk
+  Image.find({}, '_id personKey basename', function(err, images) {
+    var stats;
+
+    log.info('checking all image documents in database have a file on disk');
+    for (var i = 0, len = images.length; i < len; i++) {
+      var path = config.images.path + '/' + images[i].basename;
+      try {
+        stats = fs.statSync(path);
+        //log.info('image file for image', images[i].basename, 'does exist');
+      } catch (e) {
+        log.error('image file for image', images[i].basename, 'does not exist');
+      }
+    }
+
+    log.info('checking all images on disk have a matching database document');
+    walk(config.images.path, list);
+  });
+
+  var walk = function(dir, done) {
+    var results = [];
+    fs.readdir(dir, function(err, list) {
+      if (err) {
+        return done(err);
+      }
+      var i = 0;
+      (function next() {
+        var file = list[i++];
+        if (!file) {
+          return done(null, results);
+        }
+        file = dir + '/' + file;
+        fs.stat(file, function(err, stat) {
+          if (stat && stat.isDirectory()) {
+            walk(file, function(err, res) {
+              results = results.concat(res);
+              next();
+            });
+          } else {
+            results.push(file);
+            next();
+          }
+        });
+      })();
+    });
+  };
+
+  var list = function(err, files) {
+    if (err) {
+      log.error('error walking images tree:', err);
+      return callback(null, false);
+    }
+
+    // loop through all file system image files
+    async.each(
+      files,
+      function(file, callback) {
+        //log.info('processing file', file);
+
+        // check exactly one image document matches each image file
+        var basename = file.replace(new RegExp(config.images.path + '/'), '');
+        Image.find({ basename: basename }, 'basename', function(err, docs) {
+          checkImage(err, docs, basename);
+        });
+
+        // check exactly one person document exists for each image file
+        var personKey = path.dirname(file.replace(new RegExp(config.images.path + '/'), ''));
+        Person.findOne({ key: personKey }, checkPerson);
+
+        callback();
+      },
+      function(err) {
+        if (err) {
+          return log.error('a file failed to process asynchromously');
+        } else {
+          //log.info('all files in list have been processed successfully');
+        }
+      }
+    );
+
+    log.info('checkImages done');
+    callback(null);
+
+    function checkImage(err, docs, basename) {
+      if (err) {
+        return log.error('could not find image document for image file', basename, ':', err);
+      }
+      if (docs.length > 1) { // too many image documents
+        return log.error('too many image documents for image file', basename, '(', docs.length,')');
+      }
+      if (docs.length === 0) { // no image document found
+        return log.error('no image document for image file', basename);
+      }
+      //log.info('image document for image file', basename, 'found');
+    }
+
+    function checkPerson(err, doc) {
+      if (err) {
+        return log.warn('could not find person document:', err);
+      }
+      if (!doc) { // no person document found
+        return log.warn('no person document');
+      }
+      //log.info('person document for image file', doc.key, 'found');
+    } 
+  };
+};
+
+exports.listImagesAliases = function(callback) {
+  console.time('listImagesAliases');
+  Person.find({ isAliasFor: { $not: { $size: 0 } } }, 'key name showcaseUrl isAliasFor', listAliases);
+
+  function listAliases(err, persons) {
+    if (err) {
+      return log.warn('could not find persons with aliases:', err);
+    }
+    if (persons.length <= 0) { // no person documents found
+      return log.warn('no person with aliases found');
+    }
+    log.info('found', persons.length, 'persons with aliases');
+    console.log('<hr>');
+    console.log(
+      '<style>' +
+      ' .row { font-family: fixed, height:150px; overflow hidden; }' +
+      ' .row > .children { height:100px; float:left; }' +
+      '</style>'
+    );
+    console.log('<div class="row">');
+    for (var i = 0, len = persons.length; i < len; i++) {
+      console.log(
+        '  <img src="' + 'http://test.server.local' + '/data/images' + '/' + persons[i].showcaseUrl + '" ' +
+        'width="128" ' +
+        'title="name: ' + persons[i].name + ', key: ' + persons[i].key + '" ' +
+        '/>'
+      );
+      console.log(
+        '  <h4>name: ' + persons[i].name + ', key: ' + persons[i].key + '</h4>'
+      );
+      console.log(' = ');
+      for (var a = 0, lenAliases = persons[i].isAliasFor.length; a < lenAliases; a++) {
+        Person.findOne({ key: persons[i].isAliasFor[a] }, 'key name showcaseUrl', showAlias);
+      }
+      console.log('</div>');
+    }
+
+    function showAlias(err, person) { // TODO WHY _DOC ????????????????
+      //log.info('showAlias() - person:', person._doc);
+      if (err) {
+        return log.warn('could not find alias person:', err);
+      }
+      //console.log('<img src="' + 'http://test.server.local' + '/data/images' + '/' + person._doc.showcaseUrl + '" width="128" />');
+      console.log('<div class="row">');
+      console.log(
+        '  <img src="' + 'http://test.server.local' + '/data/images' + '/' + person._doc.showcaseUrl + '" ' +
+        'width="128" ' +
+        'title="name: ' + person._doc.name + ', key: ' + person._doc.key + '" ' +
+        '/>'
+      );
+      console.log(
+        '  <h4>name: ' + person._doc.name + ', key: ' + person._doc.key + '</h4>'
+      );
+      console.log('</div>');
+      // log aliases...
+    }
+  }
+  log.info('listImagesAliases done');
+  callback(null);
+};
+
 local.upsert = function(person, callback) {
   Person.findOne(
     { key: person.key },
     function(err, doc) {
       if (err) {
-        log.warn('could not find person ', person.name, ':', err, ', ', 'skipping');
+        log.warn('could not find person', person.name, ':', err, ',', 'skipping');
         return callback(err);
       }
       var isNew;
@@ -312,7 +489,7 @@ local.upsert = function(person, callback) {
       _.merge(doc, person);
       doc.save(function(err) {
         if (err) {
-          log.warn('could not save person ', doc.key, ':', err, ', ', 'skipping');
+          log.warn('could not save person', doc.key, ':', err, ',', 'skipping');
           return callback(err);
         }
         log.info('person', person.key, (isNew ? 'inserted' : 'updated'));
@@ -601,6 +778,12 @@ local.getDetailsImageUrls = function($, provider) {
     $('table[class="sinottico"]').find('tr').eq(1).find('a > img').each(function(index, element) {
       var href = 'http:' + $(element).attr('src'); // TODO: do not add 'http', make network.request work without schema...
       val.push(href);
+    });
+    $('div[class="thumbinner"]').find('a > img').each(function(index, element) {
+      if ($(element).attr('src').match(/\.jpg$/i)) {
+        var href = 'http:' + $(element).attr('src'); // TODO: do not add 'http', make network.request work without schema...
+        val.push(href);
+      }
     });
   }
   if (provider.key === 'TEST') {
