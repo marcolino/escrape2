@@ -104,15 +104,15 @@ exports.sync = function() { // sync persons
                   function(contents) {
                     if (!contents) {
                       log.warn(
-                        'syncing person ', person.key, ':',
-                        'empty contents', ', ', 'skipping'
+                        'syncing person', person.key, ':',
+                        'empty contents', ',', 'skipping'
                       );
                       return callbackInner(); // skip this inner loop
                     }
                     $ = cheerio.load(contents);
                     person.name = local.getDetailsName($, provider);
                     if (!person.name) { // should not happen...
-                      log.warn('person ', person.key, ' name is empty', ', ', 'skipping');
+                      log.warn('person', person.key, 'name is empty', ',', 'skipping');
                       //log.debug('THIS IS CONTENTS FOR EMPTY PERSON:', contents.toString('utf8'));
                       return callbackInner(); // skip this inner loop
                     }
@@ -242,7 +242,7 @@ exports.buildAliases = function(filter, callback) {
             continue; // avoid comparing an image already processed
           }
           if (images[j].personKey === personKey) {
-            log.info('skipping comparison of images for this same person', personKey);
+            //log.info('skipping comparison of images for this same person', personKey);
             continue; // avoid comparing an image to images of the same person
           }
           //log.debug('j:', j);

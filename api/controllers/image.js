@@ -81,7 +81,7 @@ exports.syncPersonImages = function(person, callback) {
             } else { // got signature
               //log.debug('found signature for image:', signature);
               // check image signature is not duplicated in person
-              local.findSimilarSignature(signature, { personKey: img.personKey }, config.images.thresholdDistance, function(err, found, distance, personKey) {
+              local.findSimilarSignature(signature, { personKey: img.personKey }, config.images.thresholdDistanceSameImage, function(err, found, distance, personKey) {
                 if (err) {
                   log.warn('can\'t check signature of image', img.basename, ':', err);
                   img.signature = '';
@@ -89,7 +89,9 @@ exports.syncPersonImages = function(person, callback) {
                 } else {
                   //log.debug('found similar signature for image:', signature, '?', found);
                   if (found) {
-                    return log.info('image', img.basename, 'already present in person', img.personKey, ', not added');
+                    log.info('image', img.basename, 'already present in person', img.personKey + ', not added');
+                    return callbackInner();
+                    // TODO: remove from filesystem...
                     // return, don't save image
                   }
                   //log.debug('setting signature', signature, 'in img');
