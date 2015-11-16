@@ -1,15 +1,94 @@
-<head>
-  <title>Escrape 2</title>
-</head>
+<div class="row">
+  <div data-ng-repeat="person in persons | limitTo: 500" class="col-xs-12 col-sm-6 col-md-4 col-lg-3">
+    <div class="showcase-table">
+      <div class="showcase-cell" data-ng-class="{'absent': !person.isPresent}">
+
+        <a ng-href="{{ person.url }}" target="_blank">
+          <img data-ng-src="{{ getShowcaseUrl(person) }}" class="showcase-image" alt="person showcase image" />
+        </a>
+
+        <span class="showcase-caption">
+          <div class="col-xs-10 no-padding">
+            <span class="showcase-caption-name truncate-ellipsis" data-ng-attr-title="{{ person.name ? person.name : '[empty name]' }}">
+              <span>{{ person.name ? person.name : '[empty name]' }}</span>
+            </span>
+          </div>
+          <div class="col-xs-1 no-padding">
+            <span class="showcase-caption-tel truncate-ellipsis">
+              <a data-ng-href="">
+                <img src="images/balloon.png" />
+              </a>
+            </span>
+          </div>
+          <div class="col-xs-1 no-padding">
+            <span class="showcase-caption-tel truncate-ellipsis">
+              <a data-ng-href="tel:+39{{ person.phone }}">
+                <img src="images/phone-call.png" />
+              </a>
+            </span>
+          </div>
+        </span>
+
+      </div>
+    </div>
+    <div class="showcase-separator"></div>
+  </div>
+</div>
+
+<!--
+<div class="row">
+  <div data-ng-repeat="person in persons | limitTo: 48" class="col-xs-12 col-sm-6 col-md-4 col-lg-3"
+    style="text-align:bottom; vertical-align:bottom;">
+    <a ng-href="{{ person.url }}" target="_blank">
+      <img data-ng-src="{{ getShowcaseUrl(person) }}" class="showcase" data-ng-class="{'absent': !person.isPresent}" alt="person showcase image" />
+    </a>
+  </div>
+</div>
+-->
+
+<!--
+      <row>
+        <div class="col-xs-12">
+          <a ng-href="{{ person.url }}" target="_blank">
+            <img data-ng-src="{{ getShowcaseUrl(person) }}" class="showcase" data-ng-class="{'absent': !person.isPresent}" alt="person showcase image" />
+          </a>
+        </div>
+      </row>
+
+      <row>
+        <div class="col-xs-10">
+          <span class="showcase-caption" data-ng-class="{'absent': !person.isPresent}" >
+            {{ person.name ? person.name : '[empty name]' }}
+          </span>
+        </div>
+
+        <div class="col-xs-2">
+          <a data-ng-href="tel:+{{ person.phone }}">
+            <img src="images/phone-call.png" width="24" data-ng-class="{'absent': !person.isPresent}" />
+          </a>
+        </div>
+      </row>
+
+  </div>
+</div>
+-->
+
+<!--
 <div class="jumbotron text-center">
   <h1>Persons</h1>
   <div data-ng-repeat="person in persons">
     <a ng-href="{{ person.url }}" target="_blank">
-      <img data-ng-src="{{ getShowcaseUrl(person) }}" class="showcase" data-ng-class="{'absent': !person.isPresent}" alt="person showcase" />
+      <img data-ng-src="{{ getShowcaseUrl(person) }}" class="showcase" data-ng-class="{'absent': !person.isPresent}" alt="person showcase image" />
     </a>
-    <h5 class="showcase-caption" data-ng-class="{'absent': !person.isPresent}">
-      {{ person.name ? person.name : '[empty name]' }}
-    </h5>
+    <span class="col-xs-11">
+      <h5 class="showcase-caption" data-ng-class="{'absent': !person.isPresent}">
+        {{ person.name ? person.name : '[empty name]' }}
+      </h5>
+    </span>
+    <span class="col-xs-1">
+      <a data-ng-href="tel:+{{ person.phone }}"><img src="images/phone-call.png" width="24" /></a>
+    </span>
     <span class="showcase-separator"></span>
   </div>
 </div>
+-->

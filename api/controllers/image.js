@@ -90,6 +90,13 @@ exports.syncPersonImages = function(person, callback) {
                   //log.debug('found similar signature for image:', signature, '?', found);
                   if (found) {
                     log.info('image', img.basename, 'already present in person', img.personKey + ', not added');
+                    // TODO: verify not to delete person.showcase...
+                    //if (person.showcaseUrl !== img.basename) { ... }
+                    fs.unlink(config.images.path + '/' + img.basename, function(err) {
+                      if (err) {
+                        log.warn('image file', img.basename, 'cannot not be removed from disk:', err);
+                      }
+                    });
                     return callbackInner();
                     // TODO: remove from filesystem...
                     // return, don't save image

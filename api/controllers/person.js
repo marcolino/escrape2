@@ -357,32 +357,44 @@ exports.checkImages = function(callback) {
     // loop through all file system image files
     async.each(
       files,
-      function(file, callback) {
+      function(file, callbackEach) {
         //log.info('processing file', file);
 
-        // check exactly one image document matches each image file
-        var basename = file.replace(new RegExp(config.images.path + '/'), '');
-        Image.find({ basename: basename }, 'basename', function(err, docs) {
-          checkImage(err, docs, basename);
-        });
-
-        // check exactly one person document exists for each image file
-        var personKey = path.dirname(file.replace(new RegExp(config.images.path + '/'), ''));
-        Person.findOne({ key: personKey }, checkPerson);
-
-        callback();
+        async.parallel(
+          [
+            function(callbackParallel) {
+              // check exactly one image document matches each image file
+              var basename = file.replace(new RegExp(config.images.path + '/'), '');
+              Image.find({ basename: basename }, 'basename', function(err, docs) {
+                checkImage(err, docs, basename);
+                callbackParallel();
+              });
+            },
+            function(callbackParallel) {
+              // check exactly one person document exists for each image file
+              var personKey = path.dirname(file.replace(new RegExp(config.images.path + '/'), ''));
+              Person.findOne({ key: personKey }, function(err, doc) {
+                checkPerson(err, doc);
+                callbackParallel();
+              });
+            }
+          ],
+          function(err, results) {
+            if (err) {
+              return log.error('a file failed to process parallely asynchromously');
+            }
+            callbackEach();
+          }
+        );
       },
       function(err) {
         if (err) {
-          return log.error('a file failed to process asynchromously');
-        } else {
-          //log.info('all files in list have been processed successfully');
+          log.error('a file failed to process asynchromously');
         }
+        log.info('checkImages done');
+        callback(null);
       }
     );
-
-    log.info('checkImages done');
-    callback(null);
 
     function checkImage(err, docs, basename) {
       if (err) {

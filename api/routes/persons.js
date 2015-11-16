@@ -20,9 +20,11 @@ router.get('/sync', function(req, res) { // sync all persons
 
 router.route('/').get(function(req, res) { // get all persons
   //var filter = {};
-  var filter = { isPresent: true, isAliasFor: { $size: 0 } };
+  var filter = { isAliasFor: { $size: 0 } };
+  var options = { sort: '-' + 'dateOfFirstSync' };
   // retrieve all persons from mongo database
-  mongoose.model('Person').find(filter, function(err, persons) {
+  // TODO: use controllers.person methods, not directly mongoose methods...
+  mongoose.model('Person').find(filter, null, options, function(err, persons) {
     if (err) {
       log.error('error retrieving persons:', err);
       res.json({ error: err });

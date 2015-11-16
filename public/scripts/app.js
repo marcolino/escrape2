@@ -14,7 +14,8 @@ var config = {
   devel: false,
   api: {
     url: 'http://test.server.local:3000',
-    //url: 'http://192.168.1.2:3000', // to debug on device on LAN (mobiles...)
+    //url: 'http://192.168.1.2:3000', // to debug on device on LAN @Torino (mobiles...)
+    //url: 'http://192.168.1.90:3000', // to debug on device on LAN @Portovenere (mobiles...)
     path: '/api',
   },
   category: 'women',

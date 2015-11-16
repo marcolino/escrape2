@@ -6,6 +6,8 @@
 - use private names for images, to avoid overwriting changed images... (and record the photo changes...)
 - add public.dist to .githignore
 - use variables in index.html...
+- check why there are persons images with no correspondence in db...
+- sync persons.showcaseUrl with images (when they are unlinked for duplication...)
 
 V remove all "err.context = " lines
 V use `test.server.local` (in `/etc/hosts`) @home too

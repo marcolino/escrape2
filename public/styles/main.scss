@@ -1,15 +1,18 @@
+@import 'opacity';
+
+$textColor: yellow;
+$textFontFamily: 'Open Sans' !important;
+$bodyPadding: 1.0em;
+
+/*
 html {
-   overflow-y: scroll;
+  overflow-y: scroll;
 }
+*/
 
 body {
-  font-family: 'Open Sans' !important; /* TODO: use scss ... */
-  padding: 1.0em;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  color: yellow !important;
-  font-family: 'Open Sans' !important; /* TODO: use scss ... */
+  font-family: $textFontFamily;
+  padding: $bodyPadding;
 }
 
 a:hover, a:visited, a:link, a:active {
@@ -17,22 +20,90 @@ a:hover, a:visited, a:link, a:active {
   color: #eee;
 }
 
-img.showcase {
-  width: 240px;
+.showcase-table {
+  display: table;
+  width: 100%;
+}
+
+.showcase-cell {
+  position: relative;
+  display: table-cell;
+  height: 360px;
+  width: 260px;
+  text-align: center;
+  vertical-align: middle;
+  background-color: #000;
   border-radius: 0.8em;
-  border: 1px solid #111;
-  overflow: hidden	
+  overflow: hidden;
 }
+
+.showcase-image {
+  max-height: 320px;
+  max-width: 240px;
+  width: auto;
+  height: auto;
+  border-radius: 0.8em;
+}
+
 .showcase-caption {
-  margin-top: .5em;
+  position: absolute;
+  left: 0;
+  bottom: 0.1em;
+  _margin-right: 1.0em;
 }
+
+.showcase-caption-name {
+  text-align: left;
+  padding-left: 0.5em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: $textColor;
+  font-size: 1.4em;
+  text-shadow: 1px -1px 2px #000;
+  position: absolute;
+  left: 0;
+  bottom: 0.1em;
+}
+
+.showcase-caption-tel img {
+  height: 25px;
+  position: absolute;
+  left: 0;
+  padding-left: 0.5em;
+  bottom: 0.2em;
+}
+
 .showcase-separator {
-  margin-top: 2.0em;
+  margin-top: 1.0em;
 }
+
+.truncate-ellipsis {
+  display: table;
+  table-layout: fixed;
+  width: 100%;
+  white-space: nowrap;
+}
+ 
+.truncate-ellipsis > * {
+  display: table-cell;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.no-padding {
+  padding: 0;
+}
+
 .absent {
+  @include opacity(0.4);
+/*
   opacity: 0.4;
   filter: alpha(opacity=40);
+*/
 }
+
+/*
 img.absent {
   border: 1px dotted #aaa;
   opacity: 0.4;
@@ -41,3 +112,4 @@ img.absent {
     135deg, #eee, #eee 8px, #fff 8px, #fff 16px
   );
 }
+*/
