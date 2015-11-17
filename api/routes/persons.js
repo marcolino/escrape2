@@ -10,7 +10,8 @@ var log = config.log;
 var router = express.Router(); // express router
 router.use(bodyParser.urlencoded({ extended: true })); // already in app.js (is it sufficient???)
 
-router.get('/sync', function(req, res) { // sync all persons
+//router.get('/sync', function(req, res) { // sync all persons
+router.route('/sync').get(function(req, res) { // sync all persons
   // return immedately, log progress
   var message = 'persons sync started';
   res.json(message);
@@ -22,10 +23,10 @@ router.route('/').get(function(req, res) { // get all persons
   //var filter = {};
   var filter = { isAliasFor: { $size: 0 } };
   var options = { sort: '-' + 'dateOfFirstSync' };
-  if (req.filter && req.filter.search && req.filter.search.term !== null) {
-    filter.name = new RegExp(filter.search.term, 'i');
+  if (req.search && req.search !== null) {
+    filter.name = new RegExp(req.search, 'i');
   }
-filter.name = new RegExp('angela', 'i'); ///////////////////////////////////////////////
+//filter.name = new RegExp('russa', 'i'); ///////////////////////////////////////////////
   // retrieve all persons from mongo database
   // TODO: use controllers.person methods, not directly mongoose methods...
   mongoose.model('Person').find(filter, null, options, function(err, persons) {
@@ -38,6 +39,18 @@ filter.name = new RegExp('angela', 'i'); ///////////////////////////////////////
       res.json(persons);
     }
   });
+});
+
+router.route('/get/:search/:sort').get(function(req, res, next) { // get all persons, filtered
+  log.info('search:', req.params.search);
+  log.info('sort:', req.params.sort);
+  res.json(null);
+/*
+  person.get({
+    search: req.params.search,
+    sort: req.params.sort,
+  });
+*/
 });
 
 // route middleware to validate :id

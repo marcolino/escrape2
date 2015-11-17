@@ -466,7 +466,7 @@ exports.listImagesAliases = function(callback) {
       //console.log('<img src="' + 'http://test.server.local' + '/data/images' + '/' + person._doc.showcaseUrl + '" width="128" />');
       console.log('<div class="row">');
       console.log(
-        '  <img src="' + 'http://test.server.local' + '/data/images' + '/' + person._doc.showcaseUrl + '" ' +
+        ' DUP: <img src="' + 'http://test.server.local' + '/data/images' + '/' + person._doc.showcaseUrl + '" ' +
         'width="128" ' +
         'title="name: ' + person._doc.name + ', key: ' + person._doc.key + '" ' +
         '/>'
@@ -516,7 +516,12 @@ local.setActivityStatus = function(syncStartDate, callback) {
     if (err) {
       return callback(err);
     }
-    local.presenceSet(syncStartDate, callback);
+    local.presenceSet(syncStartDate, function(err) {
+      if (err) {
+        return callback(err);
+      }
+      callback();
+    });
   });
 };
 
@@ -546,7 +551,7 @@ local.presenceSet = function(syncStartDate, callback) {
     .where('dateOfLastSync').gte(syncStartDate)
     .update({}, { $set: { isPresent: true } }, { multi: true }, function(err, count) {
       if (err) {
-        console.warn('Error setting persons activity status:', err);
+        console.warn('can\' set persons activity status:', err);
         return callback(err);
       }
       if (count.n <= 0) {
