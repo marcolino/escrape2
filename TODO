@@ -1,13 +1,6 @@
-- where to put common code (i.e.: `function inArray(arr, obj) { return (arr.indexOf(obj) != -1); }` ) ?
 - add mongo dependency and (http://docs.mongodb.org/manual/installation/) start it in deploy script (?)
-- googie: how to share config among node api and angular frontend? (backend buils config for frontend?)
 - make bootswatch theme in index.html configurable (on the server only)
-- use `handlebars` for html templating
-- use private names for images, to avoid overwriting changed images... (and record the photo changes...)
-- add public.dist to .githignore
-- use variables in index.html...
-- check why there are persons images with no correspondence in db...
-- sync persons.showcaseUrl with images (when they are unlinked for duplication...)
+- use `handlebars` for html templating (to have variables in index.html)
 
 V remove all "err.context = " lines
 V use `test.server.local` (in `/etc/hosts`) @home too
@@ -18,3 +11,8 @@ V use all lowercase for errors
 V use 'use strict' everywhere
 V uninstall module 'socket.io', if not used for tailable cursor view
 V add `"save_on_focus_lost": true` to sublimetext - preferences - settings - user
+V how to share config among node api and angular frontend? (backend builds config for frontend?) (we don't need it)
+V add public.dist to .githignore
+V use private names for images, to avoid overwriting changed images...
+V check why there are persons images with no correspondence in db...
+V where to put common code (i.e.: `function inArray(arr, obj) { return (arr.indexOf(obj) != -1); }` ) ? (in a module, if not in lodash)

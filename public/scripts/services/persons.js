@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('PersonService', []).factory('Person', ['$rootScope', '$http', function($rootScope, $http) {
+angular.module('PersonService', []).factory('Person', [ '$rootScope', '$http', function($rootScope, $http) {
   return {
     get: function(callback) { // call to get all persons
       $http({

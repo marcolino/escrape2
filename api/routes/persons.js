@@ -22,6 +22,10 @@ router.route('/').get(function(req, res) { // get all persons
   //var filter = {};
   var filter = { isAliasFor: { $size: 0 } };
   var options = { sort: '-' + 'dateOfFirstSync' };
+  if (req.filter && req.filter.search && req.filter.search.term !== null) {
+    filter.name = new RegExp(filter.search.term, 'i');
+  }
+filter.name = new RegExp('angela', 'i'); ///////////////////////////////////////////////
   // retrieve all persons from mongo database
   // TODO: use controllers.person methods, not directly mongoose methods...
   mongoose.model('Person').find(filter, null, options, function(err, persons) {

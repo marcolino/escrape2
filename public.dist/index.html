@@ -14,54 +14,25 @@
     <!-- endinject -->
 
     <!-- inject-custom:css -->
-    <link rel="stylesheet" href="styles/custom-8dd8e345bf.css">
+    <link rel="stylesheet" href="styles/custom-4b16bb28f7.css">
     <!-- endinject -->
-  </head>
-  <body data-ng-app="escrape2" data-ng-strict-di>
-    <div class="container">
-      <div class="navbar navbar-inverse DISABLE-navbar-static-top" role="navigation">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
-          <span class="sr-only">Toggle navigation</span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" rel="home" href="/" title="Escrape 2"><img src="images/logo-three-ghosts.png" alt="logo" width="32" /></a>
-        </div>
-      
-        <div class="collapse navbar-collapse navbar-ex1-collapse">
-      
-          <ul class="nav navbar-nav">
-            <li><a href="/about">about</a></li>
-          </ul>
-      
-          <div class="col-sm-4 col-md-4 pull-right">
-            <form class="navbar-form" role="search">
-              <div class="input-group">
-                <input type="text" class="form-control" placeholder="Search" name="srch-term" id="srch-term">
-                <div class="input-group-btn">
-                  <button class="btn btn-default" type="submit"><i class="glyphicon glyphicon-search"></i></button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
 
-      <div data-ng-view></div>
-    
+  </head>
+  <body data-ng-app="escrape2" data-ng-strict-di="true">
+    <div class="container">
+      <div data-ng-include src="'views/navbar.html'"></div>
+      <div data-ng-view></div>   
     </div>
 
-    <script src="http://test.server.local:35729/livereload.js"></script>
     <!-- TODO: ng-if developing -->
+    <script src="http://test.server.local:35729/livereload.js"></script>
 
     <!-- inject-vendor:js -->
     <script src="scripts/vendor-ff70fab07a.js"></script>
     <!-- endinject -->
 
     <!-- inject-custom:js -->
-    <script src="scripts/custom-f01617d7dc.js"></script>
+    <script src="scripts/custom-c991e9dfa1.js"></script>
     <!-- endinject -->
 
   </body>

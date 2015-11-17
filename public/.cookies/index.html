@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+  <!-- Include jQuery -->
+  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
+  <!-- Include you know cookiesDirective.js plugin -->
+  <script type="text/javascript" src="jquery.cookiesdirective.js"></script>
+</head>
+<body>  
+  <script type="text/javascript">
+  $(document).ready(function() {
+    $.cookiesDirective({
+      privacyPolicyUri: 'PrivacyPolicy.html',
+      explicitConsent: false,
+      position : 'bottom',
+      cookieScripts: '', 
+      backgroundColor: '#000',
+      linkColor: '#ffffff',
+      fontFamily: 'Verdana',
+    });
+  });
+  </script>
+</body>  
+</html>

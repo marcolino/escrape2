@@ -1,0 +1,8 @@
+img.absent {
+  border: 1px dotted #aaa;
+  opacity: 0.4;
+  filter: alpha(opacity=40);
+  background: repeating-linear-gradient(
+    135deg, #eee, #eee 8px, #fff 8px, #fff 16px
+  );
+}

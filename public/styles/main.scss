@@ -4,12 +4,6 @@ $textColor: yellow;
 $textFontFamily: 'Open Sans' !important;
 $bodyPadding: 1.0em;
 
-/*
-html {
-  overflow-y: scroll;
-}
-*/
-
 body {
   font-family: $textFontFamily;
   padding: $bodyPadding;
@@ -29,7 +23,7 @@ a:hover, a:visited, a:link, a:active {
   position: relative;
   display: table-cell;
   height: 360px;
-  width: 260px;
+  width: 270px;
   text-align: center;
   vertical-align: middle;
   background-color: #000;
@@ -97,19 +91,4 @@ a:hover, a:visited, a:link, a:active {
 
 .absent {
   @include opacity(0.4);
-/*
-  opacity: 0.4;
-  filter: alpha(opacity=40);
-*/
 }
-
-/*
-img.absent {
-  border: 1px dotted #aaa;
-  opacity: 0.4;
-  filter: alpha(opacity=40);
-  background: repeating-linear-gradient(
-    135deg, #eee, #eee 8px, #fff 8px, #fff 16px
-  );
-}
-*/

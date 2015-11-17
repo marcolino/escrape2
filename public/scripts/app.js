@@ -3,9 +3,11 @@
 var app = angular.module('escrape2', [
   'ngRoute',
   'routes',
+  'AuthCtrl',
   'HomeCtrl',
   'PersonCtrl',
   'AboutCtrl',
+  'FilterService',
   'PersonService'
 ]);
 
