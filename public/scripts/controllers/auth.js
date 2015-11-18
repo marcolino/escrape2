@@ -1,12 +1,15 @@
 'use strict';
 
-angular.module('AuthCtrl', []).controller('AuthController', function($scope, Filter) {
+angular.module('AuthCtrl', []).controller('AuthController', function($scope, Filter, Person) {
 
   $scope.filters = {};
 
-  $scope.$watch('filters.search', function(newValue, oldValue) {
-    Filter.set({ search: newValue });
+/*
+  $scope.$watch(function() { return Filter.get().search.term; }, function(newValue, oldValue) {
+console.log('auth WATCH:', newValue);
+    Filter.set({ search: { term: newValue } });
   });
+*/
 
   $scope.startup = function() {
   	console.log('auth controller - startup() called ...');
@@ -14,9 +17,13 @@ angular.module('AuthCtrl', []).controller('AuthController', function($scope, Fil
   };
 
   $scope.search = function() {
-  	console.log('Filter:', Filter.get());
+console.info('searching', $scope.filters.search.term);
+console.info('Fiter.set({ search: { term:', $scope.filters.search.term, ' } })');
+    Filter.set({ search: { term: $scope.filters.search.term } });
+/*
   	var what = Filter.get().search;
     console.info('searching', what);
+*/
   };
 
   $scope.startup();

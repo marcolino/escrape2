@@ -1,12 +1,16 @@
 @import 'opacity';
 
 $textColor: yellow;
-$textFontFamily: 'Open Sans' !important;
+$textFontFamily: 'Open Sans';
 $bodyPadding: 1.0em;
 
-body {
+html * {
   font-family: $textFontFamily;
+}
+
+body {
   padding: $bodyPadding;
+  color: $textColor;
 }
 
 a:hover, a:visited, a:link, a:active {

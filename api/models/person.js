@@ -20,6 +20,7 @@ var personSchema = new mongoose.Schema({
   thruthful: Boolean,
   dateOfFirstSync: { type: Date, default: Date.now /*(?)*/ },
   dateOfLastSync: { type: Date, default: Date.now },
+  phoneIsAvailable: Boolean,
   isPresent: Boolean,
   isAliasFor: { type: Array, default: [] },
   showcaseUrl: String // showcase image (local) url

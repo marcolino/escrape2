@@ -14,6 +14,34 @@ var mongoose = require('mongoose') // mongo abstraction
 var local = {};
 var log = config.log;
 
+exports.getAll = function(filter, options, result) { // get all persons
+  Person.find(filter, null, options, function(err, persons) {
+    result(err, persons);
+  });
+};
+
+exports.get = function(req, res) { // get persons
+  var filter = {};
+  var options = {};
+  Person.find(filter, null, options, function(err, persons) {
+    result(err, persons);
+  });
+};
+
+exports.getById = function(id, result) { // get person by id
+  var filter = { _id: id };
+  Person.find(filter, function(err, persons) {
+    result(err, persons);
+  });
+};
+
+exports.getByPhone = function(phone, result) { // get person by phone
+  var filter = { phone: req.phone };
+  Person.find(filter, function(err, persons) {
+    result(err, persons);
+  });
+};
+
 /**
  * sync persons from providers
  */
@@ -119,7 +147,14 @@ exports.sync = function() { // sync persons
                     }
                     person.zone = local.getDetailsZone($, provider);
                     person.description = local.getDetailsDescription($, provider);
-                    person.phone = local.getDetailsPhone($, provider);
+                    var phone = local.getDetailsPhone($, provider);
+                    if (phone) { // phone is found
+                      person.phone = phone;
+                      person.phoneIsAvailable = true;
+                    } else { // phone not found (person unavailable)
+                      // do not overwrite person phone
+                      person.phoneIsAvailable = false;
+                    }
                     person.nationality = local.detectNationality(person, provider, config);
                     person.dateOfLastSync = new Date();
                     person._imageUrls = local.getDetailsImageUrls($, provider);
@@ -191,6 +226,100 @@ exports.sync = function() { // sync persons
       }
     );
   });
+};
+
+local.upsert = function(person, callback) {
+  Person.findOne(
+    { key: person.key },
+    function(err, doc) {
+      if (err) {
+        log.warn('could not find person', person.name, ':', err, ',', 'skipping');
+        return callback(err);
+      }
+      var isNew;
+      if (doc) { // person did already exist
+        isNew = false;
+        doc.dateOfLastSync = person.dateOfLastSync;
+      } else { // person did not exist before
+        isNew = true;
+        doc = new Person();
+      }
+      _.merge(doc, person);
+      doc.save(function(err) {
+        if (err) {
+          log.warn('could not save person', doc.key, ':', err, ',', 'skipping');
+          return callback(err);
+        }
+        log.info('person', person.key, (isNew ? 'inserted' : 'updated'));
+        callback(null); // success
+      });
+    }
+  );
+};
+
+local.setActivityStatus = function(syncStartDate, callback) {
+  local.presenceReset(syncStartDate, function(err) {
+    if (err) {
+      return callback(err);
+    }
+    local.presenceSet(syncStartDate, function(err) {
+      if (err) {
+        return callback(err);
+      }
+      callback();
+    });
+  });
+};
+
+// set persons present flag to false
+local.presenceReset = function(syncStartDate, callback) {
+  Person
+    .where({
+      $or: [
+        { 'dateOfLastSync': { $lt: syncStartDate } },
+        { 'phoneIsAvailable': false },
+      ]
+    })
+    .update({}, { $set: { isPresent: false } }, { multi: true }, function(err, count) {
+      if (err) {
+        console.warn('can\'t reset persons activity status:', err);
+        return callback(err);
+      }
+      if (count.n <= 0) {
+        console.warn('no person has been set as not present');
+      } else {
+        console.log(count.n + ' persons present flag set as false');
+      }
+      callback(null);
+    })
+  ;
+};
+
+// set persons present flag according to date of last sync
+local.presenceSet = function(syncStartDate, callback) {
+  // set just sync'd persons as present
+  //console.log('updating persons isPresent flag to true for persons with datOfLastSync $gte than', syncStartDate);
+  Person
+    //.where('dateOfLastSync').gte(syncStartDate)
+    .where({
+      $and: [
+        { 'dateOfLastSync': { $gte: syncStartDate } },
+        { 'phoneIsAvailable': true },
+      ]
+    })
+    .update({}, { $set: { isPresent: true } }, { multi: true }, function(err, count) {
+      if (err) {
+        console.warn('can\'t set persons activity status:', err);
+        return callback(err);
+      }
+      if (count.n <= 0) {
+        console.warn('no person has been set as present');
+      } else {
+        console.log(count.n + ' persons present flag set as true');
+      }
+      callback(null);
+    })
+  ;
 };
 
 exports.buildAliases = function(personKey, callback) {
@@ -480,88 +609,6 @@ exports.listImagesAliases = function(callback) {
   }
   log.info('listImagesAliases done');
   callback(null);
-};
-
-local.upsert = function(person, callback) {
-  Person.findOne(
-    { key: person.key },
-    function(err, doc) {
-      if (err) {
-        log.warn('could not find person', person.name, ':', err, ',', 'skipping');
-        return callback(err);
-      }
-      var isNew;
-      if (doc) { // person did already exist
-        isNew = false;
-        doc.dateOfLastSync = person.dateOfLastSync;
-      } else { // person did not exist before
-        isNew = true;
-        doc = new Person();
-      }
-      _.merge(doc, person);
-      doc.save(function(err) {
-        if (err) {
-          log.warn('could not save person', doc.key, ':', err, ',', 'skipping');
-          return callback(err);
-        }
-        log.info('person', person.key, (isNew ? 'inserted' : 'updated'));
-        callback(null); // success
-      });
-    }
-  );
-};
-
-local.setActivityStatus = function(syncStartDate, callback) {
-  local.presenceReset(function(err) {
-    if (err) {
-      return callback(err);
-    }
-    local.presenceSet(syncStartDate, function(err) {
-      if (err) {
-        return callback(err);
-      }
-      callback();
-    });
-  });
-};
-
-// set persons present flag to false
-local.presenceReset = function(callback) {
-  Person
-    .update({}, { $set: { isPresent: false } }, { multi: true }, function(err, count) {
-      if (err) {
-        console.warn('Error resetting persons activity status:', err);
-        return callback(err);
-      }
-      if (count.n <= 0) {
-        console.warn('no person has been reset');
-      } else {
-        console.log(count.n + ' persons present flag reset');
-      }
-      callback(null);
-    })
-  ;
-};
-
-// set persons present flag according to date of last sync
-local.presenceSet = function(syncStartDate, callback) {
-  // set just sync'd persons as present
-  //console.log('updating persons isPresent flag to true for persons with datOfLastSync $gte than', syncStartDate);
-  Person
-    .where('dateOfLastSync').gte(syncStartDate)
-    .update({}, { $set: { isPresent: true } }, { multi: true }, function(err, count) {
-      if (err) {
-        console.warn('can\' set persons activity status:', err);
-        return callback(err);
-      }
-      if (count.n <= 0) {
-        console.warn('no person is present');
-      } else {
-        console.log(count.n + ' persons present flag asserted');
-      }
-      callback(null);
-    })
-  ;
 };
 
 local.getList = function(provider, $) {
@@ -1084,45 +1131,6 @@ local.detectNationality = function(person, provider, config) {
     }
     return false;
   }
-};
-
-exports.getAll = function(req, res) { // get all persons
-  local.get(filter, function(err, persons) {
-    if (err) {
-      console.error('Error retrieving persons:', err);
-      res.json({ error: err });
-    } else {
-      res.json(persons);
-    }
-  });
-};
-
-exports.getById = function(req, res) { // get person
-  local.get({ _id: req._id }, function(err, persons) {
-    if (err) {
-      console.error('Error retrieving persons by id:', err);
-      res.json({ error: err });
-    } else {
-      res.json(persons);
-    }
-  });
-};
-
-exports.getByPhone = function(req, res) { // get person
-  local.get({ phone: req.phone }, function(err, persons) {
-    if (err) {
-      console.error('Error retrieving persons by phone:', err);
-      res.json({ error: err });
-    } else {
-      res.json(persons);
-    }
-  });
-};
-
-local.get = function(filter, result) { // get person
-  mongoose.model('Person').find(filter, function(err, persons) {
-    result(err, persons);
-  });
 };
 
 /**

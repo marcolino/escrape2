@@ -22,7 +22,7 @@ exports.requestRetryAnonymous = function(resource, error, success) {
   var options = {
     url: resource.url,
     maxAttempts: 3, // retry for 3 attempts more after the first one
-    retryDelay: 60 * 1000, // wait for 60" before trying again
+    retryDelay: 33 * 1000, //60 * 1000, // wait for 60" before trying again
     retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
     headers: {
       'User-Agent': randomUseragent.generate()
@@ -64,22 +64,16 @@ exports.requestRetryAnonymous = function(resource, error, success) {
       // requestretry wants these as 3rd and 4th params of request() call...
       // TODO: with new requestretry versions we can remove these parameters...
       // TEST THIS !!!!!!!!!!!!!!!!!!!!
+/* TESTING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ,
       options.maxAttempts,
       options.retryDelay
-    );//, {
-  //    retries: 10,
-  //    factor: 2
-  //  }
-  //)
-  //.on('replay', function (replay) {
-  //  // "replay" is an object that contains some useful information 
-  //  console.log('request failed: ' + replay.error.code + ' ' + replay.error.message);
-  //  console.log('replay nr: #' + replay.number);
-  //  console.log('will replay in: ' + replay.delay + 'ms')
-  //});
+*/
+    );
 
-  // request retry strategies
+  /**
+   * request-retry strategies
+   */
 
   /**
    * @param  {Null | Object} err
@@ -135,6 +129,10 @@ exports.requestRetryAnonymous = function(resource, error, success) {
     if (forbidden) {
       log.warn('request was forbidden (' + response.statusCode + '); will retry in ', (options.retryDelay / 1000), ' seconds...');
     }
+
+// TODO: debug this condition... is this the cause of freezes on full sync's (callbackInner() not called) ?
+if (response.statusCode >= 400) { log.error('retry strategy - not found a forbidden condition (status code is:', response.statusCode + ')'); }
+
     return forbidden;
   }
 

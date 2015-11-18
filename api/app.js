@@ -26,8 +26,8 @@ var comments = require('./routes/comments');
 var app = module.exports = express();
 
 // use modules to become RESTful
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true })); // only parse urlencoded bodies
+app.use(bodyParser.json()); // only parse JSON
 app.use(methodOverride()); // override with the X-HTTP-Method-Override header in the request
 
 // server routes (API calls, authentication, ...)
@@ -41,6 +41,13 @@ app.use(express.static(staticPathPublic));
 app.use(express.static(staticPathData));
 //app.set('views', pathViews);
 //app.set('view engine', engineTemplate); 
+
+// error-handling
+app.use('/api/*', function(req, res, next) { // unforeseen request
+  //var path = req._parsedOriginalUrl.path;
+  res.status(404);
+  res.json({ error: 'path not found' });
+});
 
 /*
 // frontend routes (angular requests)
