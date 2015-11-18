@@ -127,11 +127,11 @@ exports.requestRetryAnonymous = function(resource, error, success) {
       )
     );
     if (forbidden) {
-      log.warn('request was forbidden (' + response.statusCode + '); will retry in ', (options.retryDelay / 1000), ' seconds...');
+      log.warn('request was forbidden (' + (response ? response.statusCode : '?') + '); will retry in ', (options.retryDelay / 1000), ' seconds...');
     }
 
-// TODO: debug this condition... is this the cause of freezes on full sync's (callbackInner() not called) ?
-if (response.statusCode >= 400) { log.error('retry strategy - not found a forbidden condition (status code is:', response.statusCode + ')'); }
+    // TODO: debug this condition... is this the cause of freezes on full sync's (callbackInner() not called) ?
+    if (response.statusCode >= 400) { log.error('retry strategy - not found a forbidden condition (status code is:', response.statusCode + ')'); }
 
     return forbidden;
   }
