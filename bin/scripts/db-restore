@@ -1,0 +1,10 @@
+#!/bin/sh
+#
+# Restores a mongo database
+
+db="escrape"
+backupdir="data/db.backup/"
+
+mongorestore --drop "$backupdir" --db "$db"
+
+

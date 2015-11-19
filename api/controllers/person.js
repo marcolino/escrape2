@@ -258,6 +258,34 @@ local.upsert = function(person, callback) {
 };
 
 local.setActivityStatus = function(syncStartDate, callback) {
+  async.series(
+    [
+      function(callbackInner) {
+        local.presenceReset(syncStartDate, function(err) {
+          if (err) {
+            return callbackInner('can\'t reset presence:', err);
+          }
+          callbackInner(null, 'reset');
+        });
+      },
+      function(callbackInner) {
+        local.presenceSet(syncStartDate, function(err) {
+          if (err) {
+            return callbackInner('can\'t set presence:', err);
+          }
+          callbackInner(null, 'set');
+        });
+      }
+    ],
+    function(err, results) {
+      // results should be now equal to [ 'reset', 'set' ]
+      if (err) {
+        return callback('could not set activity status for persons:', err);
+      }
+      callback(); // success
+    }
+  );
+/*
   local.presenceReset(syncStartDate, function(err) {
     if (err) {
       return callback(err);
@@ -269,10 +297,11 @@ local.setActivityStatus = function(syncStartDate, callback) {
       callback();
     });
   });
+*/
 };
 
-// set persons present flag to false
 local.presenceReset = function(syncStartDate, callback) {
+  // set persons not sync'd or with a not available phone as not present
   Person
     .where({
       $or: [
@@ -285,22 +314,15 @@ local.presenceReset = function(syncStartDate, callback) {
         console.warn('can\'t reset persons activity status:', err);
         return callback(err);
       }
-      if (count.n <= 0) {
-        console.warn('no person has been set as not present');
-      } else {
-        console.log(count.n + ' persons present flag set as false');
-      }
+      log.debug(count.n + ' persons are absent');
       callback(null);
     })
   ;
 };
 
-// set persons present flag according to date of last sync
 local.presenceSet = function(syncStartDate, callback) {
-  // set just sync'd persons as present
-  //console.log('updating persons isPresent flag to true for persons with datOfLastSync $gte than', syncStartDate);
+  // set persons sync'd and with an available phone as present
   Person
-    //.where('dateOfLastSync').gte(syncStartDate)
     .where({
       $and: [
         { 'dateOfLastSync': { $gte: syncStartDate } },
@@ -312,11 +334,7 @@ local.presenceSet = function(syncStartDate, callback) {
         console.warn('can\'t set persons activity status:', err);
         return callback(err);
       }
-      if (count.n <= 0) {
-        console.warn('no person has been set as present');
-      } else {
-        console.log(count.n + ' persons present flag set as true');
-      }
+      log.debug(count.n + ' persons are present');
       callback(null);
     })
   ;

@@ -1,0 +1,8 @@
+#!/bin/sh
+#
+# Backups a mongo database
+
+db="escrape"
+backupdir="data/db.backup/"
+
+mongodump --out "$backupdir" --db "$db"
