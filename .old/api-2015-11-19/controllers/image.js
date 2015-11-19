@@ -28,28 +28,25 @@ exports.syncPersonImages = function(person, callback) {
   var resource;
   //var keyFull = person.providerKey + '/' + person.key;
 
-  if (!person.imageUrls) {
+  if (!person._imageUrls) {
     //return callback('empty image urls for person ' + keyFull, person);
     return callback('empty image urls for person ' + person.key, person);
   }
-  if (person.imageUrls.length <= 0) {
+  if (person._imageUrls.length <= 0) {
     return callback('no image urls for person ' + person.key, person);
   }
 
   async.each(
-    person.imageUrls, // 1st param is the array of items
-    function(url, callbackInner) { // 2nd param is the function that each item is passed to
-//log.silly('url:', url);
+    person._imageUrls, // 1st param is the array of items
+    function(element, callbackInner) { // 2nd param is the function that each item is passed to
       var image = {};
-      image.url = url;
+      image.url = element;
       if (!image.url) {
         log.warn('can\'t sync image for person', person.key, ', ', 'image with no url, ', 'skipping');
         return callbackInner(); // skip this inner loop
       }
-      /* TODO: handle real showcase...
-      // set first image flag based on indexOf this url in person imageUrls
-      image.isFirst = (person.imageUrls.indexOf(url) === 0);
-      */
+      // set first image flag based on indexOf this element in person imageUrls
+      image.isFirst = (person._imageUrls.indexOf(element) === 0);
 
       // find this url in images collection
       Image.findOne({ idPerson: person._id, url: image.url }, function(err, img) {
@@ -58,14 +55,10 @@ exports.syncPersonImages = function(person, callback) {
           return callbackInner();
         }
         if (!img) { // new image url
-//log.silly('img with url', url, 'not found');
           img = new Image();
           img.url = image.url;
         }
-//else log.silly('img with url', url, 'found');
-        /*
         img._isFirst = image.isFirst; // TODO: debug this: is image coupled with img???
-        */
         resource = {
           personKey: person.key,
           url: image.url,
@@ -80,7 +73,6 @@ exports.syncPersonImages = function(person, callback) {
             return callbackInner();
           }
           if (!res) {
-//log.silly('image not downloaded because of etag %%%%%%%%%%%%%');
             return callbackInner(); // res is null, image not modified, do not save it to disk
           }
           img.personKey = res.personKey;
@@ -125,11 +117,9 @@ exports.syncPersonImages = function(person, callback) {
                   if (err) {
                     log.warn('can\'t save image', image.url, ':', err);
                   } else {
-/*
                     if (img._isFirst) { // if this image is the first set person's showcase url
                       person.showcaseUrl = img.basename;
                     }
-*/
                     log.info('image', img.basename, 'added');
                   }
                   return callbackInner();
@@ -142,12 +132,11 @@ exports.syncPersonImages = function(person, callback) {
         });
       });
     },
-    function(err) { // 3rd param is the function to call when everything's done
+    function(err) { // 3rd param is the function to call when everything's done (inner callback)
       if (err) {
         log.warn('some error in the final images async callback:', err);
-        return callback(err, person);
+        callback(err, person);
       }
-//log.silly('Image.syncPersonImages() FINISHED for person', person.key);
       // all tasks are successfully done
       callback(null, person);
     }

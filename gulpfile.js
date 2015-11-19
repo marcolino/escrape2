@@ -39,7 +39,7 @@ var cfg = {
   url: 'http://test.server.local:3000',
   browser: 'chromium-browser', // @centos: chromim-browser, @ubuntu: 'google-chrome' ...
   backend: {
-    scripts: [ api + '/*.js', api + '/routes/**/*.*', api + '/controllers/**/*.*', api + '/models/**/*.*' ],
+    scripts: [ api + '/**/*.js', api + '/routes/**/*.*', api + '/controllers/**/*.*', api + '/models/**/*.*' ],
   },
   frontend: {
     scripts: [ app + '/scripts/**/*.js' ],

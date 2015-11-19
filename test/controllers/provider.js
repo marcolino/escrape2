@@ -50,21 +50,6 @@ var mockProviders = {
     ',
     count: 5,
   },
-  'TEST': {
-    contents: '\
-      <body>\
-        <ol>\
-          <li>\
-            <a href="/test/leaf.zero.A" title="zero A">zero A</a>\
-          </li>\
-          <li>\
-            <a href="/test/leaf.zero.B" title="zero B">zero B</a>\
-          </li>\
-        </ol>\
-      </body>\
-    ',
-    count: 2,
-  },
 };
 
 describe('controllers - provider', function() {
@@ -80,7 +65,7 @@ describe('controllers - provider', function() {
       Provider.getAll({}, function(err, result) {
         expect(err).to.be.null;
         expect(typeof result).to.eql('object');
-        expect(result).to.have.keys([ 'SGI', 'TOE', 'FORBES', 'TEST' ]);
+        expect(result).to.have.keys([ 'SGI', 'TOE', 'FORBES' ]);
       });
     });
 

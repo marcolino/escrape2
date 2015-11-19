@@ -61,24 +61,6 @@ var mockProviders = [
     ',
     count: 5,
   },
-  {
-    key: 'TEST',
-    type: 'persons',
-    language: 'it',
-    contents: '\
-      <body>\
-        <ol>\
-          <li>\
-            <a href="/test/leaf.zero.A" title="zero A">zero A</a>\
-          </li>\
-          <li>\
-            <a href="/test/leaf.zero.B" title="zero B">zero B</a>\
-          </li>\
-        </ol>\
-      </body>\
-    ',
-    count: 2,
-  },
 ];
 
 describe('controllers - person', function() {

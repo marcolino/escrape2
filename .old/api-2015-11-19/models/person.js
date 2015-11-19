@@ -23,7 +23,7 @@ var personSchema = new mongoose.Schema({
   phoneIsAvailable: Boolean,
   isPresent: Boolean,
   isAliasFor: { type: Array, default: [] },
-  //////////////showcaseUrl: String // showcase image (local) url
+  showcaseUrl: String // showcase image (local) url
 },
 {
   autoIndex: config.debug,
