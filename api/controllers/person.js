@@ -48,6 +48,7 @@ exports.getByPhone = function(phone, result) { // get person by phone
  * sync persons from providers
  */
 exports.sync = function() { // sync persons
+  var totalProvidersCount = 0, retrievedProvidersCount = 0;
   var totalPersonsCount = 0, retrievedPersonsCount = 0;
   var syncStartDate = new Date(); // start of this sync date
   var persons = [];
@@ -63,6 +64,7 @@ exports.sync = function() { // sync persons
     if (err) {
       return log.error('error getting providers:', err);
     }
+    totalProvidersCount = providers.length;
 
     // loop to get list page from all providers
     async.each(
@@ -92,6 +94,7 @@ exports.sync = function() { // sync persons
               );
               return callbackOuter(); // skip this outer loop
             }
+            retrievedProvidersCount++;
             $ = cheerio.load(contents);
             var list = local.getList(provider, $);
             totalPersonsCount += list.length;
@@ -140,7 +143,7 @@ exports.sync = function() { // sync persons
                     $ = cheerio.load(contents);
                     person.name = local.getDetailsName($, provider);
                     if (!person.name) { // should not happen, network.requestRetryAnonymous should catch it
-                      log.warn('person', person.key, 'name not found', ',', 'skipping');
+                      log.warn('person', person.key, 'name not found,', 'skipping');
                       return callbackInner(); // skip this inner loop
                     }
                     person.zone = local.getDetailsZone($, provider);
@@ -207,8 +210,8 @@ exports.sync = function() { // sync persons
                 if (err) {
                   log.warn('some error in the final inner async callback:', err, 'skipping inner iteration');
                 }
-                callbackOuter(); // signal outer loop that this inner loop is finished
                 log.info('finished persons sync for provider', provider.key);
+                callbackOuter(); // signal outer loop that this inner loop is finished
               }
             );
           }
@@ -221,7 +224,10 @@ exports.sync = function() { // sync persons
         log.info('finished persons sync for all providers');
 
         // set activity status, if all persons retrieved
-        if (retrievedPersonsCount === totalPersonsCount) {
+        if (
+          (retrievedProvidersCount === totalProvidersCount) &&
+          (retrievedPersonsCount === totalPersonsCount)
+        ) {
           local.setActivityStatus(syncStartDate, function(err) {
             if (err) {
               return log.error('error setting activity status:', err);
@@ -229,12 +235,16 @@ exports.sync = function() { // sync persons
             log.info('persons sync finished: all', retrievedPersonsCount/*.toString()*/, 'persons retrieved');
           });
         } else {
-          log.warn('persons sync finished:', retrievedPersonsCount/*.toString()*/, 'out of', totalPersonsCount, 'retrieved, presence status not asserted');
+          log.warn(
+            'persons sync finished:',
+            retrievedProvidersCount, 'providers out of', totalProvidersCount, 'retrieved,',
+            retrievedPersonsCount, 'persons out of', totalPersonsCount, 'retrieved,',
+            'presence status not asserted'
+          );
         }
 
         // sync persons images
-        log.info('persons images sync started');
-        exports.syncImages(persons, function(err) {
+        local.syncImages(persons, function(err) {
           if (err) {
             return log.warn('can\'t sync persons images:', err);
           }
@@ -264,7 +274,7 @@ exports.upsert = function(person, callback) {
         // record if any intrinsic property was modified
         if (!isNew) {
           if (prop in doc && prop !== 'dateOfLastSync' && doc[prop] !== person[prop]) {
-            log.debug('updating', person.providerKey + '/' + person.key, ', property', prop, 'did change');
+            log.debug('updating', person.key, ': prop', prop, doc[prop], '=>', person[prop]);
             isModified = true;
           }
         }
@@ -277,8 +287,9 @@ exports.upsert = function(person, callback) {
         if (err) {
           return callback('could not save person ' + doc.key + ': ' + err.toString());
         }
-        log.info('person', person.key, (isNew ? 'inserted' : isModified ? 'updated' : 'unchanged'));
-        callback(null); // success
+        log.info('person', person.key, (isNew ? 'inserted' : isModified ? 'modified' : 'not changed'));
+        person.isChanged = isNew || isModified;
+        callback(null, person); // success
       });
     }
   );
@@ -354,19 +365,27 @@ local.presenceSet = function(syncStartDate, callback) {
   ;
 };
 
-exports.syncImages = function(persons, callback) {
+local.syncImages = function(persons, callback) {
 //log.debug('syncImages() A', persons.length);
   async.each(
     persons, // 1st param in async.each() is the array of items
     function(person, callbackInner) { // 2nd param is the function that each item is passed to
-//log.debug('syncImages() B', person.key);
+log.silly('=== person', person.key, ' sync images start ===');
       // sync this person images
       image.syncPersonImages(person, function(err, person) {
         if (err) {
-          log.warn(err);
+          log.warn('can\'t sync person aliases:', err);
         }
-//log.silly('=============================', person.key);
-        callbackInner();
+log.silly('=== person', person.key, ' sync images done ===');
+        // person images sync'd: sync aliases (in each person we have 'isChanged' property...)
+log.silly('=== person', person.key, ' sync aliases start ===');
+        local.syncAliases(person, function(err) {
+          if (err) {
+            log.warn('can\'t sync person aliases:', err);
+          }
+log.silly('=== person', person.key, ' sync aliases done ===');
+          callbackInner();
+        });
       });
     },
     function(err) { // 3th param is the function to call when everything's done (inner callback)
@@ -378,6 +397,9 @@ exports.syncImages = function(persons, callback) {
       callback(); // all loops finished
     }
   );
+};
+
+local.syncAliases = function(person, callback) {
 };
 
 exports.buildAliases = function(personKey, callback) {

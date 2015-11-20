@@ -75,8 +75,7 @@ exports.syncPersonImages = function(person, callback) {
         };
         local.download(resource, destination, function(err, res) {
           if (err)  {
-            log.warn('can\'t download image ', image.url, ', ', 'download error:', err);
-            console.log('err:', err);
+            log.warn('can\'t download image', image.url + ',', err.toString());
             return callbackInner();
           }
           if (!res) {
@@ -104,7 +103,8 @@ exports.syncPersonImages = function(person, callback) {
                 } else {
                   //log.debug('found similar signature for image:', signature, '?', found);
                   if (found) {
-                    log.info('image', img.basename, 'already present in person', img.personKey + ', not added');
+                    // TODO: log local url src of similar images
+                    log.info('image', img.basename, 'seems already present in person', img.personKey + ', not added');
                     // TODO: verify not to delete person.showcase...
                     //if (person.showcaseUrl !== img.basename) { ... }
                     fs.unlink(config.images.path + '/' + img.basename, function(err) {

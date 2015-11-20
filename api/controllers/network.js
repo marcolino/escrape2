@@ -129,7 +129,7 @@ exports.requestRetryAnonymous = function(resource, error, success) {
     }
 
     // TODO: debug this condition... is this the cause of freezes on full sync's (callbackInner() not called) ?
-    if (response.statusCode >= 400) { log.error('retry strategy - not found a forbidden condition (status code is:', response.statusCode + ')'); }
+    if (response && response.statusCode >= 400) { log.error('retry strategy - not found a forbidden condition (status code is:', response.statusCode + ')'); }
 
     return forbidden;
   }
