@@ -95,6 +95,9 @@ exports.sync = function() { // sync persons
               return callbackOuter(); // skip this outer loop
             }
             retrievedProvidersCount++;
+            var now = new Date();
+            provider.dateOfFirstSync = provider.dateOfFirstSync ? provider.dateOfFirstSync : now;
+            provider.dateOfLastSync = now;
             $ = cheerio.load(contents);
             var list = local.getList(provider, $);
             totalPersonsCount += list.length;
@@ -157,7 +160,8 @@ exports.sync = function() { // sync persons
                       person.phoneIsAvailable = false;
                     }
                     person.nationality = local.detectNationality(person, provider, config);
-                    person.dateOfLastSync = new Date();
+                    var now = new Date();
+                    person.dateOfLastSync = now;
                     person.imageUrls = local.getDetailsImageUrls($, provider);
                     
                     // save this person to database
@@ -170,38 +174,6 @@ exports.sync = function() { // sync persons
                       }
                       callbackInner(); // this person is done
                     });
-/*
-                    // sync this person images
-                    image.syncPersonImages(person, function(err, person) {
-                      if (err) {
-                        // ignore this person images error to continue with person save
-                        log.warn(err);
-                        // TODO: can't continue, person is null...
-                      }
-
-                      // save this person to database
-                      local.upsert(person, function(err) {
-                        if (err) {
-                          // ignore this person error to continue with other persons
-                        } else {
-                          retrievedPersonsCount++;
-                          //log.info('person ', person.key, ' sync\'d');
-                        }
-
-/ *
-                        // TO BE TESTED!
-                        // re-build aliases after having inserted this person images
-                        exports.buildAliases(person.key, function(err, result) {
-                          if (err) {
-                            log.warn(err);
-                          }
-                          callbackInner(); // this person is done
-                        });
-* /
-                        callbackInner(); // this person is done
-                      });
-                    });
-*/
 
                   }
                 );
@@ -221,9 +193,38 @@ exports.sync = function() { // sync persons
         if (err) {
           return log.error('some error in the final outer async callback:', err, 'skipping outer iterations');
         }
-        log.info('finished persons sync for all providers');
+        log.info('persons sync finished');
 
-        // set activity status, if all persons retrieved
+        // set activity status
+        log.info('persons activity status setting started');
+        local.setActivityStatus(providers, syncStartDate, function(err) {
+          if (err) {
+            return log.error('error setting activity status:', err);
+          }
+          log.info('persons activity status setting finished');
+          log.debug(retrievedProvidersCount, '/', totalProvidersCount, 'providers retrieved');
+          log.debug(retrievedPersonsCount, '/', totalPersonsCount, 'persons retrieved');
+
+          // sync persons images
+          log.info('persons images sync started');
+          local.syncImages(persons, function(err, images) {
+            if (err) {
+              return log.warn('can\'t sync persons images:', err);
+            }
+            // success
+            log.info('persons images sync finished');
+
+            // sync persons aliases
+            log.info('persons aliases started');
+            local.syncAliases(persons, images, function(err) {
+              if (err) {
+                return log.warn('can\'t sync person aliases:', err);
+              }
+              log.info('persons aliases sync finished');
+            });
+          });
+        });
+        /*
         if (
           (retrievedProvidersCount === totalProvidersCount) &&
           (retrievedPersonsCount === totalPersonsCount)
@@ -232,7 +233,7 @@ exports.sync = function() { // sync persons
             if (err) {
               return log.error('error setting activity status:', err);
             }
-            log.info('persons sync finished: all', retrievedPersonsCount/*.toString()*/, 'persons retrieved');
+            log.info('persons sync finished: all', retrievedPersonsCount, 'persons retrieved');
           });
         } else {
           log.warn(
@@ -242,15 +243,7 @@ exports.sync = function() { // sync persons
             'presence status not asserted'
           );
         }
-
-        // sync persons images
-        local.syncImages(persons, function(err) {
-          if (err) {
-            return log.warn('can\'t sync persons images:', err);
-          }
-          // success
-          log.info('persons images sync finished');
-        });
+        */
       }
     );
   });
@@ -267,6 +260,7 @@ exports.upsert = function(person, callback) {
       if (!doc) { // person did not exist before
         isNew = true;
         doc = new Person();
+        doc.dateOfFirstSync = new Date();
       }
 
       // merge sync'd person data to database person object
@@ -284,6 +278,8 @@ exports.upsert = function(person, callback) {
       //_.merge(doc, person); // merge sync'd person data to database person object
 
       doc.save(function(err) {
+      //log.warn('doc.dateOfFirstSync when saving:', doc.dateOfFirstSync);
+
         if (err) {
           return callback('could not save person ' + doc.key + ': ' + err.toString());
         }
@@ -295,11 +291,25 @@ exports.upsert = function(person, callback) {
   );
 };
 
-local.setActivityStatus = function(syncStartDate, callback) {
+local.setActivityStatus = function(providers, syncStartDate, callback) {
+  var syncdProvidersRegExp = null;
+  for (var i = 0, len = providers.length; i < len; i++) {
+    if (providers[i].dateOfLastSync >= syncStartDate) {
+      // provider was sync'd correctly
+      syncdProvidersRegExp = (!syncdProvidersRegExp ? '' : '|');
+      syncdProvidersRegExp += '(' + providers[i].key + ')';
+    }
+  }
+
+  if (!syncdProvidersRegExp) {
+    return callback(); // success: no provider sync'd, no activity status set
+  }
+  log.silly('syncdProvidersRegExp:', syncdProvidersRegExp);
+
   async.series(
     [
       function(callbackInner) {
-        local.presenceReset(syncStartDate, function(err) {
+        local.presenceReset(syncdProvidersRegExp, syncStartDate, function(err) {
           if (err) {
             return callbackInner('can\'t reset presence:', err);
           }
@@ -307,7 +317,7 @@ local.setActivityStatus = function(syncStartDate, callback) {
         });
       },
       function(callbackInner) {
-        local.presenceSet(syncStartDate, function(err) {
+        local.presenceSet(syncdProvidersRegExp, syncStartDate, function(err) {
           if (err) {
             return callbackInner('can\'t set presence:', err);
           }
@@ -325,13 +335,18 @@ local.setActivityStatus = function(syncStartDate, callback) {
   );
 };
 
-local.presenceReset = function(syncStartDate, callback) {
+local.presenceReset = function(syncdProvidersRegExp, syncStartDate, callback) {
   // set persons not sync'd or with a not available phone as not present
   Person
     .where({
-      $or: [
-        { 'dateOfLastSync': { $lt: syncStartDate } },
-        { 'phoneIsAvailable': false },
+      $and: [
+        { 'key': new RegExp('^' + syncdProvidersRegExp + '/') }, // person key is ^providerKey/personKey$
+        {
+          $or: [
+            { 'dateOfLastSync': { $lt: syncStartDate } },
+            { 'phoneIsAvailable': false },
+          ]
+        }
       ]
     })
     .update({}, { $set: { isPresent: false } }, { multi: true }, function(err, count) {
@@ -345,11 +360,12 @@ local.presenceReset = function(syncStartDate, callback) {
   ;
 };
 
-local.presenceSet = function(syncStartDate, callback) {
+local.presenceSet = function(syncdProvidersRegExp, syncStartDate, callback) {
   // set persons sync'd and with an available phone as present
   Person
     .where({
       $and: [
+        { 'key': new RegExp('^' + syncdProvidersRegExp + '/') }, // person key is ^providerKey/personKey$
         { 'dateOfLastSync': { $gte: syncStartDate } },
         { 'phoneIsAvailable': true },
       ]
@@ -378,14 +394,7 @@ log.silly('=== person', person.key, ' sync images start ===');
         }
 log.silly('=== person', person.key, ' sync images done ===');
         // person images sync'd: sync aliases (in each person we have 'isChanged' property...)
-log.silly('=== person', person.key, ' sync aliases start ===');
-        local.syncAliases(person, function(err) {
-          if (err) {
-            log.warn('can\'t sync person aliases:', err);
-          }
-log.silly('=== person', person.key, ' sync aliases done ===');
-          callbackInner();
-        });
+        callbackInner();
       });
     },
     function(err) { // 3th param is the function to call when everything's done (inner callback)
@@ -399,9 +408,96 @@ log.silly('=== person', person.key, ' sync aliases done ===');
   );
 };
 
-local.syncAliases = function(person, callback) {
+local.syncAliases = function(persons, images, callback) {
+  /**
+   * person   images                                  alias   reason
+   *     P1   i1.P1   i2.P1   i3.P1                   aa      Δ P1, P3 < threshold
+   *     P2   i1.P2   i2.P2   i3.P2   i4.P2
+   *     P3   i1.P3   i2.P3                           aa      Δ P1, P3 < threshold
+   *
+   *     P9   i1.P9   i2.P9   i3.P9   i4.P9   i5.p9
+   */
+  log.debug('syncAliases - start');
+
+  // check if person (P) belongs to an alias group, or if it constitutes a new alias group
+  for (var i = 0, personsLen = persons.lenght; i < personsLen; i++) {
+    P = persons[i]; // P is the person we arge going to check for aliases
+    //P.alias = null;
+    log.silly('syncALiases - person:', i, '/', personsLen);
+    var Q = persons[i]; // Q is the current person from all persons
+    if (P.key === Q.key) { // skip the same person
+      continue;
+    }
+    if (local.areSimilar(P, Q, images)) {
+      if (Q.alias) { // Q had already an alias
+        if (P.alias && (Q.alias !== P.alias)) {
+          // our person (P) was just assigned an alias, and we find anoter person (Q)
+          log.error('found one more person similar to person', P.key, ':', Q.key, 'P alias is', P.alias, 'and', 'Q alias is', Q.alias);
+        }
+      } else { // Q had not any alias
+        Q.alias = local.aliasCreate();
+      }
+      P.alias = Q.alias;
+      //break; // DEBUG: do not break, to check we do not have duplicated Persons with different aliases
+    } else {
+      log.silly('syncAliases - person:', i, '/', personsLen, 'key:', Q.key, 'is not similar to given person:', P.key);
+    }
+  }
+  log.debug('syncAliases - finish');
 };
 
+local.areSimilar = function(person1, person2, images) {
+  log.debug('areSimilar - start');
+
+  // add to each person it's images
+  person1.images = person2.images = [];
+  for (var i = 0, len = images.length; i < len; i++) {
+    if (images[i].personKey === person1.key) {
+      person1.images.push(images[i][key]);
+      continue;
+    }
+    if (images[i].personKey === person2.key) {
+      person2.images.push(images[i][key]);
+      continue;
+    }
+  }
+
+  // compare each image from person 1 to each image from person 2
+  var thresholdDistance = config.images.thresholdDistance;
+  for (i = 0, len1 = person1.images.lenght; i < len1; i++) {
+    var image1 = person1.images[i];
+    if (!image1.signature) { log.error('image 1 has no signature'); }
+    for (var j = 0, len2 = person2.images.lenght; j < len2; j++) {
+      var image2 = person2.images[j];
+      if (!image2.signature) { log.error('image 2 has no signature'); }
+      var bitsOn = 0;
+      for (var k = 0, lenS = image1.signature.length; k < lenS; k++) {
+        if (image1.signature[k] !== image2.signature[k]) {
+          bitsOn++;
+        }
+      }
+      var distance = bitsOn / len;
+      //log.silly('distance:', distance);
+      if (distance <= thresholdDistance) { // these two images are similar
+        return true;
+      }
+    }
+  }
+  log.debug('areSimilar - finish');
+  return false; // these two images are not similar
+};
+
+local.aliasCreate = function() {
+  require('crypto').randomBytes(32, function(ex, buf) {
+    if (ex) {
+      log.error('can\'t create alias:', ex.toString());
+      throw ex;
+    }
+    var alias = buf.toString('hex');
+  });
+};
+
+/*
 exports.buildAliases = function(personKey, callback) {
   console.time('buildAliases');
   log.info('starting buildAliases()');
@@ -437,13 +533,11 @@ exports.buildAliases = function(personKey, callback) {
       for (var ii = 0, lenOwn = personImages[personKey].length; ii < lenOwn; ii++) {
         var i = personImages[personKey][ii]; // index of this image in images array
 
-        /**/
         if (images[i] === null) { // TODO: this should never happen...
           log.error('IMAGE #', i, 'IS NULL, IT SHOULD NOT BE HAPPENING!');
           continue; // image was canceled because already processed
         }
         log.debug('evaluating image', images[i].basename);
-        /**/
 
         // loop through all images of all persons
         for (var j = 0, lenAll = images.length; j < lenAll; j++) {
@@ -505,6 +599,7 @@ exports.buildAliases = function(personKey, callback) {
     );
   }
 };
+*/
 
 exports.checkImages = function(callback) {
   console.time('checkImages');

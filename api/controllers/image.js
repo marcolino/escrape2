@@ -119,7 +119,6 @@ exports.syncPersonImages = function(person, callback) {
                   //log.debug('setting signature', signature, 'in img');
                   img.signature = signature; // signature is not duplicated in person
                 }
-
                 // do save image
                 img.save(function(err) {
                   if (err) {
