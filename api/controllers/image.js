@@ -65,9 +65,12 @@ log.silly('callbackInner() for', person.key + ':', ++don, '/', tot);
 log.silly('callbackInner() for', person.key + ':', ++don, '/', tot);
           return callbackInner();
         }
-        if (!img) { // new image url
-//log.silly('callbackInner() for', person.key + ':', ++don, '/', tot);
+        if (img) { // existing image url
+          img.new = false;
+        } else { // new image url
+          //log.silly('callbackInner() for', person.key + ':', ++don, '/', tot);
           img = new Image();
+          img.new = true;
           img.url = image.url;
         }
 //else log.silly('img with url', url, 'found');
@@ -92,7 +95,11 @@ log.silly('image', resource.url, 'not downloaded because of unchanged ETag');
 log.silly('callbackInner() for', person.key + ':', ++don, '/', tot);
             return callbackInner(); // res is null, image not modified, do not save it to disk
           }
-log.silly('image', resource.url, 'downloaded because of being new || of changed ETag');
+if (img.new) {
+  log.silly('image', resource.url, 'downloaded because of being NEW');
+} else {
+  log.silly('image', resource.url, 'downloaded because of being CHANGED etag');
+}
           img.personKey = res.personKey;
           img.etag = res.etag; // ETag, to handle caching
           img.lastModified = res.lastModified; // lastModified, to handle alternative caching
