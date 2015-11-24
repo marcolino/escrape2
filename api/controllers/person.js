@@ -202,12 +202,12 @@ exports.sync = function() { // sync persons
             return log.error('error setting activity status:', err);
           }
           log.info('persons activity status setting finished');
-          log.debug(retrievedProvidersCount, '/', totalProvidersCount, 'providers retrieved');
-          log.debug(retrievedPersonsCount, '/', totalPersonsCount, 'persons retrieved');
+          log.debug('' + retrievedProvidersCount, '/', totalProvidersCount, 'providers retrieved');
+          log.debug('' + retrievedPersonsCount, '/', totalPersonsCount, 'persons retrieved');
 
           // sync persons images
           log.info('persons images sync started');
-          local.syncImages(persons, function(err, images) {
+          local.syncImages(persons, function(err, persons) {
             if (err) {
               return log.warn('can\'t sync persons images:', err);
             }
@@ -215,12 +215,13 @@ exports.sync = function() { // sync persons
             log.info('persons images sync finished');
 
             // sync persons aliases
-            log.info('persons aliases started');
-            local.syncAliases(persons, images, function(err) {
+            log.info('persons aliases sync started');
+            local.syncAliases(persons, function(err) {
               if (err) {
                 return log.warn('can\'t sync person aliases:', err);
               }
               log.info('persons aliases sync finished');
+              log.info('persons sync finished');
             });
           });
         });
@@ -386,13 +387,13 @@ local.syncImages = function(persons, callback) {
   async.each(
     persons, // 1st param in async.each() is the array of items
     function(person, callbackInner) { // 2nd param is the function that each item is passed to
-log.silly('=== person', person.key, ' sync images start ===');
+//log.silly('=== person', person.key, 'sync images start ===');
       // sync this person images
       image.syncPersonImages(person, function(err, person) {
         if (err) {
           log.warn('can\'t sync person aliases:', err);
         }
-log.silly('=== person', person.key, ' sync images done ===');
+else log.silly('=== person', person.key, 'sync images done ===');
         // person images sync'd: sync aliases (in each person we have 'isChanged' property...)
         callbackInner();
       });
@@ -401,73 +402,92 @@ log.silly('=== person', person.key, ' sync images done ===');
       if (err) {
         return callback('some error in the final async callback:' + err.toString());
       }
-//log.silly('ALL IMAGES SYNC\'D !!!!!!!!!!!!!!!!!!!!!!!!!');
+log.silly('ALL IMAGES SYNC\'D !!!!!!!!!!!!!!!!!!!!!!!!!');
       // success
-      callback(); // all loops finished
+      callback(null, persons); // all loops finished
     }
   );
 };
 
-local.syncAliases = function(persons, images, callback) {
+local.syncAliases = function(persons, callback) {
   /**
    * person   images                                  alias   reason
-   *     P1   i1.P1   i2.P1   i3.P1                   aa      Δ P1, P3 < threshold
+   *     P1   i1.P1   i2.P1   i3.P1                   aa      Δ(P1, P3) < threshold
    *     P2   i1.P2   i2.P2   i3.P2   i4.P2
-   *     P3   i1.P3   i2.P3                           aa      Δ P1, P3 < threshold
+   *     P3   i1.P3   i2.P3                           aa      Δ(P1, P3) < threshold
    *
    *     P9   i1.P9   i2.P9   i3.P9   i4.P9   i5.p9
    */
   log.debug('syncAliases - start');
+  log.silly('persons.length:', persons.length);
 
-  // check if person (P) belongs to an alias group, or if it constitutes a new alias group
-  for (var i = 0, personsLen = persons.lenght; i < personsLen; i++) {
-    P = persons[i]; // P is the person we arge going to check for aliases
-    //P.alias = null;
-    log.silly('syncALiases - person:', i, '/', personsLen);
-    var Q = persons[i]; // Q is the current person from all persons
-    if (P.key === Q.key) { // skip the same person
-      continue;
+  Image.find({}, '_id personKey signature basename', function(err, images) {
+    if (err) {
+      return callback(err);
     }
-    if (local.areSimilar(P, Q, images)) {
-      if (Q.alias) { // Q had already an alias
-        if (P.alias && (Q.alias !== P.alias)) {
-          // our person (P) was just assigned an alias, and we find anoter person (Q)
-          log.error('found one more person similar to person', P.key, ':', Q.key, 'P alias is', P.alias, 'and', 'Q alias is', Q.alias);
+
+    // add to each person its images
+log.silly(' *** loading persons with their images started ***');
+    for (var i = 0, personsLen = persons.length; i < personsLen; i++) {
+      persons[i].images = [];
+      for (var j = 0, len = images.length; j < len; j++) {
+        if (images[j].personKey === persons[i].key) {
+//log.silly('pushing image', images[j].basename, 'to person', P.key);
+          persons[i].images.push(images[j]);
+          continue;
         }
-      } else { // Q had not any alias
-        Q.alias = local.aliasCreate();
       }
-      P.alias = Q.alias;
-      //break; // DEBUG: do not break, to check we do not have duplicated Persons with different aliases
-    } else {
-      log.silly('syncAliases - person:', i, '/', personsLen, 'key:', Q.key, 'is not similar to given person:', P.key);
     }
-  }
-  log.debug('syncAliases - finish');
+log.silly(' *** loading persons with their images finished ***');
+
+    // check if person (P) belongs to an alias group, or if it constitutes a new alias group
+    for (var k = 0; k < personsLen; k++) {
+      log.silly('syncALiases - person:', 1 + k, '/', personsLen);
+      P = persons[k]; // P is the person we arge going to check for aliases
+
+      for (var l = k + 1; l < personsLen; l++) {
+        var Q = persons[l]; // Q is the current person from all persons
+        if (P.key === Q.key) { // skip the same person
+          continue;
+        }
+        if (local.areSimilar(P, Q)) {
+          if (Q.alias) { // Q had already an alias
+            if (P.alias && (Q.alias !== P.alias)) {
+              // our person (P) was just assigned an alias, and we find anoter person (Q)
+              log.error('found one more person similar to person', P.key, ':', Q.key, 'P alias is', P.alias, 'and', 'Q alias is', Q.alias);
+            }
+          } else { // Q had not any alias
+            Q.alias = local.aliasCreate();
+log.silly('syncAliases - new alias created:', Q.alias);
+          }
+          P.alias = Q.alias;
+          //break; // DEBUG: do not break, to check we do not have duplicated Persons with different aliases
+        } else {
+          log.silly('syncAliases - person:', 1 + k, '/', personsLen, 'key:', Q.key, 'is not similar to person:', P.key);
+        }
+      }
+    }
+    log.debug('syncAliases - finish');
+    
+  });
 };
 
-local.areSimilar = function(person1, person2, images) {
+local.areSimilar = function(person1, person2) {
   log.debug('areSimilar - start');
+//log.silly('person1:', person1);
+//log.silly('person2:', person2);
 
-  // add to each person it's images
-  person1.images = person2.images = [];
-  for (var i = 0, len = images.length; i < len; i++) {
-    if (images[i].personKey === person1.key) {
-      person1.images.push(images[i][key]);
-      continue;
-    }
-    if (images[i].personKey === person2.key) {
-      person2.images.push(images[i][key]);
-      continue;
-    }
+  if (!person1.images || !person2.images) {
+log.debug('areSimilar - FALSE 1');
+    return false; // first or second person has no images, persons are not similar
   }
 
   // compare each image from person 1 to each image from person 2
   var thresholdDistance = config.images.thresholdDistance;
-  for (i = 0, len1 = person1.images.lenght; i < len1; i++) {
+  for (i = 0, len1 = person1.images.length; i < len1; i++) {
     var image1 = person1.images[i];
     if (!image1.signature) { log.error('image 1 has no signature'); }
-    for (var j = 0, len2 = person2.images.lenght; j < len2; j++) {
+    for (var j = 0, len2 = person2.images.length; j < len2; j++) {
       var image2 = person2.images[j];
       if (!image2.signature) { log.error('image 2 has no signature'); }
       var bitsOn = 0;
@@ -476,14 +496,14 @@ local.areSimilar = function(person1, person2, images) {
           bitsOn++;
         }
       }
-      var distance = bitsOn / len;
-      //log.silly('distance:', distance);
+      var distance = bitsOn / lenS;
       if (distance <= thresholdDistance) { // these two images are similar
+log.silly('areSimilar - TRUE - distance is', distance);
         return true;
       }
     }
   }
-  log.debug('areSimilar - finish');
+  log.debug('areSimilar - FALSE 2');
   return false; // these two images are not similar
 };
 

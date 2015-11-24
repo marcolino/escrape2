@@ -22,7 +22,7 @@ exports.requestRetryAnonymous = function(resource, error, success) {
   var options = {
     url: resource.url,
     maxAttempts: 3, // retry for 3 attempts more after the first one
-    retryDelay: 33 * 1000, //60 * 1000, // wait for 60" before trying again
+    retryDelay: 3 * 1000, //60 * 1000, // wait for 3" before trying again
     retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
     headers: {
       'User-Agent': randomUseragent.generate()
