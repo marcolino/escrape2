@@ -1,6 +1,7 @@
 - add mongo dependency and (http://docs.mongodb.org/manual/installation/) start it in deploy script (?)
 - make bootswatch theme in index.html configurable (on the server only)
 - use `handlebars` for html templating (to have variables in index.html)
+- do sync images only for new/changed persons (?)
 
 V remove all "err.context = " lines
 V use `test.server.local` (in `/etc/hosts`) @home too

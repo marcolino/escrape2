@@ -80,8 +80,7 @@ exports.sync = function() { // sync persons
           resource,
           function(err) { // error
             log.warn(
-              'error syncing provider', provider.key, ':',
-              err, ',', 'skipping'
+              'error syncing provider', provider.key + ':',  err, ',', 'skipping'
             );
             return callbackOuter(); // skip this outer loop
           },
@@ -89,7 +88,7 @@ exports.sync = function() { // sync persons
             log.info('provider', provider.key, 'list resource got');
             if (!contents) {
               log.warn(
-                'error syncing provider', provider.key, ':',
+                'error syncing provider', provider.key + ':',
                 'empty contents', ',', 'skipping'
               );
               return callbackOuter(); // skip this outer loop
@@ -130,7 +129,7 @@ exports.sync = function() { // sync persons
                   resource,
                   function(err) {
                     log.warn(
-                      'syncing person', person.key, ':',
+                      'syncing person', person.key + ':',
                       err, ',', 'skipping'
                     );
                     return callbackInner(); // skip this inner loop
@@ -138,7 +137,7 @@ exports.sync = function() { // sync persons
                   function(contents) {
                     if (!contents) {
                       log.warn(
-                        'syncing person', person.key, ':',
+                        'syncing person', person.key + ':',
                         'empty contents', ',', 'skipping'
                       );
                       return callbackInner(); // skip this inner loop
@@ -213,6 +212,7 @@ exports.sync = function() { // sync persons
             }
             // success
             log.info('persons images sync finished');
+return log.error('stopped before persons aliases');
 
             // sync persons aliases
             log.info('persons aliases sync started');
@@ -454,7 +454,7 @@ log.silly(' *** loading persons with their images finished ***');
           if (Q.alias) { // Q had already an alias
             if (P.alias && (Q.alias !== P.alias)) {
               // our person (P) was just assigned an alias, and we find anoter person (Q)
-              log.error('found one more person similar to person', P.key, ':', Q.key, 'P alias is', P.alias, 'and', 'Q alias is', Q.alias);
+              log.error('found one more person similar to person', P.key + ':', Q.key, 'P alias is', P.alias, 'and', 'Q alias is', Q.alias);
             }
           } else { // Q had not any alias
             Q.alias = local.aliasCreate();
@@ -613,7 +613,7 @@ exports.buildAliases = function(personKey, callback) {
       { upsert: true },
       function(err) {
         if (err) {
-          log.warn('can\'t update alias on person', + images[j].personKey, ':', err);
+          log.warn('can\'t update alias on person', + images[j].personKey + ':', err);
         }
       }
     );
@@ -722,7 +722,7 @@ exports.checkImages = function(callback) {
 
     function checkImage(err, docs, basename) {
       if (err) {
-        return log.error('could not find image document for image file', basename, ':', err);
+        return log.error('could not find image document for image file', basename + ':', err);
       }
       if (docs.length > 1) { // too many image documents
         return log.error('too many image documents for image file', basename, '(', docs.length,')');

@@ -32,10 +32,12 @@ exports.requestRetryAnonymous = function(resource, error, success) {
   // TODO: before setting cache fields in request header, check we have image on fs, it could have been deleted...
   if (resource.etag) { // set header's If-None-Match tag if we have an etag
     options.headers['If-None-Match'] = resource.etag;
+/*
   } else {
     if (resource.lastModified) { // set header's If-Modified-Since tag if we have a lastModified
       options.headers['If-Modified-Since'] = resource.lastModified;
     }
+*/
   }
   if (config.mode !== 'fake') { // not fake
     if (config.tor.available) { // TOR is available
@@ -55,9 +57,19 @@ exports.requestRetryAnonymous = function(resource, error, success) {
           //log.error('error in request to ', options.url, ': ', err);
           return error(err);
         }
+/*
+if (resource.etag || resource.lastModified) {
+  console.warn('response.statusCode:', response.statusCode, ', etag:', resource.etag, '=>', response.headers.etag, 'lastModified:', resource.lastModified, '=>', response.headers['last-modified']);
+}
+*/
+if (resource.etag) {
+  console.warn('response.statusCode:', response.statusCode, ', contents.length:', contents.length, ', etag:', resource.etag, '=>', response.headers.etag);
+}
         if (response.statusCode < 300) { // 2xx, success, download effected
           resource.etag = response.headers.etag;
+/*
           resource.lastModified = response.headers['last-modified'];
+*/
         }
         success(contents, resource);
       }
