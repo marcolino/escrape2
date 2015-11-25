@@ -80,14 +80,30 @@ log.silly('=== syncPersonImages', (tot - don), ' persons image urls remaining ==
         */
 //log.silly(person.key, ' ########### img.isNew before download:', img.isNew);
         resource = {
+
+          // TODO: use img object in resource !
+          // isNew => img.isNew
+          // etag => img.etag
+          // lastModified => img.lastModified
+          img: img,
+
           personKey: person.key,
           url: image.url,
           type: 'image',
+/**/
           isNew: img.isNew,
           etag: img.etag, // comment this to force download
           lastModified: img.lastModified // comment this to force download
+/**/
         };
         local.download(resource, destination, function(err, res) {
+/*
+if (res.img) {
+  log.debug('res.img found :-)');
+} else {
+  log.error('res.img NOT found ! :-(');
+}
+*/
           if (err)  {
             log.warn('can\'t download image', image.url + ',', err.toString());
 //log.silly('callbackInner() for', person.key + ':', ++don, '/', tot);
@@ -108,10 +124,10 @@ if (res.isNew) {
           img.etag = res.etag; // ETag, to handle caching
           img.lastModified = res.lastModified; // lastModified, to handle alternative caching
           img.basename = res.basename; // image base name
-          var imagePath = destination + '/' + img.basename;
+          // NOT USED ANYMORE //var imagePath = destination + '/' + img.basename;
 
           // calculate image signature from contents
-          local.signatureFromContents(res._contents, function(err, signature) {
+          local.signatureFromContents(res.contents, function(err, signature) {
             if (err) {
               log.warn('can\'t calculate signature of image', img.basename + ':', err);
 //log.silly('callbackInner() for', person.key + ':', ++don, '/', tot);
@@ -340,7 +356,7 @@ local.download = function(resource, destination, callback) {
         var basename = hash + ext;
         destinationDir += '/' + basename;
         resource.basename = resource.personKey + '/' + basename;
-        resource._contents = contents;
+        resource.contents = contents;
 
         //log.info('download() saving to: ', destinationDir);
         fs.writeFile(

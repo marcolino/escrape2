@@ -50,34 +50,33 @@ exports.requestRetryAnonymous = function(resource, error, success) {
     }
   }
 
-  //replay(
-    requestretry(
-      options,
-      function(err, response, contents) {
-        if (err) {
-          //log.error('error in request to ', options.url, ': ', err);
-          return error(err);
-        }
+  requestretry(
+    options,
+    function(err, response, contents) {
+      if (err) {
+        //log.error('error in request to ', options.url, ': ', err);
+        return error(err);
+      }
 /*
 if (response.headers.etag) {
   console.warn('response.statusCode:', response.statusCode, ', contents.length:', contents.length, ', etag:', resource.etag, '=>', response.headers.etag);
 }
 */
-        if (response.statusCode < 300) { // 2xx, success, download effected
-          resource.etag = response.headers.etag;
+      if (response.statusCode < 300) { // 2xx, success, download effected
+        resource.etag = response.headers.etag;
 /**/
-          resource.lastModified = response.headers['last-modified'];
+        resource.lastModified = response.headers['last-modified'];
 /**/
-        }
-        success(contents, resource);
       }
-      // requestretry wants these as 3rd and 4th params of request() call...
-      // TODO: with new requestretry versions we can remove these parameters...
-      // TEST THIS !!!!!!!!!!!!!!!!!!!!
-      ,
-      options.maxAttempts,
-      options.retryDelay
-    );
+      success(contents, resource);
+    }
+    // requestretry wants these as 3rd and 4th params of request() call...
+    // TODO: with new requestretry versions we can remove these parameters...
+    // TEST THIS !!!!!!!!!!!!!!!!!!!!
+    ,
+    options.maxAttempts,
+    options.retryDelay
+  );
 
   /**
    * request-retry strategies
