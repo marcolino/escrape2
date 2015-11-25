@@ -16,7 +16,12 @@ config.logger = {};
 config.logger.levelConsole = 'silly'; // 'error' to production
 config.logger.levelFile = 'debug'; // 'info' to production
 config.logger.logFilePath = 'logs/escrape.log';
-config.logger.timestamp = function() { return (new Date()).toISOString().replace('T', ' ').replace('Z', ''); };
+config.logger.timestamp = function() {
+  //return (new Date()).toISOString().replace('T', ' ').replace('Z', '');
+  var tzoffset = (new Date()).getTimezoneOffset() * 60 * 1000; // offset in milliseconds
+  var localISOTime = (new Date(Date.now() - tzoffset)).toISOString().slice(0, -1).replace('T', ' ');
+  return localISOTime;
+};
 config.db = {};
 config.db.type = 'mongodb';
 config.db.host = 'localhost';

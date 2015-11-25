@@ -31,6 +31,7 @@ exports.requestRetryAnonymous = function(resource, error, success) {
   };
   // TODO: before setting cache fields in request header, check we have image on fs, it could have been deleted...
   if (resource.etag) { // set header's If-None-Match tag if we have an etag
+//log.info('>network downloading resource with etag set');
     options.headers['If-None-Match'] = resource.etag;
 /*
   } else {
@@ -58,18 +59,15 @@ exports.requestRetryAnonymous = function(resource, error, success) {
           return error(err);
         }
 /*
-if (resource.etag || resource.lastModified) {
-  console.warn('response.statusCode:', response.statusCode, ', etag:', resource.etag, '=>', response.headers.etag, 'lastModified:', resource.lastModified, '=>', response.headers['last-modified']);
-}
-*/
-if (resource.etag) {
+if (response.headers.etag) {
   console.warn('response.statusCode:', response.statusCode, ', contents.length:', contents.length, ', etag:', resource.etag, '=>', response.headers.etag);
 }
+*/
         if (response.statusCode < 300) { // 2xx, success, download effected
           resource.etag = response.headers.etag;
-/*
+/**/
           resource.lastModified = response.headers['last-modified'];
-*/
+/**/
         }
         success(contents, resource);
       }
