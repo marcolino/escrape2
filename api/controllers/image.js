@@ -100,9 +100,9 @@ log.silly('=== syncPersonImages', (tot - don), ' persons image urls remaining ==
           }
 //log.silly(res.personKey, 'res.isNew after download:', img.isNew);
 if (res.isNew) {
-  log.silly('image', resource.url, 'downloaded because of being NEW');
+  log.silly('image', res.url, 'downloaded because of being NEW');
 } else {
-  log.silly('image', resource.url, 'downloaded because of being CHANGED etag');
+  log.silly('image', res.url, 'downloaded because of being CHANGED etag');
 }
           img.personKey = res.personKey;
           img.etag = res.etag; // ETag, to handle caching

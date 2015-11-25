@@ -222,7 +222,6 @@ exports.sync = function() { // sync persons
                 return log.warn('can\'t sync person aliases:', err);
               }
               log.info('persons aliases sync finished');
-              log.info('persons sync finished');
             });
           });
         });
@@ -389,15 +388,27 @@ local.presenceSet = function(syncdProvidersRegExp, syncStartDate, callback) {
 };
 
 local.syncImages = function(persons, callback) {
-//log.debug('syncImages() A', persons.length);
+  var personsSyncd = [];
+
   async.each(
     persons, // 1st param in async.each() is the array of items
     function(person, callbackInner) { // 2nd param is the function that each item is passed to
 //log.silly('=== person', person.key, 'sync images start ===');
+
+      // sync images only for new/changed persons
+      // TODO: TO BE TESTED!!!
+      if (!person.isChanged) {
+log.silly('person', person.key, 'is NOT changed, NOT syncing images');
+        return callbackInner();
+      }
+log.silly('person', person.key, 'is changed, syncing images');
+
       // sync this person images
       image.syncPersonImages(person, function(err, person) {
         if (err) {
-          log.warn('can\'t sync person aliases:', err);
+          log.warn('can\'t sync person images:', err);
+        } else { // person sync'd
+          personsSyncd.push(person);
         }
 //else log.silly('=== person', person.key, 'sync images done ===');
         // person images sync'd: sync aliases (in each person we have 'isChanged' property...)
@@ -410,7 +421,8 @@ local.syncImages = function(persons, callback) {
       }
 //log.silly('ALL IMAGES SYNC\'D !!!!!!!!!!!!!!!!!!!!!!!!!');
       // success
-      callback(null, persons); // all loops finished
+      //callback(null, persons); // all loops finished
+      callback(null, personsSyncd); // all loops finished
     }
   );
 };
