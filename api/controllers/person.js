@@ -440,15 +440,15 @@ local.syncAliases = function(persons, callback) {
   //log.silly('persons.length:', persons.length);
   //log.silly('persons:', persons); return callback();
 
-/* RESET aliases
+/* RESET aliases - DEBUG ONLY */
 for (var i = 0, personsLen = persons.length; i < personsLen; i++) {
   P = persons[i];
   log.silly(' XXX persons[', i, '].alias =', P.alias);
   P.alias = null;
   local.savePerson(P);
 }
-return callback();
-*/
+//return callback();
+/* */
 
   Image.find({}, '_id personKey signature basename', function(err, images) {
     if (err) {
@@ -481,7 +481,7 @@ return callback();
       P.aliasOld = P.alias;
 //log.silly('========= P.aliasOld reset to', P.aliasOld);
 
-      for (var l = 0/*k + 1*/; l < personsLen; l++) {
+      for (var l = 0/*k + 1*/; l < personsLen; l++) { // start from 0 inner loop, too, if we reset aliases on top
         var Q = persons[l]; // Q is the current person from all persons
         Q.aliasOld = Q.alias;
         if (P.key === Q.key) { // skip the same person
@@ -526,7 +526,7 @@ return callback();
 };
 
 exports.listImagesAliases = function(callback) {
-  Person.find({ alias: { $ne: null } }, 'key alias', { 'group': 'alias' }, function(err, persons) { 
+  Person.find({ alias: { $ne: null } }, 'key alias', { 'group': 'alias' }, function(err, persons) { // NOOOOOOOOOOOOO
     if (err) {
       return callback(err);
     }
@@ -625,13 +625,14 @@ local.getClosestImages = function(person1, person2) {
 /*
       var distance = bitsOn / lenS;
       if (distance <= config.images.thresholdDistance) { // these two images are similar
-//log.silly('areSimilar - TRUE - distance is', distance);
+log.silly('getClosestImages - MIN distance is', distanceMin);
 //log.silly(image1.basename, image2.basename);
         return true;
       }
 */
     }
   }
+log.silly('getClosestImages - MIN distance is', distanceMin, img1.basename, img2.basename);
   return {
     distance: distanceMin,
     image1: img1,
