@@ -6,6 +6,10 @@ angular.module('routes', []).config( function($routeProvider, $locationProvider)
       templateUrl: 'views/home.html',
       controller: 'PersonController'
     })
+    .when('/aliases', { // aliases list page
+      templateUrl: 'views/aliases.html',
+      controller: 'PersonController'
+    })
     .when('/about', {
       templateUrl: 'views/about.html',
       controller: 'AboutController'

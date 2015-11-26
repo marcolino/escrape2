@@ -136,7 +136,7 @@ if (res.isNew) {
             // got signature
             //log.debug('found signature for image:', signature);
             // check image signature is not duplicated in person
-            local.findSimilarSignature(signature, { personKey: img.personKey }, config.images.thresholdDistanceSamePerson, function(err, found, distance, personKey) {
+            exports.findSimilarSignature(signature, { personKey: img.personKey }, config.images.thresholdDistanceSamePerson, function(err, found, distance, personKey) {
               if (err) {
                 log.warn('can\'t check signature of image', img.basename + ':', err);
                 img.signature = '';
@@ -220,7 +220,7 @@ exports.findSimilarFixed = function(image, filter, thresholdDistance, callback) 
     if (err) {
       return callback(err);
     }
-    local.findSimilarSignature(signature, filter, thresholdDistance, function(err, found, distance, personKey) {
+    exports.findSimilarSignature(signature, filter, thresholdDistance, function(err, found, distance, personKey) {
       if (err) {
         return callback(err);
       }
@@ -267,7 +267,7 @@ exports.findSimilarAll = function(thresholdDistance, callback) {
 };
 */
 
-local.findSimilarSignature = function(signature, filter, thresholdDistance, callback) {
+exports.findSimilarSignature = function(signature, filter, thresholdDistance, callback) {
   Image.find(filter, '_id personKey signature url', function(err, images) {
     if (err) {
       return callback('can\'t find images');
@@ -279,7 +279,7 @@ local.findSimilarSignature = function(signature, filter, thresholdDistance, call
       if (!image.signature) {
         return; // skip this image without signature
       }        
-      var distance = local.distance(image.signature, signature);
+      var distance = exports.distance(image.signature, signature);
       if (distance <= minDistance) {
         minDistance = distance;
         personKey = image.personKey;
@@ -303,7 +303,7 @@ local.signature = function(image, callback) {
   callback(null, signature); // success
 };
 
-local.distance = function(signature1, signature2) {
+exports.distance = function(signature1, signature2) {
   if (!signature1 || !signature2) {
     return 1; // maximum possible distance
   }

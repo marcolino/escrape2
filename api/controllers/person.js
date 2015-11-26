@@ -4,6 +4,7 @@ var mongoose = require('mongoose') // mongo abstraction
   , fs = require('fs') // file-system handling
   , path = require('path') // paths handling
   //, _ = require('lodash') // lo-dash utilities
+  , crypto = require('crypto') // random bytes
   , network = require('../controllers/network') // network handling
   , image = require('../controllers/image') // network handling
   , provider = require('./provider') // provider's controller
@@ -388,7 +389,7 @@ local.presenceSet = function(syncdProvidersRegExp, syncStartDate, callback) {
 };
 
 local.syncImages = function(persons, callback) {
-  var personsSyncd = [];
+  //var personsSyncd = [];
 
   async.each(
     persons, // 1st param in async.each() is the array of items
@@ -407,8 +408,8 @@ log.silly('person', person.key, 'is changed, syncing images');
       image.syncPersonImages(person, function(err, person) {
         if (err) {
           log.warn('can\'t sync person images:', err);
-        } else { // person sync'd
-          personsSyncd.push(person);
+        //} else { // person sync'd
+        //  personsSyncd.push(person);
         }
 //else log.silly('=== person', person.key, 'sync images done ===');
         // person images sync'd: sync aliases (in each person we have 'isChanged' property...)
@@ -421,8 +422,8 @@ log.silly('person', person.key, 'is changed, syncing images');
       }
 //log.silly('ALL IMAGES SYNC\'D !!!!!!!!!!!!!!!!!!!!!!!!!');
       // success
-      //callback(null, persons); // all loops finished
-      callback(null, personsSyncd); // all loops finished
+      callback(null, persons); // all loops finished
+      //callback(null, personsSyncd); // all loops finished
     }
   );
 };
@@ -437,6 +438,17 @@ local.syncAliases = function(persons, callback) {
    *     P9   i1.P9   i2.P9   i3.P9   i4.P9   i5.p9
    */
   //log.silly('persons.length:', persons.length);
+  //log.silly('persons:', persons); return callback();
+
+/* RESET aliases
+for (var i = 0, personsLen = persons.length; i < personsLen; i++) {
+  P = persons[i];
+  log.silly(' XXX persons[', i, '].alias =', P.alias);
+  P.alias = null;
+  local.savePerson(P);
+}
+return callback();
+*/
 
   Image.find({}, '_id personKey signature basename', function(err, images) {
     if (err) {
@@ -458,12 +470,20 @@ local.syncAliases = function(persons, callback) {
 
     // check if person (P) belongs to an alias group, or if it constitutes a new alias group
     for (var k = 0; k < personsLen; k++) {
+      var P = persons[k]; // P is the person we arge going to check for aliases
       //log.silly('syncALiases - person:', 1 + k, '/', personsLen);
-      P = persons[k]; // P is the person we arge going to check for aliases
+/* TODO: COMMENTED OUT JUST FOR DEBUGGING PURPOSES - RE-ENABLE IT!
+      if (!P.isChanged) {
+        log.silly('person:', 1 + k, '/', personsLen, 'is NOT changed, NOT syncing aliases');
+        continue;
+      }
+*/
       P.aliasOld = P.alias;
+//log.silly('========= P.aliasOld reset to', P.aliasOld);
 
-      for (var l = k + 1; l < personsLen; l++) {
+      for (var l = 0/*k + 1*/; l < personsLen; l++) {
         var Q = persons[l]; // Q is the current person from all persons
+        Q.aliasOld = Q.alias;
         if (P.key === Q.key) { // skip the same person
           continue;
         }
@@ -471,23 +491,33 @@ local.syncAliases = function(persons, callback) {
           if (Q.alias) { // Q had already an alias
             if (P.alias && (Q.alias !== P.alias)) {
               // our person (P) was just assigned an alias, and we find anoter person (Q)
-              log.error('found one more person similar to person', P.key + ':', Q.key, 'P alias is', P.alias, 'and', 'Q alias is', Q.alias);
+              log.warn('found one more person (with a different alias) similar to person', P.key + ':', Q.key, 'P alias is', P.alias, 'and', 'Q alias is', Q.alias, ', ignored');
+              continue;
             }
+//log.silly('syncAliases - alias already present:', Q.alias);
           } else { // Q had not any alias
             Q.alias = local.aliasCreate();
-//log.silly('syncAliases - new alias created:', Q.alias);
+//log.silly('syncAliases - alias created:', Q.alias);
+//log.silly('*** Q.alias:', Q.alias);
+            local.savePerson(Q);
+            //log.silly('updated alias for Q person', Q.key);
           }
           log.silly('syncAliases - person:', 1 + k, '/', personsLen, 'key:', Q.key, 'is similar to person:', P.key);
           P.alias = Q.alias;
+//log.silly('* P.alias:', P.alias);
+//log.silly('ooo P.aliasOld:', P.aliasOld);
           //break; // DEBUG: do not break, to check we do not have duplicated Persons with different aliases
         } else {
-          //log.silly('syncAliases - person:', 1 + k, '/', personsLen, 'key:', Q.key, 'is not similar to person:', P.key);
+          //log.silly('syncAliases - person:', 1 + k, '/', personsLen, 'key:', Q.key, 'is NOT similar to person:', P.key);
         }
       }
       // finished check for this person P, save alias if changed
+//log.silly('** P.aliasOld:', P.aliasOld);
+//log.silly('** P.alias:', P.alias);
       if (P.aliasOld !== P.alias) {
+//log.silly('*** P.alias:', P.alias);
         local.savePerson(P);
-        //log.silly('+++++++++ saved alias for person', P.key);
+        //log.silly('updated alias for P person', P.key);
       }
 //else log.silly('--------- not saved alias for person', P.key, '(unchanged)');
     }
@@ -495,7 +525,66 @@ local.syncAliases = function(persons, callback) {
   });
 };
 
+exports.listImagesAliases = function(callback) {
+  Person.find({ alias: { $ne: null } }, 'key alias', { 'group': 'alias' }, function(err, persons) { 
+    if (err) {
+      return callback(err);
+    }
+    var docs = [];
+    for (var i = 0; i < persons.length; i++) {
+      docs.push(persons[i]._doc);
+    }
+    callback(null, docs);
+  });
+/*
+  Person.find({}, function(err, persons) {
+    if (err) {
+      return callback(err);
+    }
+    Image.find({}, 'personKey signature basename', function(err, images) {
+      if (err) {
+        return callback(err);
+      }
+      // add to each person its images
+      for (var i = 0, personsLen = persons.length; i < personsLen; i++) {
+        persons[i].images = [];
+        for (var j = 0, len = images.length; j < len; j++) {
+          if (images[j].personKey === persons[i].key) {
+            persons[i].images.push(images[j]);
+            continue;
+          }
+        }
+      }
+      // scan through all persons
+      for (var k = 0; k < personsLen; k++) {
+        var P = persons[k]; // P is the person we arge going to check for aliases
+        for (var l = 0; l < personsLen; l++) {
+          var Q = persons[l]; // Q is the current person from all persons
+          if (P.key === Q.key) { // skip the same person
+            continue;
+          }
+          var closest = local.getClosestImages(P, Q);
+          if (closest.distance <= config.images.thresholdDistance) {
+            // these two images are really colose, and the closest for these two persons
+            list.push({
+              key1: P.key,
+              key2: Q.key,
+              imageUrl1: 'images/' + closest.image1.basename,
+              imageUrl2: 'images/' + closest.image2.basename
+            });
+          }
+        }
+      }
+      // finished
+      //log.silly(list);
+      callback(null, list);
+    });
+  });
+*/
+};
+
 local.savePerson = function(person) {
+//log.silly('SAVING person:', person);
   person.save(function(err) {
     if (err) {
       return log.warn('can\'t save person alias:', err);
@@ -505,46 +594,57 @@ local.savePerson = function(person) {
 };
 
 local.areSimilar = function(person1, person2) {
+  return (local.getClosestImages(person1, person2).distance <= config.images.thresholdDistance);
+};
+
+local.getClosestImages = function(person1, person2) {
 //log.debug('areSimilar - start');
+  var distanceMin = 1; // the maximum distance
+  var img1, img2 = null; // the closest images
 
   if (!person1.images || !person2.images) {
 //log.debug('areSimilar - FALSE 1');
-    return false; // first or second person has no images, persons are not similar
+    return distanceMin; // first or second person has no images, distance is the maximum
   }
 
   // compare each image from person 1 to each image from person 2
-  var thresholdDistance = config.images.thresholdDistance;
+  all:
   for (i = 0, len1 = person1.images.length; i < len1; i++) {
     var image1 = person1.images[i];
     if (!image1.signature) { log.error('image 1 has no signature'); }
     for (var j = 0, len2 = person2.images.length; j < len2; j++) {
       var image2 = person2.images[j];
       if (!image2.signature) { log.error('image 2 has no signature'); }
-      var bitsOn = 0;
-      for (var k = 0, lenS = image1.signature.length; k < lenS; k++) {
-        if (image1.signature[k] !== image2.signature[k]) {
-          bitsOn++;
-        }
+      var distance = image.distance(image1.signature, image2.signature);
+      distanceMin = Math.min(distanceMin, distance);
+      img1 = image1;
+      img2 = image2;
+      if (distanceMin === 0) { // can't go lower...
+        break all;
       }
+/*
       var distance = bitsOn / lenS;
-      if (distance <= thresholdDistance) { // these two images are similar
+      if (distance <= config.images.thresholdDistance) { // these two images are similar
 //log.silly('areSimilar - TRUE - distance is', distance);
+//log.silly(image1.basename, image2.basename);
         return true;
       }
+*/
     }
   }
+  return {
+    distance: distanceMin,
+    image1: img1,
+    image2: img2
+  };
+/*
   //log.debug('areSimilar - FALSE 2');
   return false; // these two images are not similar
+*/
 };
 
 local.aliasCreate = function() {
-  require('crypto').randomBytes(32, function(ex, buf) {
-    if (ex) {
-      log.error('can\'t create alias:', ex.toString());
-      throw ex;
-    }
-    var alias = buf.toString('hex');
-  });
+  return crypto.randomBytes(16).toString('hex');
 };
 
 /*
@@ -775,6 +875,7 @@ exports.checkImages = function(callback) {
   };
 };
 
+/*
 exports.listImagesAliases = function(callback) {
   console.time('listImagesAliases');
   Person.find({ isAliasFor: { $not: { $size: 0 } } }, 'key name showcaseUrl isAliasFor', listAliases);
@@ -835,6 +936,7 @@ exports.listImagesAliases = function(callback) {
   log.info('listImagesAliases done');
   callback(null);
 };
+*/
 
 local.getList = function(provider, $) {
   var val = [];

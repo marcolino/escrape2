@@ -24,7 +24,8 @@ router.route('/getAll/search/:search').get(function(req, res) { getAll(req, res)
 
 var getAll = function(req, res) {
   //log.info('/getAll/search/:search ~ search:', req.params.search);
-  var filter = { isAliasFor: { $size: 0 } };
+  //var filter = { isAliasFor: { $size: 0 } };
+  var filter = { };
   var options = { sort: '-' + 'dateOfFirstSync' };
   if (req.params.search && req.params.search !== null) {
     filter.name = new RegExp(req.params.search, 'i');
@@ -135,6 +136,19 @@ router.route('/checkImages').
 
 router.route('/listImagesAliases').
   get(function(req, res) { // list images duplicates
+    person.listImagesAliases(function(err, list) {
+      if (err) {
+        log.error('error listing images aliases:', err);
+        return res.json({ error: err });
+      }
+      res.json(list);
+    });
+  })
+;
+
+/*
+router.route('/listImagesAliases').
+  get(function(req, res) { // list images duplicates
     person.listImagesAliases(function(err) {
       if (err) {
         log.error('error listing images aliases:', err);
@@ -144,6 +158,7 @@ router.route('/listImagesAliases').
     });
   })
 ;
+*/
 
 router.route('/*'). // requested path is in req._parsedUrl.path
   get(function(req, res) { // unforeseen get request

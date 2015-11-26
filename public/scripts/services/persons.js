@@ -26,6 +26,26 @@ angular.module('PersonService', []).factory('Person', [ '$rootScope', '$http', f
       });
     },
 
+    listImagesAliases: function(callback) { // call to get all persons
+      var path = '';
+      $http({
+        method: 'GET',
+        url:
+          $rootScope.config.api.url + $rootScope.config.api.path + '/persons/listImagesAliases' +
+          path
+      })
+      .success(function(response) {
+        if (response.error) {
+          return console.warn('error getting persons data:', response.error);
+        }
+        console.info('got persons data (size is', response.length + '):', response);
+        callback(response);
+      })
+      .error(function(err) {
+        console.warn('error getting persons data:', err);
+      });
+    },
+
     getProviderUrl: function(key, category, callback) { // call to get person's provider base url
       $http({
         method: 'GET',
