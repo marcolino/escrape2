@@ -1049,6 +1049,7 @@ local.getDetailsDescription = function($, provider) {
       val = $(element).text();
       if (val) {
         val = val
+          .replace(/Quando mi contatterai dimmi che mi hai visto su .*$/, '') // remove trailing text
           .replace(/<br>.*$/, '') // remove trailing fixed part
           .replace(/\r+/, '') // remove CRs
           .replace(/\n+/, '\n') // remove multiple LFs
