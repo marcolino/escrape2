@@ -11,9 +11,17 @@ angular.module('PersonCtrl', []).controller('PersonController', function($rootSc
     }
   }, true); // last parameter is for object deep watch
 
-  $scope.load = function() {
+  $scope.loadPersons = function() {
     Person.getAll(Filter.get()/*$scope.filter*/, function(response) {
       $scope.persons = response;
+    });
+  };
+
+  $scope.listAliasGroups = function() { // debug only method
+//console.log('calling $scope.listAliasGroups...');
+    Person.listAliasGroups(function(response) {
+      $scope.aliasGroups = response;
+//console.log('$scope.aliasGroups:', $scope.aliasGroups);
     });
   };
 
@@ -27,6 +35,7 @@ angular.module('PersonCtrl', []).controller('PersonController', function($rootSc
     return encodeURIComponent(url);
   };
 
-  $scope.load();  
+
+  //$scope.load();  
 
 });

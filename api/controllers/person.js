@@ -428,6 +428,30 @@ log.silly('person', person.key, 'is changed, syncing images');
   );
 };
 
+/**
+ * Sync aliases in "batch" mode, i.e. on all existing persons, resetting all aliases on start
+ */
+exports.syncAliasesBatch = function(callback) {
+};
+
+/**
+ * Sync aliases in "live" mode, i.e. with persons with 'isChanged' property set
+ */
+exports.syncAliasesLive = function(persons, callback) {
+};
+
+/**
+ * reset all aliases - DEBUG ONLY
+ */
+local.resetAliases = function(persons) {
+  for (var i = 0, personsLen = persons.length; i < personsLen; i++) {
+    P = persons[i];
+    log.silly(' XXX persons[', i, '].alias =', P.alias);
+    P.alias = null;
+    local.savePerson(P);
+  }
+};
+
 local.syncAliases = function(persons, callback) {
   /**
    * person   images                                  alias   reason
@@ -440,15 +464,9 @@ local.syncAliases = function(persons, callback) {
   //log.silly('persons.length:', persons.length);
   //log.silly('persons:', persons); return callback();
 
-/* RESET aliases - DEBUG ONLY */
-for (var i = 0, personsLen = persons.length; i < personsLen; i++) {
-  P = persons[i];
-  log.silly(' XXX persons[', i, '].alias =', P.alias);
-  P.alias = null;
-  local.savePerson(P);
-}
-//return callback();
-/* */
+  /* RESET aliases - DEBUG ONLY */
+  local.resetAliases(persons);
+  /* */
 
   Image.find({}, '_id personKey signature basename', function(err, images) {
     if (err) {
@@ -525,16 +543,63 @@ for (var i = 0, personsLen = persons.length; i < personsLen; i++) {
   });
 };
 
-exports.listImagesAliases = function(callback) {
-  Person.find({ alias: { $ne: null } }, 'key alias', { 'group': 'alias' }, function(err, persons) { // NOOOOOOOOOOOOO
+exports.listAliasGroups = function(callback) {
+  Person.find({ alias: { $ne: null } }, 'key alias', { sort: { alias: 1 } }, function(err, persons) { // NOOOOOOOOOOOOO
     if (err) {
       return callback(err);
     }
-    var docs = [];
-    for (var i = 0; i < persons.length; i++) {
-      docs.push(persons[i]._doc);
-    }
-    callback(null, docs);
+    Image.find({}, 'personKey signature basename', function(err, images) {
+      if (err) {
+        return callback(err);
+      }
+
+      // add to each person its images
+      for (var i = 0, personsLen = persons.length; i < personsLen; i++) {
+        persons[i].images = [];
+        for (var j = 0, len = images.length; j < len; j++) {
+          if (images[j].personKey === persons[i].key) {
+            persons[i].images.push(images[j]);
+            continue;
+          }
+        }
+      }
+
+      // scan through all persons
+      var aliasGroups = [];
+      for (var k = 0; k < persons.length; k++) {
+        var docs = [];
+        var aliasLast;
+        var P, Q;
+        while ((k < persons.length) && (!aliasLast || (aliasLast === persons[k]._doc.alias))) { // group aliases docs
+          if (!aliasLast) {
+            P = persons[k]; // set P as the first person of alias group
+          } else {
+            Q = persons[k]; // set Q as the next person of alias group
+          }
+          var doc = persons[k]._doc;
+          if (!aliasLast) { // the first person
+            doc.keys = [];
+log.info('0 doc.keys:', doc.keys);
+            doc.imageUrls = [];
+          } else { // start getting closest images from the second person onwards
+            var closest = local.getClosestImages(P, Q);
+            // these two images are the closest for these two persons
+            if (k === 1) { // push key and closest imageUrl of first person only on second iteration
+log.info('1 doc.keys:', doc.keys);
+              doc.keys.push(P.key);
+              doc.imageUrls.push('images/' + closest.image1.basename);
+            }
+            doc.keys.push(Q.key);
+            doc.imageUrls.push('images/' + closest.image2.basename);
+          }
+          docs.push(doc);
+          aliasLast = doc.alias;
+          k++;
+        }
+        aliasGroups.push(docs);
+      }
+      callback(null, aliasGroups);
+    });
   });
 /*
   Person.find({}, function(err, persons) {

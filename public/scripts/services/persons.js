@@ -26,13 +26,12 @@ angular.module('PersonService', []).factory('Person', [ '$rootScope', '$http', f
       });
     },
 
-    listImagesAliases: function(callback) { // call to get all persons
+    listAliasGroups: function(callback) { // call to get all persons
       var path = '';
       $http({
         method: 'GET',
         url:
-          $rootScope.config.api.url + $rootScope.config.api.path + '/persons/listImagesAliases' +
-          path
+          $rootScope.config.api.url + $rootScope.config.api.path + '/persons/listAliasGroups'
       })
       .success(function(response) {
         if (response.error) {

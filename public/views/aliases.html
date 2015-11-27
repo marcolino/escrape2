@@ -1,43 +1,14 @@
-<div class="container">
-  <div class="row">
-    <div data-ng-repeat="person in persons | limitTo: 500" class="col-xs-12 col-sm-6 col-md-4 col-lg-3">
-
-      <div class="showcase-table">
-        <div class="showcase-cell">
-  
-          <a ng-href="{{ person.url }}" target="_blank">
-            <img data-ng-src="{{ getShowcaseUrl(person) }}" class="showcase-image" alt="person showcase image" />
-          </a>
-  
-          <span class="showcase-caption">
-            <div class="col-xs-8 no-padding">
-              <span class="showcase-caption-name truncate-ellipsis" data-ng-attr-title="{{ person.name ? person.name : '[empty name]' }}">
-                <span>{{ person.name ? person.name : '[empty name]' }}</span>
-                <br>
-                <span>{{ person.alias }}</span>
-              </span>
-            </div>
-            <div class="col-xs-2 no-padding">
-              <span class="showcase-caption-tel truncate-ellipsis">
-                <a data-ng-href="">
-                  <img src="images/balloon.png" />
-                </a>
-              </span>
-            </div>
-            <div class="col-xs-2 no-padding">
-              <span class="showcase-caption-tel truncate-ellipsis">
-                <a data-ng-href="tel:{{ person.phone }}">
-                  <img src="images/phone-call.png" />
-                </a>
-              </span>
-            </div>
-          </span>
-  
-        </div>
-      </div>
-
-      <div class="showcase-separator"></div>
-
-    </div>
-  </div>
+<div class="container" ng-init="listAliasGroups()">
+  <table>
+    <!-- aliases is a two-dimensions array -->
+    <tr ng-repeat="aliasGroup in aliasGroups">
+      <td ng-repeat="person in aliasGroup" style="border:1px solid grey; padding:1.0em; white-space: nowrap;">
+<pre> {{ person }} </pre>
+        <span ng-if="$index === 0" style="color:lightyellow; font-size:12px;">
+          [alias: {{ person.alias }}]
+        </span>
+        {{ person.key }}
+      </td>
+    </tr>
+  </table>
 </div>

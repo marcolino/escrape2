@@ -134,9 +134,9 @@ router.route('/checkImages').
   })
 ;
 
-router.route('/listImagesAliases').
+router.route('/listAliasGroups').
   get(function(req, res) { // list images duplicates
-    person.listImagesAliases(function(err, list) {
+    person.listAliasGroups(function(err, list) {
       if (err) {
         log.error('error listing images aliases:', err);
         return res.json({ error: err });
@@ -146,32 +146,18 @@ router.route('/listImagesAliases').
   })
 ;
 
-/*
-router.route('/listImagesAliases').
-  get(function(req, res) { // list images duplicates
-    person.listImagesAliases(function(err) {
-      if (err) {
-        log.error('error listing images aliases:', err);
-        return res.json({ error: err });
-      }
-      res.json();
-    });
-  })
-;
-*/
-
 router.route('/*'). // requested path is in req._parsedUrl.path
   get(function(req, res) { // unforeseen get request
-    res.json({ error: 'persons path not found' });
+    res.json({ error: 'persons path not found' + ' (' + req._parsedUrl.path + ')' });
   }).
   post(function(req, res) { // unforeseen post request
-    res.json({ error: 'persons path not found' });
+    res.json({ error: 'persons path not found' + ' (' + req._parsedUrl.path + ')' });
   }).
   put(function(req, res) { // unforeseen post request
-    res.json({ error: 'persons path not found' });
+    res.json({ error: 'persons path not found' + ' (' + req._parsedUrl.path + ')' });
   }).
   delete(function(req, res) { // unforeseen post request
-    res.json({ error: 'persons path not found' });
+    res.json({ error: 'persons path not found' + ' (' + req._parsedUrl.path + ')' });
   })
 ;
 
