@@ -17,18 +17,20 @@ exports.requestRetryAnonymous = function(resource, error, success) {
     (resource.type === 'image') ? 'binary' :
     null
   ;
-  //log.debug('netror - requesting url ', resource.url);
+  //log.debug('network - requesting url ', resource.url);
   //log.debug('!!!!! setting header If-Modified-Since to', resource.lastModified);
   var options = {
     url: resource.url,
-    maxAttempts: 3, // retry for 3 attempts more after the first one
-    retryDelay: 3 * 1000, //60 * 1000, // wait for 3" before trying again
+    maxAttempts: config.networking.maxAttempts, // number of attempts to retry after the first one
+    retryDelay: config.networking.retryDelay, // number of milliseconds to wait for before trying again
     retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
     headers: {
       'User-Agent': randomUseragent.generate()
     },
-    encoding: encoding
+    encoding: encoding,
+    timeout: config.networking.timeout // number of milliseconds to wait for a server to send response headers before aborting the request
   };
+  //log.debug('network - requesting resource:', resource);
   // TODO: before setting cache fields in request header, check we have image on fs, it could have been deleted...
   if (resource.etag) { // set header's If-None-Match tag if we have an etag
 //log.info('>network downloading resource with etag set');
@@ -40,7 +42,7 @@ exports.requestRetryAnonymous = function(resource, error, success) {
     }
 */
   }
-  if (config.mode !== 'fake') { // not fake
+  //if (config.mode !== 'fake') { // not fake
     if (config.tor.available) { // TOR is available
       options.agentClass = agent;
       options.agentOptions = { // TOR socks host/port
@@ -48,7 +50,7 @@ exports.requestRetryAnonymous = function(resource, error, success) {
         socksPort: config.tor.port
       };
     }
-  }
+  //}
 
   requestretry(
     options,
@@ -62,11 +64,13 @@ if (response.headers.etag) {
   console.warn('response.statusCode:', response.statusCode, ', contents.length:', contents.length, ', etag:', resource.etag, '=>', response.headers.etag);
 }
 */
+      resource.statusCode = response.statusCode;
+      
       if (response.statusCode < 300) { // 2xx, success, download effected
         resource.etag = response.headers.etag;
-/**/
+/*
         resource.lastModified = response.headers['last-modified'];
-/**/
+*/
       }
       success(contents, resource);
     }

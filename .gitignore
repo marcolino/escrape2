@@ -1,5 +1,6 @@
 node_modules
 public/bower_components
 public.dist
+api/config.providers.js
 data
 logs

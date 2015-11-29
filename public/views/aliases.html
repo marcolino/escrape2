@@ -1,9 +1,12 @@
 <div class="container" ng-init="listAliasGroups()">
   <table>
     <!-- aliases is a two-dimensions array -->
-    <tr ng-repeat="aliasGroup in aliasGroups">
+    <tr ng-repeat="aliasGroup in aliasGroups" style="border-bottom:2px solid red">
       <td ng-repeat="person in aliasGroup" style="border:1px solid grey; padding:1.0em; white-space: nowrap;">
 <pre> {{ person }} </pre>
+        <span ng-repeat="imageUrl in person.imageUrls">
+          <img data-ng-src="{{ imageUrl }}" style="max-height:200px" />
+        </span>
         <span ng-if="$index === 0" style="color:lightyellow; font-size:12px;">
           [alias: {{ person.alias }}]
         </span>

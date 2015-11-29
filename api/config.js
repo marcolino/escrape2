@@ -1,42 +1,48 @@
 var os = require("os")
   , winston = require('winston') // handle logging
+  , providers = require('./config.providers') // configured providers
 ;
 
-var config = {};
-config.env = 'development';
-config.debug = true;
-config.mode = ((os.hostname() === 'linux-backup') ? 'fake' : 'normal');
-config.category = 'women'; // TODO: will get it from req, this will be a default value (?)
-config.city = 'torino'; // TODO: will get it from req, this will be a default value (?)
-config.images = {};
-config.images.path = __dirname + '/..' + '/data/images';
-config.images.thresholdDistance = 0.05; // was 0.12
-config.images.thresholdDistanceSamePerson = 0.02;
-config.logger = {};
-config.logger.levelConsole = 'silly'; // 'error' to production
-config.logger.levelFile = 'debug'; // 'info' to production
-config.logger.logFilePath = 'logs/escrape.log';
-config.logger.timestamp = function() {
-  //return (new Date()).toISOString().replace('T', ' ').replace('Z', '');
-  var tzoffset = (new Date()).getTimezoneOffset() * 60 * 1000; // offset in milliseconds
-  var localISOTime = (new Date(Date.now() - tzoffset)).toISOString().slice(0, -1).replace('T', ' ');
-  return localISOTime;
+var config = {
+  env: 'development',
+  debug: true,
+  //config.mode: ((os.hostname() === 'linux-backup') ? 'fake' : 'normal'),
+  category: 'women', // TODO: will get it from req, this will be a default value (?)
+  city: 'torino', // TODO: will get it from req, this will be a default value (?)
+  providers: providers, // imported providers
+  images: {
+    path: __dirname + '/..' + '/data/images',
+    thresholdDistance: 0.05, // was 0.12
+    thresholdDistanceSamePerson: 0.02
+  },
+  logger: {
+    levelConsole: 'silly', // 'error' to production
+    levelFile: 'debug', // 'info' to production
+    logFilePath: 'logs/escrape.log',
+    timestamp: function() {
+      var tzoffset = (new Date()).getTimezoneOffset() * 60 * 1000; // offset in milliseconds
+      var localISOTime = (new Date(Date.now() - tzoffset)).toISOString().slice(0, -1).replace('T', ' ');
+      return localISOTime;
+    }
+  },
+  db: {
+    type: 'mongodb',
+    host: 'localhost',
+    name: 'escrape'
+  },
+  networking: {
+    timeout: 5 * 60 * 1000, // wait for 5' before throwing a timeout
+    maxAttempts: 3, // retry for 3 attempts more after the first one
+    retryDelay: 3 * 1000 // wait for 3" before trying again
+  },
+  tor: {
+    available: (os.hostname() === 'malibox'), // TOR is available only @malibox, at the moment...
+    host: 'localhost',
+    port: 9050
+  },
 };
-config.db = {};
-config.db.type = 'mongodb';
-config.db.host = 'localhost';
-config.db.name = 'escrape';
-//config.db.openshiftRootUser = 'admin';
-//config.db.openshiftRootPassword = 'fSnwesCwws11';
-//config.db.openshiftName = 'nodejs';
 
-config.tor = {};
-config.tor.available = (os.hostname() === 'malibox'); // TOR is available only locally, at the moment...
-config.tor.host = 'localhost';
-config.tor.port = 9050;
-
-// set up logging
-var logger = new (winston.Logger)({
+config.log = new (winston.Logger)({
   transports: [
     new (winston.transports.Console)({
       silent: false,
@@ -60,60 +66,5 @@ var logger = new (winston.Logger)({
     }),
   ]
 });
-config.log = logger;
-
-// development only (?)
-config.providers = [
-  {
-    key: 'SGI',
-    mode: 'normal',
-    type: 'persons',
-    url: 'http://www.sexyguidaitalia.com',
-    language: 'it',
-    categories: {
-      women: {
-        pathList: '/escort',
-        pathDetails: '/escort',
-      },
-    },
-  },
-  {
-    key: 'TOE',
-    mode: 'normal',
-    type: 'persons',
-    url: 'http://www.torinoerotica.com',
-    language: 'it',
-    categories: {
-      women: {
-        pathList: '/annunci-escort-donna',
-        pathDetails: ''
-      },
-    },
-  },
-  {
-    key: 'FORBES',
-    mode: 'fake',
-    type: 'persons',
-    url: 'http://it.wikipedia.org',
-    language: 'it',
-    categories: {
-      overall: {
-        pathList: '/wiki/Lista_delle_persone_pi%C3%B9_potenti_del_mondo_secondo_Forbes#2014.5B2.5D',
-        pathDetails: ''
-      },
-      women: { 
-        pathList: '/wiki/Lista_delle_100_donne_pi%C3%B9_potenti_del_mondo_secondo_Forbes#2015',
-        pathDetails: ''
-      },
-    },
-  },
-  {
-    key: 'GF',
-    mode: 'normal',
-    type: 'comments',
-    // ...
-  },
-
-];
 
 module.exports = config;

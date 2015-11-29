@@ -24,10 +24,6 @@ exports.syncPersonImages = function(person, callback) {
     return callback('no person to sync images for');
   }
 
-  var destination = config.images.path;
-  var resource;
-  //var keyFull = person.providerKey + '/' + person.key;
-
   if (!person.imageUrls) {
 //log.silly('Image.syncPersonImages() FINISHED for person', person.key);
     return callback('no image urls for person ' + person.key);
@@ -37,20 +33,15 @@ exports.syncPersonImages = function(person, callback) {
     return callback('zero image urls for person ' + person.key);
   }
 
-var tot = person.imageUrls.length;
-var don = 0;
   async.each(
     person.imageUrls, // 1st param is the array of items
     function(url, callbackInner) { // 2nd param is the function that each item is passed to
-/*
-log.silly('syncPersonImages - url:', url);
-log.silly('=== syncPersonImages', (tot - don), ' persons image urls remaining ===');
-*/
+//log.silly('syncPersonImages - url:', url);
+
       var image = {};
       image.url = url;
       if (!image.url) {
         log.warn('can\'t sync image for person', person.key, ', ', 'image with no url, ', 'skipping');
-//log.silly('callbackInner() for', person.key + ':', ++don, '/', tot);
         return callbackInner(); // skip this inner loop
       }
       /* TODO: handle real showcase...
@@ -63,108 +54,114 @@ log.silly('=== syncPersonImages', (tot - don), ' persons image urls remaining ==
       Image.findOne({ personKey: person.key, url: image.url }, function(err, img) {
         if (err) {
           log.warn('can\'t find image ', image.url);
-//log.silly('callbackInner() for', person.key + ':', ++don, '/', tot);
           return callbackInner();
         }
         if (img) { // existing image url
           img.isNew = false;
         } else { // new image url
-          //log.silly('callbackInner() for', person.key + ':', ++don, '/', tot);
           img = new Image();
           img.isNew = true;
           img.url = image.url;
+          img.personKey = person.key;
         }
-//else log.silly('img with url', url, 'found');
+//log.silly('img is new?', img.isNew);
+//log.silly('img.url', img.url);
         /*
         img._isFirst = image.isFirst; // TODO: debug this: is image coupled with img???
         */
 //log.silly(person.key, ' ########### img.isNew before download:', img.isNew);
+        var res = {
+          img: img,
+          url: img.url,
+          type: 'image'
+        };
+        var destination = config.images.path;
+/*
         resource = {
-
           // TODO: use img object in resource !
           // isNew => img.isNew
           // etag => img.etag
           // lastModified => img.lastModified
           img: img,
-
           personKey: person.key,
           url: image.url,
           type: 'image',
-/**/
-          isNew: img.isNew,
-          etag: img.etag, // comment this to force download
-          lastModified: img.lastModified // comment this to force download
-/**/
         };
-        local.download(resource, destination, function(err, res) {
-/*
-if (res.img) {
-  log.debug('res.img found :-)');
-} else {
-  log.error('res.img NOT found ! :-(');
-}
 */
+        local.download(res, destination, function(err, res) {
           if (err)  {
-            log.warn('can\'t download image', image.url + ',', err.toString());
-//log.silly('callbackInner() for', person.key + ':', ++don, '/', tot);
+            log.warn('can\'t download image', res.img.url + ',', err.toString());
             return callbackInner();
           }
           if (!res) {
-//log.silly('image', resource.url, 'not downloaded because of unchanged ETag');
-//log.silly('callbackInner() for', person.key + ':', ++don, '/', tot);
             return callbackInner(); // res is null, image not modified, do not save it to disk
           }
+//log.debug('syncPersonImages 1 - res.img.basename:', res.img.basename);
+
 //log.silly(res.personKey, 'res.isNew after download:', img.isNew);
-if (res.isNew) {
-  log.silly('image', res.url, 'downloaded because of being NEW');
+if (res.img.isNew) {
+  log.silly('image', res.url, 'for', img.personKey, 'downloaded because of being NEW');
 } else {
-  log.silly('image', res.url, 'downloaded because of being CHANGED etag');
+  log.silly('image', res.url, 'for', img.personKey, 'downloaded because of being CHANGED etag');
 }
+          /*
           img.personKey = res.personKey;
           img.etag = res.etag; // ETag, to handle caching
           img.lastModified = res.lastModified; // lastModified, to handle alternative caching
           img.basename = res.basename; // image base name
           // NOT USED ANYMORE //var imagePath = destination + '/' + img.basename;
+          */
 
           // calculate image signature from contents
-          local.signatureFromContents(res.contents, function(err, signature) {
+          local.signatureFromResourceContents(res, function(err, res) {
             if (err) {
-              log.warn('can\'t calculate signature of image', img.basename + ':', err);
-//log.silly('callbackInner() for', person.key + ':', ++don, '/', tot);
-              return callbackInner(); // !!!!!!!!!!!!
+              log.warn('can\'t calculate signature of image', res.img.basename + ':', err, ', skipping');
+              return callbackInner(); // !!!
             }
+//log.debug('syncPersonImages 2 - res.img.basename:', res.img.basename);
             // got signature
-            //log.debug('found signature for image:', signature);
+            res.img.signature = res.signature;
+
+            //log.debug('found signature for image:', res.img.signature);
             // check image signature is not duplicated in person
-            exports.findSimilarSignature(signature, { personKey: img.personKey }, config.images.thresholdDistanceSamePerson, function(err, found, distance, personKey) {
+            exports.findSimilarSignature(res, { personKey: res.img.personKey }, config.images.thresholdDistanceSamePerson, function(err, found, distance, personKey, res) {
               if (err) {
-                log.warn('can\'t check signature of image', img.basename + ':', err);
-                img.signature = '';
-                // don't return, do save image with fake signature
+                log.warn('can\'t check signature of image', res.img.basename + ':', err);
+                //res.img.signature = ''; // don't return, do save image with fake signature
               } else {
+//log.debug('syncPersonImages 3 - res.img.basename:', res.img.basename);
                 //log.debug('found similar signature for image:', signature, '?', found);
                 if (found) {
                   // TODO: log local url src of similar images
-                  log.info('image', img.basename, 'downloaded, but seems already present in person', img.personKey + ': not added');
-                  fs.unlink(config.images.path + '/' + img.basename, function(err) {
+                  log.info('image', res.img.basename, 'downloaded, but seems already present in person', res.img.personKey + ': not added');
+                  fs.unlink(config.images.path + '/' + res.img.basename, function(err) {
                     if (err) {
-                      log.warn('image file', img.basename, 'cannot not be removed from disk:', err);
+                      log.warn('image file', res.img.basename, 'cannot not be removed from disk:', err);
                     }
-//log.silly('callbackInner() for', person.key + ':', ++don, '/', tot);
                     callbackInner();
                   });
                   return; // don't save image
                 }
-                img.signature = signature; // signature is not duplicated in person
+                //res.img.signature = res.signature; // signature is not duplicated in person
               }
               // do save image
-              img.save(function(err) {
+  /*
+  _id: OK
+  url: OK
+  personKey: 
+  etag: 
+  //lastModified: 
+  basename: 
+  dateOfFirstSync: OK
+  signature:
+  */
+//log.debug('syncPersonImages 4 - res.img.basename:', res.img.basename);
+              res.img.save(function(err) {
                 if (err) {
-                  log.warn('can\'t save image', image.url + ':', err);
+                  log.warn('can\'t save image', res.img, ':', err);
                 } else {
-                  log.info('image', img.basename, 'added');
+                  log.info('image', res.img.basename, 'added');
                 }
-//log.silly('callbackInner() for', person.key + ':', ++don, '/', tot);
                 return callbackInner();
               });
             });
@@ -177,97 +174,72 @@ if (res.isNew) {
         log.warn('some error in the final images async callback:', err);
         return callback(err, person);
       }
-//log.silly('Image.syncPersonImages() FINISHED for person', person.key);
+      //log.silly('Image.syncPersonImages() FINISHED for person', person.key);
       // all tasks are successfully done
       callback(null, person);
     }
   );
 };
 
-/*
-exports.areSimilar = function(image1, image2, thresholdDistance) {
-  thresholdDistance = thresholdDistance ? thresholdDistance : config.images.thresholdDistance;
-  return (local.distance(image1.signature, image2.signature) <= thresholdDistance);
-};
-
-exports.findSimilar = function(image, filter, thresholdDistance, callback) {
-  // try with image signature as-is
-  exports.findSimilarFixed(image, filter, thresholdDistance, function(err, found, distance, personKey) {
-    if (err) {
-      return callback(err);
-    }
-    if (found) {
-      return callback(err, found, distance, personKey);
-    }
-  
-    // image not found; try with mirrored signature
-    image.mirror(true, false, function(err, image) {
-      if (err) {
-        return callback(err);
+// download an image from url to destination on filesystem
+local.download = function(req, destination, callback) {
+//log.error('req:', req);
+  network.requestRetryAnonymous(
+    req,
+    function(err) {
+//log.error(err);
+      callback(err, req);
+    },
+    function(contents, res) {
+      if (contents.length === 0) {
+        // contents length is zero, possibly not modified, do not save to disk
+        return callback(null, req);
       }
-      exports.findSimilarFixed(image, filter, thresholdDistance, function(err, found, distance, personKey) {
+      // TODO: we should not need this this following test, If-None-Match should be honoured and 
+      if (req.img.etag === res.etag) {
+        // contents downloaded but etag does not change, If-None-Match not honoured?
+        log.warn('image', req.url, 'downloaded (200) but etag does not change, If-None-Match not honoured, skipping');
+        //log.warn('res status code:', res.statusCode);
+        return callback(null, null);
+      }
+      var destinationDir = destination + '/' + req.img.personKey;
+      mkdirp(destinationDir, function(err, made) {
         if (err) {
-          return callback(err);
+          log.warn('can\'t make directory ', destinationDir);
+          return callback(err, req);
         }
-        return callback(err, found, distance, personKey);
+        res.img = req.img;
+        // as filename extension use res extension
+        var ext = path.extname(res.url); // TODO: normalize extension (.Jpg, .jpeg, .JPG => .jpg)
+        // as filename use a hash of res url + current timestamp
+        var hash = crypto.createHash('md5').update(res.url + Date.now()).digest('hex');
+        var basename = hash + ext;
+        destinationDir += '/' + basename;
+        res.contents = contents;
+        res.img.basename = req.img.personKey + '/' + basename;
+//log.debug('download - res.img.basename:', res.img.basename);
+        res.img.etag = res.etag;
+
+        //log.info('download() saving to: ', destinationDir);
+        fs.writeFile(
+          destinationDir,
+          contents,
+          'binary',
+          function(err) {
+            if (err) {
+              log.warn('can\'t write file to file system:', err);
+              return callback(err, req);
+            }
+            //log.debug('res.basename:', res.basename);
+            callback(null, res); // success
+          }
+        );
       });
-    });
-  });
+    }
+  );
 };
 
-exports.findSimilarFixed = function(image, filter, thresholdDistance, callback) {
-  local.signature(image, function(err, signature) {
-    if (err) {
-      return callback(err);
-    }
-    exports.findSimilarSignature(signature, filter, thresholdDistance, function(err, found, distance, personKey) {
-      if (err) {
-        return callback(err);
-      }
-      return callback(err, found, distance, personKey);
-    });
-  });
-};
-
-/**
- * print to console html with a list of all similar images
- * /
-exports.findSimilarAll = function(thresholdDistance, callback) {
-  var filter = {};
-  log.info('start');
-  Image.find(filter, '_id personKey signature url', function(err, images) {
-    if (err) {
-      return callback('can\'t find images');
-    }
-    check(images, callback);
-  });
-  function check(images, callback) {
-    log.debug('#images:', images.length);
-    var minDistance = 1;
-    var personKey = null;
-    var found = false;
-    for (var i = 0, len = images.length; i < len; i++) {
-      var printed = false;
-      for (var j = i + 1; j < images.length; j++) {
-        var distance = local.distance(images[i].signature, images[j].signature);
-        if (distance <= thresholdDistance) {
-          found = true;
-          //log.info('similar images found (distance is', distance + ') :', images[i].personKey, '<=>', images[j].personKey);
-          if (!printed) console.log('<hr>', i, images[i].personKey + ': <img src="' + images[i].url + '" width="64" />');
-          printed = true;
-          console.log('', j, images[j].personKey, ': <img src="', images[j].url, '" width="64" /> ', distance, '<br>');
-        }
-      }
-    }
-    if (!found) {
-      console.log('no similar images found');
-    }
-    log.info('finish');
-  }
-};
-*/
-
-exports.findSimilarSignature = function(signature, filter, thresholdDistance, callback) {
+exports.findSimilarSignature = function(res, filter, thresholdDistance, callback) {
   Image.find(filter, '_id personKey signature url', function(err, images) {
     if (err) {
       return callback('can\'t find images');
@@ -279,7 +251,7 @@ exports.findSimilarSignature = function(signature, filter, thresholdDistance, ca
       if (!image.signature) {
         return; // skip this image without signature
       }        
-      var distance = exports.distance(image.signature, signature);
+      var distance = exports.distance(image.signature, res.img.signature);
       if (distance <= minDistance) {
         minDistance = distance;
         personKey = image.personKey;
@@ -287,9 +259,9 @@ exports.findSimilarSignature = function(signature, filter, thresholdDistance, ca
       //log.info(i, images[i].personKey, 'distance is', distance);        
     });
     if (minDistance <= thresholdDistance) {
-      return callback(null, true, minDistance, personKey);
+      return callback(null, true, minDistance, personKey, res);
     } else {
-      return callback(null, false, minDistance, null);
+      return callback(null, false, minDistance, null, res);
     }
   });
 };
@@ -316,8 +288,8 @@ exports.distance = function(signature1, signature2) {
   return (counter / signature1.length);
 };
 
-local.signatureFromContents = function(contents, callback) {
-  Jimp.read(new Buffer(contents, "ascii"), function(err, image) {
+local.signatureFromResourceContents = function(res, callback) {
+  Jimp.read(new Buffer(res.contents, "ascii"), function(err, image) {
     if (err) {
       callback('can\'t read image contents:', err);
     }
@@ -325,56 +297,11 @@ local.signatureFromContents = function(contents, callback) {
       if (err) {
         callback(err);
       } else {
-        callback(null, signature);
+        res.signature = signature;
+        callback(null, res);
       }
     });
   });
-};
-
-// download an image from url to destination on filesystem
-local.download = function(resource, destination, callback) {
-  network.requestRetryAnonymous(
-    resource,
-    function(err) {
-      callback(err);
-    },
-    function(contents, resource) {
-      if (contents.length === 0) {
-        // contents length is zero, possibly not modified, do not save to disk
-        return callback(null, null);
-      }
-      var destinationDir = destination + '/' + resource.personKey;
-      mkdirp(destinationDir, function(err, made) {
-        if (err) {
-          log.warn('can\'t make directory ', destinationDir);
-          return callback(err);
-        }
-        // as filename extension use resource extension
-        var ext = path.extname(resource.url); // TODO: normalize extension (.Jpg, .jpeg, .JPG => .jpg)
-        // as filename use a hash of resource url + current timestamp
-        var hash = crypto.createHash('md5').update(resource.url + Date.now()).digest('hex');
-        var basename = hash + ext;
-        destinationDir += '/' + basename;
-        resource.basename = resource.personKey + '/' + basename;
-        resource.contents = contents;
-
-        //log.info('download() saving to: ', destinationDir);
-        fs.writeFile(
-          destinationDir,
-          contents,
-          'binary',
-          function(err) {
-            if (err) {
-              log.warn('can\'t write file to file system:', err);
-              return callback(err);
-            }
-            //log.debug('resource.basename:', resource.basename);
-            callback(null, resource); // success
-          }
-        );
-      });
-    }
-  );
 };
 
 module.exports = exports;
