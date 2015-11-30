@@ -712,8 +712,8 @@ local.getClosestImages = function(person1, person2) {
   }
 
   // compare each image from person 1 to each image from person 2
- log.silly('person1.images.length:', person1.images.length);
- log.silly('person2.images.length:', person2.images.length);
+ //log.silly('person1.images.length:', person1.images.length);
+ //log.silly('person2.images.length:', person2.images.length);
   all:
   for (i = 0, len1 = person1.images.length; i < len1; i++) {
 //log.silly('i:', i);
