@@ -27,8 +27,8 @@ angular.module('PersonCtrl', []).controller('PersonController', function($rootSc
 
   $scope.getShowcaseUrl = function(person) {
     var url;
-    if (person.showcaseUrl) {
-      url = '/images/' + '/' + person.showcaseUrl;
+    if (person.showcaseBasename) {
+      url = '/images/' + '/' + person.showcaseBasename;
     } else { // no showcase url for this person: use default person showcase url
       url = '/images/' + 'person-showcase-default.png';
     }

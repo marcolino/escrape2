@@ -6,13 +6,12 @@ var os = require("os")
 var config = {
   env: 'development',
   debug: true,
-  //config.mode: ((os.hostname() === 'linux-backup') ? 'fake' : 'normal'),
   category: 'women', // TODO: will get it from req, this will be a default value (?)
   city: 'torino', // TODO: will get it from req, this will be a default value (?)
   providers: providers, // imported providers
   images: {
     path: __dirname + '/..' + '/data/images',
-    thresholdDistance: 0.05, // was 0.12
+    thresholdDistance: 0.125, // was 0.05
     thresholdDistanceSamePerson: 0.02
   },
   logger: {

@@ -17,7 +17,28 @@ var log = config.log;
 
 exports.getAll = function(filter, options, result) { // get all persons
   Person.find(filter, null, options, function(err, persons) {
-    result(err, persons);
+    Image.find({}, 'personKey basename', function(err, images) {
+      if (err) {
+        return callback(err);
+      }
+
+      // add to each person its showcase image
+      for (var i = 0, personsLen = persons.length; i < personsLen; i++) {
+        var P = persons[i]._doc;
+        persons[i]._doc.showcaseBasename = null;
+        for (var j = 0, len = images.length; j < len; j++) {
+          var I = images[j]._doc;
+          if (I.personKey === P.key) {
+            if (P.showcaseBasename === null) { // TODO: add a isShowcase function...
+              P.showcaseBasename = I.basename;
+              break;
+            }
+          }
+        }
+      }
+
+      result(err, persons);
+    });
   });
 };
 
@@ -215,9 +236,7 @@ exports.sync = function() { // sync persons
             }
             // success
             log.info('persons images sync finished');
-//return log.error('stopped before persons aliases');
 
-/*
             // sync persons aliases
             log.info('persons aliases sync started');
             local.syncAliases(persons, function(err) {
@@ -226,7 +245,7 @@ exports.sync = function() { // sync persons
               }
               log.info('persons aliases sync finished');
             });
-*/
+
           });
         });
         /*
@@ -279,7 +298,6 @@ exports.upsert = function(person, callback) {
         }
         doc[prop] = person[prop];
       }
-
       //_.merge(doc, person); // merge sync'd person data to database person object
 
       doc.save(function(err) {
@@ -450,7 +468,7 @@ exports.syncAliasesLive = function(persons, callback) {
 local.resetAliases = function(persons) {
   for (var i = 0, personsLen = persons.length; i < personsLen; i++) {
     P = persons[i];
-    log.silly(' XXX persons[', i, '].alias =', P.alias);
+    //log.silly(' XXX persons[', i, '].alias =', P.alias);
     P.alias = null;
     local.savePerson(P);
   }
@@ -470,6 +488,7 @@ local.syncAliases = function(persons, callback) {
 
   /* RESET aliases - DEBUG ONLY */
   local.resetAliases(persons);
+  log.silly('Aliases RESET');
 //return callback(); // JUST CLEAN ALIASES
 
   /* */
@@ -550,6 +569,7 @@ local.syncAliases = function(persons, callback) {
 };
 
 exports.listAliasGroups = function(callback) {
+  var people = [];
   Person.find({ alias: { $ne: null } }, 'key name alias', { sort: { alias: 1 } }, function(err, persons) {
     if (err) {
       return callback(err);
@@ -559,67 +579,77 @@ exports.listAliasGroups = function(callback) {
         return callback(err);
       }
 
-      // add to each person its images
+      // add to each person its images, building people
       for (var i = 0, personsLen = persons.length; i < personsLen; i++) {
-        persons[i].images = [];
+        people[i] = persons[i].toObject();
+        people[i].images = [];
         for (var j = 0, len = images.length; j < len; j++) {
-          if (images[j].personKey === persons[i].key) {
-            persons[i].images.push(images[j]);
+          var image = images[j].toObject();
+          if (image.personKey === people[i].key) {
+            people[i].images.push(image);
             continue;
           }
         }
       }
 
+/* OK - CLI test
 log.warn('listAliasGroups');
 var aliasLast = null;
-log.warn('persons.length:', persons.length);
-for (var k = 0; k < persons.length; k++) {
-  var alias = persons[k]._doc.alias;
-  var key = persons[k]._doc.key;
+log.warn('people.length:', people.length);
+for (var k = 0; k < people.length; k++) {
+  var alias = people[k].alias;
+  var key = people[k].key;
   if (alias !== aliasLast) { log.warn('---'); log.warn('alias:', alias); }
   log.warn('key:', key);
   aliasLast = alias;
 }
-log.warn('');
 //log.warn('aliasGroupLenMax:', aliasGroupLenMax);
 return callback(null, []);
+*/
 
-/*
+// scan through all people
 log.warn('listAliasGroups');
 var aliasLast = null;
-var aliasGroupLen = 0, aliasGroupLenMax = 0;
-log.warn('persons.length:', persons.length);
-for (var k = 0; k < persons.length; k++) {
-  var alias = persons[k]._doc.alias;
-  var key = persons[k]._doc.key;
-  if (aliasLast && aliasLast === alias) { // same alias group
-    aliasGroupLen++;
-    aliasGroupLenMax = Math.max(aliasGroupLenMax, aliasGroupLen);
-    log.warn(' key:', key);
+var groupLenMax = 0;
+var groups = [];
+var group = [];
+log.warn('people.length:', people.length);
+for (var k = 0; k < people.length; k++) {
+  var alias = people[k].alias;
+  var key = people[k].key;
+  group = [];
+  if (alias !== aliasLast) {
+    log.warn('new alias:', alias);
+    groups.push(group);
+    group = [];
   } else {
-    if (aliasLast) {
-      log.warn('  alias group length:', aliasGroupLen);
-      log.warn('-------------------------');
-    }
-    log.warn('alias:', alias);
-    log.warn(' key:', key);
-    aliasGroupLen = 1;
+    group.push(people[k]);
+    groupLenMax = Math.max(groupLenMax, group.length);
   }
+  aliasLast = alias;
 }
-log.warn('');
-log.warn('=========================');
-log.warn('aliasGroupLenMax:', aliasGroupLenMax);
-return callback(null, []);
-*/
+groups.push(group);
+log.warn('groupLenMax:', groupLenMax);
+log.warn('groups:', groups);
+return callback(null, groups);
+
+/*
       // scan through all persons
       var aliasGroups = [];
       for (var k = 0; k < persons.length; k++) {
-log.info('k:', k);
+//log.info('k:', k);
         var docs = [];
         var aliasLast = null;
         var P, Q;
         for (l = k; (l < persons.length) && (!aliasLast || (aliasLast === persons[k]._doc.alias)); l++) { // group aliases docs
-log.info('L:', l, ', aliasLast:', aliasLast);
+//log.info('L:', l, ', aliasLast:', aliasLast);
+          P = {
+            _id: persons[l]._doc._id,
+            key: persons[l]._doc.key,
+            name: persons[l]._doc.name,
+            alias: persons[l]._doc.alias,
+            images: persons[l].images,
+          };
           if (!aliasLast) {
             P = persons[l]; // set P as the first person of alias group
           } else {
@@ -627,14 +657,13 @@ log.info('L:', l, ', aliasLast:', aliasLast);
           }
           var doc = persons[l]._doc;
           doc.keys = [];
-//log.info('FALSE aliasLast doc.keys:', doc.keys);
           doc.imageUrls = [];
           if (aliasLast) { // start getting closest images from the second person onwards
-log.info('TRUE aliasLast doc.keys:', doc.keys);
+//log.info('TRUE aliasLast doc.keys:', doc.keys);
             var closest = local.getClosestImages(P, Q);
             // these two images are the closest for these two persons
             if (l === k + 1) { // push key and closest imageUrl of first person only on second iteration
-log.info('TRUE aliasLast, l == k+1 doc.keys:', doc.keys);
+//log.info('TRUE aliasLast, l == k+1 doc.keys:', doc.keys);
               doc.keys.push(P.key);
               doc.imageUrls.push('images/' + closest.image1.basename);
             }
@@ -642,65 +671,21 @@ log.info('TRUE aliasLast, l == k+1 doc.keys:', doc.keys);
             doc.imageUrls.push('images/' + closest.image2.basename);
           }
           docs.push(doc);
-log.info('+++ doc:', doc);
+//log.info('+++ doc:', doc);
           aliasLast = doc.alias;
-log.info('set aliasLast:', aliasLast);
+//log.info('set aliasLast:', aliasLast);
         }
         k = l;
         aliasGroups.push(docs);
       }
       callback(null, aliasGroups);
-    });
-  });
-/*
-  Person.find({}, function(err, persons) {
-    if (err) {
-      return callback(err);
-    }
-    Image.find({}, 'personKey signature basename', function(err, images) {
-      if (err) {
-        return callback(err);
-      }
-      // add to each person its images
-      for (var i = 0, personsLen = persons.length; i < personsLen; i++) {
-        persons[i].images = [];
-        for (var j = 0, len = images.length; j < len; j++) {
-          if (images[j].personKey === persons[i].key) {
-            persons[i].images.push(images[j]);
-            continue;
-          }
-        }
-      }
-      // scan through all persons
-      for (var k = 0; k < personsLen; k++) {
-        var P = persons[k]; // P is the person we arge going to check for aliases
-        for (var l = 0; l < personsLen; l++) {
-          var Q = persons[l]; // Q is the current person from all persons
-          if (P.key === Q.key) { // skip the same person
-            continue;
-          }
-          var closest = local.getClosestImages(P, Q);
-          if (closest.distance <= config.images.thresholdDistance) {
-            // these two images are really colose, and the closest for these two persons
-            list.push({
-              key1: P.key,
-              key2: Q.key,
-              imageUrl1: 'images/' + closest.image1.basename,
-              imageUrl2: 'images/' + closest.image2.basename
-            });
-          }
-        }
-      }
-      // finished
-      //log.silly(list);
-      callback(null, list);
-    });
-  });
 */
+    });
+  });
 };
 
 local.savePerson = function(person) {
-//log.silly('SAVING person:', person);
+  //log.silly('SAVING person:', person);
   person.save(function(err) {
     if (err) {
       return log.warn('can\'t save person alias:', err);
@@ -718,17 +703,24 @@ local.getClosestImages = function(person1, person2) {
   var distanceMin = 1; // the maximum distance
   var img1, img2 = null; // the closest images
 
-  if (!person1.images || !person2.images) {
+  if (
+    !(person1.images && person1.images.length > 0) ||
+    !(person2.images && person2.images.length > 0)
+  ) {
 //log.debug('areSimilar - FALSE 1');
     return distanceMin; // first or second person has no images, distance is the maximum
   }
 
   // compare each image from person 1 to each image from person 2
+ log.silly('person1.images.length:', person1.images.length);
+ log.silly('person2.images.length:', person2.images.length);
   all:
   for (i = 0, len1 = person1.images.length; i < len1; i++) {
+//log.silly('i:', i);
     var image1 = person1.images[i];
     if (!image1.signature) { log.error('image 1 has no signature'); }
     for (var j = 0, len2 = person2.images.length; j < len2; j++) {
+//log.silly('j:', j);
       var image2 = person2.images[j];
       if (!image2.signature) { log.error('image 2 has no signature'); }
       var distance = image.distance(image1.signature, image2.signature);
@@ -738,16 +730,10 @@ local.getClosestImages = function(person1, person2) {
       if (distanceMin === 0) { // can't go lower...
         break all;
       }
-/*
-      var distance = bitsOn / lenS;
-      if (distance <= config.images.thresholdDistance) { // these two images are similar
-log.silly('getClosestImages - MIN distance is', distanceMin);
-//log.silly(image1.basename, image2.basename);
-        return true;
-      }
-*/
     }
+//log.silly('---');
   }
+//log.silly('===');
 
 if (!img1) { log.error('img1 is undefined, person1:', person1.key, person1.images.length); }
 if (!img2) { log.error('img2 is undefined, person2:', person2.key, person2.images.length); }
@@ -758,10 +744,6 @@ if (!img2) { log.error('img2 is undefined, person2:', person2.key, person2.image
     image1: img1,
     image2: img2
   };
-/*
-  //log.debug('areSimilar - FALSE 2');
-  return false; // these two images are not similar
-*/
 };
 
 local.aliasCreate = function() {

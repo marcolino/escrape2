@@ -36,21 +36,15 @@ exports.syncPersonImages = function(person, callback) {
   async.each(
     person.imageUrls, // 1st param is the array of items
     function(url, callbackInner) { // 2nd param is the function that each item is passed to
-//log.silly('syncPersonImages - url:', url);
-
+      //log.silly('syncPersonImages - url:', url);
       var image = {};
       image.url = url;
       if (!image.url) {
         log.warn('can\'t sync image for person', person.key, ', ', 'image with no url, ', 'skipping');
         return callbackInner(); // skip this inner loop
       }
-      /* TODO: handle real showcase...
-      // set first image flag based on indexOf this url in person imageUrls
-      image.isFirst = (person.imageUrls.indexOf(url) === 0);
-      */
 
       // find this url in images collection
-      //Image.findOne({ idPerson: person._id, url: image.url }, function(err, img) {
       Image.findOne({ personKey: person.key, url: image.url }, function(err, img) {
         if (err) {
           log.warn('can\'t find image ', image.url);
@@ -64,30 +58,15 @@ exports.syncPersonImages = function(person, callback) {
           img.url = image.url;
           img.personKey = person.key;
         }
-//log.silly('img is new?', img.isNew);
-//log.silly('img.url', img.url);
-        /*
-        img._isFirst = image.isFirst; // TODO: debug this: is image coupled with img???
-        */
-//log.silly(person.key, ' ########### img.isNew before download:', img.isNew);
         var res = {
           img: img,
           url: img.url,
+          etag: img.etag,
           type: 'image'
         };
         var destination = config.images.path;
-/*
-        resource = {
-          // TODO: use img object in resource !
-          // isNew => img.isNew
-          // etag => img.etag
-          // lastModified => img.lastModified
-          img: img,
-          personKey: person.key,
-          url: image.url,
-          type: 'image',
-        };
-*/
+
+        // download image
         local.download(res, destination, function(err, res) {
           if (err)  {
             log.warn('can\'t download image', res.img.url + ',', err.toString());
@@ -96,21 +75,13 @@ exports.syncPersonImages = function(person, callback) {
           if (!res) {
             return callbackInner(); // res is null, image not modified, do not save it to disk
           }
-//log.debug('syncPersonImages 1 - res.img.basename:', res.img.basename);
 
-//log.silly(res.personKey, 'res.isNew after download:', img.isNew);
-if (res.img.isNew) {
-  log.silly('image', res.url, 'for', img.personKey, 'downloaded because of being NEW');
-} else {
-  log.silly('image', res.url, 'for', img.personKey, 'downloaded because of being CHANGED etag');
-}
-          /*
-          img.personKey = res.personKey;
-          img.etag = res.etag; // ETag, to handle caching
-          img.lastModified = res.lastModified; // lastModified, to handle alternative caching
-          img.basename = res.basename; // image base name
-          // NOT USED ANYMORE //var imagePath = destination + '/' + img.basename;
-          */
+          // TODO: we do not need this this following test, can remove on production
+          if (res.img.isNew) {
+            log.silly('image', res.url, 'for', img.personKey, 'was downloaded because NEW');
+          } else {
+            log.silly('image', res.url, 'for', img.personKey, 'was downloaded because MOD');
+          }
 
           // calculate image signature from contents
           local.signatureFromResourceContents(res, function(err, res) {
@@ -118,7 +89,6 @@ if (res.img.isNew) {
               log.warn('can\'t calculate signature of image', res.img.basename + ':', err, ', skipping');
               return callbackInner(); // !!!
             }
-//log.debug('syncPersonImages 2 - res.img.basename:', res.img.basename);
             // got signature
             res.img.signature = res.signature;
 
@@ -129,7 +99,6 @@ if (res.img.isNew) {
                 log.warn('can\'t check signature of image', res.img.basename + ':', err);
                 //res.img.signature = ''; // don't return, do save image with fake signature
               } else {
-//log.debug('syncPersonImages 3 - res.img.basename:', res.img.basename);
                 //log.debug('found similar signature for image:', signature, '?', found);
                 if (found) {
                   // TODO: log local url src of similar images
@@ -145,17 +114,6 @@ if (res.img.isNew) {
                 //res.img.signature = res.signature; // signature is not duplicated in person
               }
               // do save image
-  /*
-  _id: OK
-  url: OK
-  personKey: 
-  etag: 
-  //lastModified: 
-  basename: 
-  dateOfFirstSync: OK
-  signature:
-  */
-//log.debug('syncPersonImages 4 - res.img.basename:', res.img.basename);
               res.img.save(function(err) {
                 if (err) {
                   log.warn('can\'t save image', res.img, ':', err);
@@ -174,7 +132,6 @@ if (res.img.isNew) {
         log.warn('some error in the final images async callback:', err);
         return callback(err, person);
       }
-      //log.silly('Image.syncPersonImages() FINISHED for person', person.key);
       // all tasks are successfully done
       callback(null, person);
     }
@@ -183,23 +140,23 @@ if (res.img.isNew) {
 
 // download an image from url to destination on filesystem
 local.download = function(req, destination, callback) {
-//log.error('req:', req);
   network.requestRetryAnonymous(
     req,
     function(err) {
-//log.error(err);
       callback(err, req);
     },
     function(contents, res) {
-      if (contents.length === 0) {
-        // contents length is zero, possibly not modified, do not save to disk
-        return callback(null, req);
+      if (res.statusCode === 304) { // not changed
+        // status code is 304, not modified, do not save to disk
+        //log.silly('DOWNLOAD - status code is', res.statusCode, ', contents length is', contents.length);
+        return callback(null, null);
       }
-      // TODO: we should not need this this following test, If-None-Match should be honoured and 
+      // TODO: we should not need this this following test, can remove on production
       if (req.img.etag === res.etag) {
         // contents downloaded but etag does not change, If-None-Match not honoured?
         log.warn('image', req.url, 'downloaded (200) but etag does not change, If-None-Match not honoured, skipping');
-        //log.warn('res status code:', res.statusCode);
+        log.warn('res status code:', res.statusCode);
+        log.silly('eTags - req:', req.img.etag, ', res:', res.etag);
         return callback(null, null);
       }
       var destinationDir = destination + '/' + req.img.personKey;
@@ -209,17 +166,18 @@ local.download = function(req, destination, callback) {
           return callback(err, req);
         }
         res.img = req.img;
-        // as filename extension use res extension
-        var ext = path.extname(res.url); // TODO: normalize extension (.Jpg, .jpeg, .JPG => .jpg)
-        // as filename use a hash of res url + current timestamp
+        // use a hash of response url + current timestamp as filename
         var hash = crypto.createHash('md5').update(res.url + Date.now()).digest('hex');
+        // use response url extension as filename extension
+        var ext = path.extname(res.url);
+        ext = local.normalizeExtension(ext);
         var basename = hash + ext;
         destinationDir += '/' + basename;
         res.contents = contents;
         res.img.basename = req.img.personKey + '/' + basename;
-//log.debug('download - res.img.basename:', res.img.basename);
         res.img.etag = res.etag;
 
+        // save image contents to filesystem
         //log.info('download() saving to: ', destinationDir);
         fs.writeFile(
           destinationDir,
@@ -302,6 +260,15 @@ local.signatureFromResourceContents = function(res, callback) {
       }
     });
   });
+};
+
+// normalize extension (i.e.: .Jpg, .jpeg, .JPG => .jpg, .GIF => .gif, .PNG => .png)
+local.normalizeExtension = function(ext) {
+  var retval = ext;
+  retval = retval.replace(/^\.jpe?g$/i, '.jpg');
+  retval = retval.replace(/^\.gif$/i, '.gif');
+  retval = retval.replace(/^\.png$/i, '.png');
+  return retval;
 };
 
 module.exports = exports;
