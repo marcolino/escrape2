@@ -89,7 +89,7 @@ exports.sync = function() { // sync persons
     totalProvidersCount = providers.length;
 
     // loop to get list page from all providers
-    async.eachSeries(
+    async.each(
       providers, // 1st param in async.each() is the array of items
       function(provider, callbackOuter) { // 2nd param is the function that each item is passed to
         resource = {

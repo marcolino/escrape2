@@ -33,7 +33,7 @@ exports.syncPersonImages = function(person, callback) {
     return callback('zero image urls for person ' + person.key);
   }
 
-  async.eachSeries(
+  async.eachSeries( // TODO: use a parallel async method... !!!
     person.imageUrls, // 1st param is the array of items
     function(url, callbackInner) { // 2nd param is the function that each item is passed to
       //log.silly('syncPersonImages - url:', url);
@@ -80,15 +80,15 @@ exports.syncPersonImages = function(person, callback) {
             return callbackInner();
           }
           if (!img.isChanged) {
-            log.info('image', img.url, 'for', img.personKey, 'was NOT downloaded because NOT MOD');
+            //log.info('image', img.url, 'for', img.personKey, 'was NOT downloaded because NOT MOD');
             return callbackInner(); // res is null, image not modified, do not save it to disk
           }
 
           // TODO: we do not need this this following test, can remove on production
           if (img.isNew) {
-            log.info('image', img.url, 'for', img.personKey, 'was downloaded because NEW');
+            log.info('image', img.url, 'for', img.personKey, 'was downloaded (NEW)');
           } else {
-            log.warn('image', img.url, 'for', img.personKey, 'was downloaded because !NEW (???)');
+            log.warn('image', img.url, 'for', img.personKey, 'was downloaded (!NEW... ???)');
           }
 
           // calculate image signature from contents
@@ -168,7 +168,8 @@ local.download = function(img, callback) {
         log.warn(
           'image', img.url, '(person:', img.personKey, ') downloaded, but etag does not change, If-None-Match not honoured;',
           'res status code:', res.statusCode, ';',
-          'eTags - img:', img.etag, ', res:', res.etag
+          'eTags - img:', img.etag, ', res:', res.etag, ';',
+          'contents length:', (contents ? contents.length : 'zero')
         );
         return callback(null, img);
       }

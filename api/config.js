@@ -30,7 +30,7 @@ var config = {
     name: 'escrape'
   },
   networking: {
-    timeout: 5 * 60 * 1000, // wait for 5' before throwing a timeout
+    timeout: 1 * 60 * 1000, // wait for 1' before throwing a timeout
     maxAttempts: 3, // retry for 3 attempts more after the first one
     retryDelay: 3 * 1000 // wait for 3" before trying again
   },
