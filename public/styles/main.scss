@@ -73,7 +73,7 @@ a:hover, a:visited, a:link, a:active {
 }
 
 .showcase-separator {
-  margin-top: 1.0em;
+  margin-top: 0.1em;
 }
 
 .truncate-ellipsis {
@@ -90,7 +90,12 @@ a:hover, a:visited, a:link, a:active {
 }
 
 .no-padding {
-  padding: 0;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.little-padding {
+  padding: 0.4em !important;
 }
 
 .absent {

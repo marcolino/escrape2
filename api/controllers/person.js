@@ -239,7 +239,7 @@ exports.sync = function() { // sync persons
 
             // sync persons aliases
             log.info('persons aliases sync started');
-            local.syncAliasesLive(persons, function(err) {
+            exports.syncAliasesLive(persons, function(err) {
               if (err) {
                 return log.warn('can\'t sync person aliases:', err);
               }
@@ -611,19 +611,19 @@ exports.listAliasGroups = function(callback) {
       var group = [];
       for (var k = 0; k < people.length; k++) { // loop through all people
         var alias = people[k].alias;
-        var key = people[k].key;
+        //var key = people[k].key;
         if (aliasLast && aliasLast !== alias) { // alias changes, push this group to groups, and make new group
-          findClosestImagesInAliasGroup(group);
+          group = findClosestImagesInAliasGroup(group);
           groups.push(group);
           group = [];
-        } else { // same alias, push this people to this group
-          group.push(people[k]);
-          groupLenMax = Math.max(groupLenMax, group.length);
-        }
+        }// else { // same alias, push this people to this group
+        group.push(people[k]);
+        groupLenMax = Math.max(groupLenMax, group.length);
+        //}
         aliasLast = alias;
       }
       if (group.length > 0) { // push last group
-        findClosestImagesInAliasGroup(group);
+        group = findClosestImagesInAliasGroup(group);
         groups.push(group);
         groupLenMax = Math.max(groupLenMax, group.length);
       }      

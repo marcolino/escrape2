@@ -10,12 +10,6 @@
           {{ person.key }} <b>{{ person.name }}</b> ({{ person.imagesClosest.distance }})
         </div>
 
-<!--
-        <span ng-repeat="image in person.images">
-          <img data-ng-src="/images/{{ image.basename }}" style="max-height:100px" />
-        </span>
--->
-
         <div id="scroll">
           <span ng-repeat="image in person.images">
             <img data-ng-src="/images/{{ image.basename }}" />

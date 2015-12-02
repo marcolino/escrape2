@@ -7,7 +7,7 @@ angular.module('PersonCtrl', []).controller('PersonController', function($rootSc
   $scope.$watch(function() { return Filter.get(); }, function(newValue, oldValue) {
     //console.log('persons WATCH:', newValue);
     if (newValue !== oldValue) { // filter did change, re-load persons
-      $scope.load();
+      $scope.loadPersons();
     }
   }, true); // last parameter is for object deep watch
 
