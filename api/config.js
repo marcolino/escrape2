@@ -11,7 +11,7 @@ var config = {
   providers: providers, // imported providers
   images: {
     path: __dirname + '/..' + '/data/images',
-    thresholdDistance: 0.04, // 0.125 / 0.05
+    thresholdDistance: 0.125, // 0.125 / 0.04
     thresholdDistanceSamePerson: 0.02
   },
   logger: {

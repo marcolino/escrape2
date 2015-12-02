@@ -239,7 +239,9 @@ exports.sync = function() { // sync persons
 
             // sync persons aliases
             log.info('persons aliases sync started');
-            exports.syncAliasesLive(persons, function(err) {
+            // TODO: test syncAliasesBatch() to avoid alias groups with just one people...
+            //exports.syncAliasesLive(persons, function(err) {
+            exports.syncAliasesBatch(function(err) {
               if (err) {
                 return log.warn('can\'t sync person aliases:', err);
               }
