@@ -127,7 +127,7 @@ exports.sync = function() { // sync persons
             async.each(
               list, // 1st param is the array of items
               function(element, callbackInner) { // 2nd param is the function that each item is passed to
-                var person = {}; // create person object
+                var person = {}; // create person object (TODO new Person() ?)
                 person.url = local.buildDetailsUrl(provider, element.url, config);
                 if (!person.url) {
                   log.warn(
@@ -548,6 +548,9 @@ local.syncAliases = function(persons, callback) {
           if (Q.alias) { // Q had already an alias
             if (P.alias && (Q.alias !== P.alias)) {
               // our person (P) was just assigned an alias, and we find anoter person (Q)
+              // TODO: do not skip, wait creating a new alias at the end of this loop,
+              //       and use the alias found, if any is found;
+              //       bark only if different aliases are found...
               log.warn('found one more person (with a different alias) similar to person', P.key + ':', Q.key, 'P alias is', P.alias, 'and', 'Q alias is', Q.alias, ', ignored');
               continue;
             }
