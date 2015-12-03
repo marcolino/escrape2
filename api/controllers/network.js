@@ -1,4 +1,5 @@
-var requestretry = require('requestretry') // to place http requests and retry if needed
+var requestretry = require('requestretry'); // to place http requests and retry if needed
+var request = require('request') // to place http requests
   , randomUseragent = require('random-ua') // to use a random user-agent
   , agent = require('socks5-http-client/lib/Agent') // to be able to proxy requests
   , fs = require('fs') // to be able to use filesystem
@@ -11,16 +12,13 @@ var log = config.log;
  * requests url contents, retrying and anonymously
  */
 exports.requestRetryAnonymous = function(resource, error, success) {
-  // TODO: handle type (text / image / ...) ...
-  var encoding =
+  var encoding = // set encoding to null (auto) for text resources, to binary for images
     (resource.type === 'text') ? null :
     (resource.type === 'image') ? 'binary' :
     null
   ;
-  //log.debug('network - requesting url ', resource.url);
-  //log.debug('!!!!! setting header If-Modified-Since to', resource.lastModified);
   var options = {
-    url: resource.url,
+    url: resource.url, // url to download
     maxAttempts: config.networking.maxAttempts, // number of attempts to retry after the first one
     retryDelay: config.networking.retryDelay, // number of milliseconds to wait for before trying again
     retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
@@ -30,57 +28,50 @@ exports.requestRetryAnonymous = function(resource, error, success) {
     encoding: encoding,
     timeout: config.networking.timeout // number of milliseconds to wait for a server to send response headers before aborting the request
   };
-  //log.debug('network - requesting resource:', resource);
-  // TODO: before setting cache fields in request header, check we have image on fs, it could have been deleted...
   if (resource.etag) { // set header's If-None-Match tag if we have an etag
-//log.info('>network downloading resource with etag set');
+log.info('>network downloading resource with etag set');
     options.headers['If-None-Match'] = resource.etag;
-/*
-  } else {
-    if (resource.lastModified) { // set header's If-Modified-Since tag if we have a lastModified
-      options.headers['If-Modified-Since'] = resource.lastModified;
-    }
-*/
   }
-  //if (config.mode !== 'fake') { // not fake
-    if (config.tor.available) { // TOR is available
-      options.agentClass = agent;
-      options.agentOptions = { // TOR socks host/port
-        socksHost: config.tor.host,
-        socksPort: config.tor.port
-      };
-    }
-  //}
+else log.info('>network downloading resource with etag NOT set');
+  if (config.tor.available) { // TOR is available
+    options.agentClass = agent;
+    options.agentOptions = { // TOR socks host/port
+      socksHost: config.tor.host,
+      socksPort: config.tor.port
+    };
+  }
 
   requestretry(
     options,
     function(err, response, contents) {
       if (err) {
-        //log.error('error in request to ', options.url, ': ', err);
         return error(err);
       }
-/*
-if (response.headers.etag) {
-  console.warn('response.statusCode:', response.statusCode, ', contents.length:', contents.length, ', etag:', resource.etag, '=>', response.headers.etag);
-}
-*/
+
+if (response.headers.etag) log.info('<network downloaded resource with etag set');
+else log.info('<network downloaded resource with etag NOT set');
+
       resource.statusCode = response.statusCode;
       
       if (response.statusCode < 300) { // 2xx, success, download effected
-        resource.etag = response.headers.etag;
-/*
-        resource.lastModified = response.headers['last-modified'];
-*/
+log.info('<network downloaded resource with etag NOT set');
+        if (response.headers.etag)
+          log.info('<network downloaded resource with statusCode < 300(' + response.statusCode < 300 + '), reporting it to response');
+          resource.etag = response.headers.etag;
       }
       success(contents, resource);
     }
+/*
     // requestretry wants these as 3rd and 4th params of request() call...
     // TODO: with new requestretry versions we can remove these parameters...
     // TEST THIS !!!!!!!!!!!!!!!!!!!!
     ,
     options.maxAttempts,
     options.retryDelay
+*/
   );
+
+
 
   /**
    * request-retry strategies
@@ -147,6 +138,55 @@ if (response.headers.etag) {
     return forbidden;
   }
 
+};
+
+/**
+ * requests url contents, smartfully
+ */
+exports.requestSmart = function(resource, error, success) {
+  var encoding = // set encoding to null (auto) for text resources, to binary for images
+    (resource.type === 'text') ? null :
+    (resource.type === 'image') ? 'binary' :
+    null
+  ;
+  var options = {
+    uri: resource.url, // uri to download
+    headers: {
+      'User-Agent': randomUseragent.generate()
+    },
+    encoding: encoding,
+    timeout: config.networking.timeout // number of milliseconds to wait for a server to send response headers before aborting the request
+  };
+  if (resource.etag) { // set header's If-None-Match tag if we have an etag
+//log.info('>network downloading resource with etag set');
+    options.headers['If-None-Match'] = resource.etag;
+  }
+//else log.info('>network downloading resource with etag NOT set');
+  if (config.tor.available) { // TOR is available
+    options.agentClass = agent;
+    options.agentOptions = { // TOR socks host/port
+      socksHost: config.tor.host,
+      socksPort: config.tor.port
+    };
+  }
+
+  request(
+    options,
+    function(err, response, contents) {
+      if (err) {
+        return error(err);
+      }
+//if (response.headers.etag) log.info('<network downloaded resource with etag set');
+//else log.info('<network downloaded resource with etag NOT set');
+      resource.statusCode = response.statusCode;    
+      if (response.statusCode < 300) { // 2xx, success, download effected
+        if (response.headers.etag) {
+          resource.etagNew = response.headers.etag;
+        }
+      }
+      success(contents, resource);
+    }
+  );
 };
 
 module.exports = exports;

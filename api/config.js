@@ -11,7 +11,7 @@ var config = {
   providers: providers, // imported providers
   images: {
     path: __dirname + '/..' + '/data/images',
-    thresholdDistance: 0.04, // 0.125 / 0.04
+    thresholdDistance: (os.hostname() === 'malibox') ? 0.07 : 0.125, // TODO: debug only, fix on 0.04 or 0.07 on production
     thresholdDistanceSamePerson: 0.02
   },
   logger: {
@@ -30,7 +30,7 @@ var config = {
     name: 'escrape'
   },
   networking: {
-    timeout: 1 * 60 * 1000, // wait for 1' before throwing a timeout
+    timeout: 5 * 60 * 1000, // wait for 1' before throwing a timeout
     maxAttempts: 3, // retry for 3 attempts more after the first one
     retryDelay: 3 * 1000 // wait for 3" before trying again
   },

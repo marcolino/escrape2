@@ -110,14 +110,13 @@ router.route('/:idPerson/getImages').
   })
 ;
 
-router.route('/buildAliases').
+router.route('/syncAliasesBatch').
   get(function(req, res) { // build aliases
-    person.buildAliases(null, function(err, result) {
+    person.syncAliasesBatch(function(err, result) {
       if (err) {
-        log.error('error building aliases:', err);
+        log.error('error batch sync\'ing aliases:', err);
         return res.json({ error: err });
       }
-      log.info('result:', result);
       res.json(result);
     });
   })

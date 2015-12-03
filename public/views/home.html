@@ -1,35 +1,74 @@
-<div ng-init="loadPersons()">
+<div ng-init="loadPersons()" style="padding:0.6em;">
   <div class="row">
     <div data-ng-repeat="person in persons | limitTo: 500" class="col-xs-12 col-sm-6 col-md-4 col-lg-3 little-padding">
 
       <div class="showcase-table">
         <div class="showcase-cell" data-ng-class="{'absent': !person.isPresent}">
   
+          <span class="showcase-caption-top">
+            <div class="col-xs-12 no-padding">
+              <span class="showcase-caption-name-top truncate-ellipsis" data-ng-attr-title="{{ person.name ? person.name : '[empty name]' }}">
+                <span>{{ person.name ? person.name : '[empty name]' }}</span>
+              </span>
+            </div>
+          </span>
+
           <a ng-href="{{ person.url }}" target="_blank">
             <img data-ng-src="{{ getShowcaseUrl(person) }}" class="showcase-image" alt="person showcase image" />
           </a>
   
-          <span class="showcase-caption">
+          <div class="showcase-caption">
+            <!--
             <div class="col-xs-8 no-padding">
               <span class="showcase-caption-name truncate-ellipsis" data-ng-attr-title="{{ person.name ? person.name : '[empty name]' }}">
                 <span>{{ person.name ? person.name : '[empty name]' }}</span>
               </span>
             </div>
-            <div class="col-xs-2 no-padding">
-              <span class="showcase-caption-tel truncate-ellipsis">
+            -->
+            <div class="col-xs-2" style="padding: 2px !important; margin: 0 !important;">
+              <span class="showcase-caption-thumbs" title="thumbs up">
                 <a data-ng-href="">
-                  <img src="images/balloon.png" />
+                  <button class="btn btn-default btn-xs" type="button" style="width: 2.5em;"><span class="glyphicon glyphicon-thumbs-up"></span></button>
                 </a>
               </span>
             </div>
-            <div class="col-xs-2 no-padding">
-              <span class="showcase-caption-tel truncate-ellipsis">
+            <div class="col-xs-2" style="padding: 2px !important; margin: 0 !important;">
+              <span class="showcase-caption-thumbs" title="thumbs down">
+                <a data-ng-href="">
+                  <button class="btn btn-default btn-xs" type="button" style="width: 2.5em;"><span class="glyphicon glyphicon-thumbs-down"></span></button>
+                </a>
+              </span>
+            </div>
+            <div class="col-xs-2" style="padding: 2px !important; margin: 0 !important;">
+              <span class="showcase-caption-tel truncate-ellipsis" title="hide this person">
+                <a data-ng-href="">
+                  <button class="btn btn-default btn-xs" type="button" style="width: 2.5em;"><span class="glyphicon glyphicon-trash"></span></button>
+                </a>
+              </span>
+            </div>
+            <div class="col-xs-2" style="padding: 2px !important; margin: 0 !important;">
+              <span class="showcase-caption-comments truncate-ellipsis" title="comments (click to show)">
+                <a data-ng-href="">
+                  <button class="btn btn-default btn-xs" type="button" style="width: 2.5em;"><b>75</b></button>
+                  <!--<img src="images/balloon.png" />-->
+                </a>
+              </span>
+            </div>
+            <div class="col-xs-2" style="padding: 2px !important; margin: 0 !important;">
+              <span class="showcase-caption-nationality truncate-ellipsis" title="nationality">
+                <a data-ng-href="">
+                  <button class="btn btn-default btn-xs" type="button" style="width: 2.5em;"><span class="f16"><span class="flag it" style="margin-top:1px;"></span></span></button>
+                </a>
+              </span>
+            </div>
+            <div class="col-xs-2" style="padding: 2px !important; margin: 0 !important;">
+              <span class="showcase-caption-tel truncate-ellipsis" title="phone number (click to call)">
                 <a data-ng-href="tel:{{ person.phone }}">
-                  <img src="images/phone-call.png" />
+                  <button class="btn btn-success btn-xs" type="button" style="width: 2.5em;"><span class="glyphicon glyphicon-earphone"></span></button>
                 </a>
               </span>
             </div>
-          </span>
+          </div>
   
         </div>
       </div>

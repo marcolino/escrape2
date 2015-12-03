@@ -86,7 +86,7 @@ exports.syncPersonImages = function(person, callback) {
 
           // TODO: we do not need this this following test, can remove on production
           if (img.isNew) {
-            log.info('image', img.url, 'for', img.personKey, 'was downloaded (NEW)');
+            log.debug('image', img.url, 'for', img.personKey, 'was downloaded (NEW)');
           } else {
             log.warn('image', img.url, 'for', img.personKey, 'was downloaded (!NEW... ???)');
           }
@@ -102,16 +102,15 @@ exports.syncPersonImages = function(person, callback) {
             res.img.signature = res.signature;
             */
 
-            //log.debug('found signature for image:', res.img.signature);
+            //log.info('found signature for image:', img.signature);
             // check image signature is not duplicated in person
-            exports.findSimilarSignature(img, { personKey: res.img.personKey }, config.images.thresholdDistanceSamePerson, function(err, found, distance, personKey, img) {
+            exports.findSimilarSignature(img, { personKey: img.personKey }, config.images.thresholdDistanceSamePerson, function(err, found, distance, personKey, img) {
               if (err) {
                 log.warn('can\'t check signature of image', img.basename + ':', err);
                 //img.signature = ''; // don't return, do save image with fake signature
               } else {
                 //log.debug('found similar signature for image:', signature, '?', found);
                 if (found) {
-                  // TODO: log local url src of similar images
                   log.info('image', img.basename, 'downloaded, but seems already present in person', img.personKey + ': not added');
                   fs.unlink(config.images.path + '/' + img.basename, function(err) {
                     if (err) {
@@ -150,7 +149,8 @@ exports.syncPersonImages = function(person, callback) {
 
 // download an image from url to destination on filesystem
 local.download = function(img, callback) {
-  network.requestRetryAnonymous(
+  //network.requestRetryAnonymous(
+  network.requestSmart(
     img,
     function(err) {
       callback(err, img);
@@ -163,7 +163,7 @@ local.download = function(img, callback) {
         return callback(null, img);
       }
       // TODO: we should not need this this following test, can remove on production
-      if (img.etag === res.etag) {
+      if (img.etag === res.etagNew) {
         // contents downloaded but etag does not change, If-None-Match not honoured?
         log.warn(
           'image', img.url, '(person:', img.personKey, ') downloaded, but etag does not change, If-None-Match not honoured;',
@@ -173,7 +173,7 @@ local.download = function(img, callback) {
         );
         return callback(null, img);
       }
-      img.etag = res.etag;
+      img.etag = res.etagNew;
       img.isChanged = true;
       var destinationDir = img.destination + '/' + img.personKey;
       mkdirp(destinationDir, function(err, made) {

@@ -99,7 +99,8 @@ exports.sync = function() { // sync persons
           //lastModified: null
         };
         log.info('provider', provider.key, 'list resource getting from', resource.url);
-        network.requestRetryAnonymous(
+        //network.requestRetryAnonymous(
+        network.requestSmart(
           resource,
           function(err) { // error
             log.warn(
@@ -148,7 +149,8 @@ exports.sync = function() { // sync persons
                   url: person.url,
                   type: 'text'
                 };
-                network.requestRetryAnonymous(
+                //network.requestRetryAnonymous(
+                network.requestSmart(
                   resource,
                   function(err) {
                     log.warn(
@@ -488,7 +490,7 @@ local.resetAliases = function(persons) {
   }
 };
 
-local.syncAliases = function(persons, callback) {
+local.syncAliasesGOOD = function(persons, callback) {
   /**
    * person   images                                  alias   reason
    *     P1   i1.P1   i2.P1   i3.P1                   aa      Δ(P1, P3) < threshold
@@ -500,7 +502,7 @@ local.syncAliases = function(persons, callback) {
   //log.silly('persons.length:', persons.length);
   //log.silly('persons:', persons); return callback();
 
-  /* RESET aliases - DEBUG ONLY */
+  /* RESET aliases - DEBUG ONLY (?) */
   local.resetAliases(persons);
   log.silly('Aliases RESET');
 //return callback(); // JUST CLEAN ALIASES
@@ -580,6 +582,55 @@ local.syncAliases = function(persons, callback) {
         //log.silly('updated alias for P person', P.key);
       }
 //else log.silly('--------- not saved alias for person', P.key, '(unchanged)');
+    }
+    callback(); // success    
+  });
+};
+
+local.syncAliases = function(persons, callback) {
+  //local.resetAliases(persons);
+
+  Image.find({}, 'personKey signature basename', function(err, images) {
+    if (err) {
+      return callback(err);
+    }
+
+    // add to each person its images
+    for (var i = 0, personsLen = persons.length; i < personsLen; i++) {
+      persons[i].images = [];
+      for (var j = 0, len = images.length; j < len; j++) {
+        if (images[j].personKey === persons[i].key) {
+          persons[i].images.push(images[j]);
+          continue;
+        }
+      }
+    }
+
+    // check if person (P) belongs to an alias group, or if it constitutes a new alias group
+    for (var p = 0; p < personsLen; p++) {
+      var P = persons[p]; // P is the person we arge going to check for aliases
+
+      // inner loop, to check every person (P) to every other person (Q)
+      for (var q = 0; q < personsLen; q++) {
+        var Q = persons[q]; // Q is the current person from all persons
+        if (P.key === Q.key) { // skip the same person
+          continue;
+        }
+        if (local.areSimilar(P, Q)) { // P and Q are similar
+          if (!P.alias) { // no alias yet, create a new one
+            P.alias = local.aliasCreate();
+            local.savePerson(P); // save group alias to P
+          }
+          if (Q.alias !== P.alias) { // Q (similar to P) has an alias different from alias group, should not happen
+            if (Q.alias) { // Q had already an alias
+              log.warn('syncAliases - Q (similar to P) had an alias different from alias group!');
+            }
+            Q.alias = P.alias;
+            local.savePerson(Q); // save group alias to Q
+          }
+          log.silly('syncAliases - person:', 1 + p, '/', personsLen, 'key:', Q.key, 'is similar to person:', P.key);
+        }
+      }
     }
     callback(); // success    
   });

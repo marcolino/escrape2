@@ -3,6 +3,7 @@
 $textColor: yellow;
 $textFontFamily: 'Open Sans';
 $bodyPadding: 1.0em;
+$showcaseCaptionColor: #ffefa3;
 
 html * {
   font-family: $textFontFamily;
@@ -16,6 +17,11 @@ body {
 a:hover, a:visited, a:link, a:active {
   text-decoration: none !important;
   color: #eee;
+}
+
+.no-gutter > [class*='col-'] {
+  padding-right: 3px;
+  padding-left: 3px;
 }
 
 .showcase-table {
@@ -43,32 +49,42 @@ a:hover, a:visited, a:link, a:active {
   border-radius: 0.8em;
 }
 
+.showcase-caption-top {
+  position: absolute;
+  left: 0;
+  top: 0.1em;
+}
+
 .showcase-caption {
   position: absolute;
   left: 0;
   bottom: 0.1em;
-  _margin-right: 1.0em;
 }
 
-.showcase-caption-name {
-  text-align: left;
+.showcase-caption-name-top {
+  padding-top: 0.3em;
   padding-left: 0.5em;
+  padding-right: 0.5em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: $textColor;
-  font-size: 1.4em;
-  text-shadow: 1px -1px 2px #000;
-  position: absolute;
-  left: 0;
-  bottom: 0.1em;
+  color: $showcaseCaptionColor;
+  font-size: 1.3em;
+  text-shadow: 2px 2px 1px #000;
 }
 
 .showcase-caption-tel img {
   height: 25px;
-  position: absolute;
-  left: 0;
-  padding-left: 0.5em;
+  bottom: 0.2em;
+}
+
+.showcase-caption-comments img {
+  height: 25px;
+  bottom: 0.2em;
+}
+
+.showcase-caption-nationality img {
+  height: 25px;
   bottom: 0.2em;
 }
 
