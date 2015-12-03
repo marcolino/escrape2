@@ -16,6 +16,7 @@ var local = {};
 var log = config.log;
 
 exports.getAll = function(filter, options, result) { // get all persons
+
   Person.find(filter, null, options, function(err, persons) {
     Image.find({}, 'personKey basename', function(err, images) {
       if (err) {
@@ -300,9 +301,8 @@ exports.upsert = function(person, callback) {
             isModified = true;
           }
         }
-        doc[prop] = person[prop];
+        doc[prop] = person[prop]; // TODO: if some sort of historical recording needed, do it here...
       }
-      //_.merge(doc, person); // merge sync'd person data to database person object
 
       doc.save(function(err) {
       //log.warn('doc.dateOfFirstSync when saving:', doc.dateOfFirstSync);
@@ -588,6 +588,8 @@ local.syncAliasesGOOD = function(persons, callback) {
 };
 
 local.syncAliases = function(persons, callback) {
+  log.silly('syncAliases started');
+
   //local.resetAliases(persons);
 
   Image.find({}, 'personKey signature basename', function(err, images) {
@@ -623,7 +625,7 @@ local.syncAliases = function(persons, callback) {
           }
           if (Q.alias !== P.alias) { // Q (similar to P) has an alias different from alias group, should not happen
             if (Q.alias) { // Q had already an alias
-              log.warn('syncAliases - Q (similar to P) had an alias different from alias group!');
+              log.warn('syncAliases - Q', Q.key, '(similar to P', P.key, ') had an alias (', Q.alias, ') different from alias group!');
             }
             Q.alias = P.alias;
             local.savePerson(Q); // save group alias to Q
@@ -632,6 +634,7 @@ local.syncAliases = function(persons, callback) {
         }
       }
     }
+    log.silly('syncAliases finished');
     callback(); // success    
   });
 };

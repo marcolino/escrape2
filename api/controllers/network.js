@@ -179,11 +179,11 @@ exports.requestSmart = function(resource, error, success) {
 //if (response.headers.etag) log.info('<network downloaded resource with etag set');
 //else log.info('<network downloaded resource with etag NOT set');
       resource.statusCode = response.statusCode;    
-      if (response.statusCode < 300) { // 2xx, success, download effected
+      //if (response.statusCode < 300) { // 2xx, success, download effected
         if (response.headers.etag) {
           resource.etagNew = response.headers.etag;
         }
-      }
+      //}
       success(contents, resource);
     }
   );
