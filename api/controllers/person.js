@@ -233,7 +233,8 @@ exports.sync = function() { // sync persons
 
           // sync persons images
           log.info('persons images sync started');
-          local.syncImages(persons, function(err, persons) {
+          image.syncImages(persons, function(err, persons) {
+          //local.syncImages(persons, function(err, persons) {
             if (err) {
               return log.warn('can\'t sync persons images:', err);
             }
@@ -413,7 +414,7 @@ local.presenceSet = function(syncdProvidersRegExp, syncStartDate, callback) {
   ;
 };
 
-local.syncImages = function(persons, callback) {
+local.OLDsyncImages = function(persons, callback) {
   //var personsSyncd = [];
 
   async.each(
