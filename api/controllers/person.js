@@ -233,7 +233,7 @@ exports.sync = function() { // sync persons
 
           // sync persons images
           log.info('persons images sync started');
-          image.syncImages(persons, function(err, persons) {
+          image.syncPersonImages(persons, function(err, persons) {
           //local.syncImages(persons, function(err, persons) {
             if (err) {
               return log.warn('can\'t sync persons images:', err);

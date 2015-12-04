@@ -19,7 +19,77 @@ exports.getByIdPerson = function(idPerson, callback) {
 };
 
 // syncronize all images for persons
-exports.syncImages = function(persons, callback) {
+exports.syncPersonsImages = function(persons, callback) {
+  if (!persons) {
+    return callback('no persons to sync images for');
+  }
+
+  // get all images present beforehand
+  Image.find({}, function(err, images) {
+    if (err) {
+      return callback('can\'t find images');
+    }
+    log.debug('all images array length:', images.length);
+    syncImages(persons, images, callback);
+  });
+
+  var syncImages = function(persons, images, callback) {
+    async.each(
+      persons,
+      function(person, callbackPerson) {
+        async.each(
+          person.imageUrls,
+          function(imageUrl, callbackImage) {
+            download(imageUrl, function(err, image) {
+              if (err) return err;
+              downloadPost(callbackImage);
+            });
+          },
+          function(err) {
+            if (err) return err;
+            callbackPerson();
+          }
+        );
+      },
+      function(err) {
+        if (err) return err;
+        callback(persons);
+      }
+    );
+  });
+
+  function downloadPost(image, callback) {
+    async.waterfall(
+      [
+        getSignatureFromImage,
+        findSimilarSignatureImage,
+        saveImage,
+      ],
+      function (err, image) {
+        callback(image);
+      }
+    );
+  }
+
+  function getSignatureFromImage(image, getSignatureFromImageCallback) {
+    // ...
+    getSignatureFromImageCallback(null);
+  }
+
+  function findSimilarSignatureImage(image, findSimilarSignatureImageCallback) {
+    // ...
+    findSimilarSignatureImageCallback(null);
+  }
+
+  function save(image, saveCallback) {
+    // ...
+    saveCallback(null);
+  }
+
+};
+
+// syncronize all images for persons
+exports.syncImagesSTANDBY = function(persons, callback) {
   if (!persons) {
     return callback('no persons to sync images for');
   }

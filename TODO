@@ -2,6 +2,7 @@
 - make bootswatch theme in index.html configurable (on the server only)
 - use `handlebars` for html templating (to have variables in index.html)
 - do sync images only for new/changed persons (?)
+- try using `callback(new Error('err str'))` instead of `callback('err str')`
 
 V remove all "err.context = " lines
 V use `test.server.local` (in `/etc/hosts`) @home too
