@@ -76,7 +76,7 @@ exports.sync = function() { // sync persons
   var syncStartDate = new Date(); // start of this sync date
   var persons = [];
   var resource;
-  
+
   /**
    * get all providers
    *
@@ -87,6 +87,7 @@ exports.sync = function() { // sync persons
     if (err) {
       return log.error('error getting providers:', err);
     }
+providers = providers.slice(0, 1); log.info('providers length:', providers.length); // to debug: limit providers
     totalProvidersCount = providers.length;
 
     // loop to get list page from all providers
@@ -100,8 +101,8 @@ exports.sync = function() { // sync persons
           //lastModified: null
         };
         log.info('provider', provider.key, 'list resource getting from', resource.url);
-        //network.requestRetryAnonymous(
-        network.requestSmart(
+        network.requestRetryAnonymous(
+        //network.requestSmart(
           resource,
           function(err) { // error
             log.warn(
@@ -125,7 +126,7 @@ exports.sync = function() { // sync persons
             $ = cheerio.load(contents);
             var list = local.getList(provider, $);
             totalPersonsCount += list.length;
-            //list = list.slice(0, 3); log.info('list:', list); // to debug: limit list
+list = list.slice(0, 1); log.info('list:', list); // to debug: limit list
             async.each(
               list, // 1st param is the array of items
               function(element, callbackInner) { // 2nd param is the function that each item is passed to
@@ -150,8 +151,8 @@ exports.sync = function() { // sync persons
                   url: person.url,
                   type: 'text'
                 };
-                //network.requestRetryAnonymous(
-                network.requestSmart(
+                network.requestRetryAnonymous(
+                //network.requestSmart(
                   resource,
                   function(err) {
                     log.warn(
@@ -233,7 +234,7 @@ exports.sync = function() { // sync persons
 
           // sync persons images
           log.info('persons images sync started');
-          image.syncPersonImages(persons, function(err, persons) {
+          image.syncPersonsImages(persons, function(err, persons) {
           //local.syncImages(persons, function(err, persons) {
             if (err) {
               return log.warn('can\'t sync persons images:', err);
@@ -298,7 +299,7 @@ exports.upsert = function(person, callback) {
         // record if any intrinsic property was modified
         if (!isNew) {
           if (prop in doc && prop !== 'dateOfLastSync' && doc[prop] !== person[prop]) {
-            log.debug('updating', person.key, ': prop', prop, doc[prop], '=>', person[prop]);
+            log.debug('updating', person.key, ': changed property', prop, ':', local.diffColor(doc[prop], person[prop]));
             isModified = true;
           }
         }
@@ -322,6 +323,47 @@ exports.upsert = function(person, callback) {
       });
     }
   );
+};
+
+// TODO: can suppress on production (and remember to remove dependencies from packages.json...)
+local.diffColor1 = function(string1, string2) {
+  var colors = require('colors');
+  var diff = require('diff').diffChars;
+  var differences = diff(doc[prop], person[prop]);
+  var differencesColored = '';
+  differences.forEach(function(part) {
+    // green for additions, red for deletions, grey for common parts
+    var color =
+      part.added ? 'green' :
+      part.removed ? 'red' :
+      'grey'
+    ;
+    differencesColored += part.value[color];
+  });
+  differencesColored += '\n';
+  return differencesColored;
+};
+
+// TODO: can suppress on production (and remember to remove dependencies from packages.json...)
+local.diffColor = function(string1, string2) {
+  var colors = require('colors');
+  var diffMatchPatch = require('diff-match-patch-node');
+
+  var differences = diffMatchPatch().diff_main(string1, string2);
+// 'test A B', 'test B B');
+// => [ [ 0, 'test ' ], [ -1, 'A' ], [ 1, 'B' ], [ 0, ' B' ] ]
+  var differencesColored = '';
+  differences.forEach(function(part) {
+    // green for additions, red for deletions, grey for common parts
+    var color =
+      (part[0] === 1) ? 'green' : // added
+      (part[0] === -1) ? 'red' : // removed
+      'grey' // unchanged
+    ;
+    differencesColored += part.value[color];
+  });
+  differencesColored += '\n';
+  return differencesColored;
 };
 
 local.setActivityStatus = function(providers, syncStartDate, callback) {
@@ -589,7 +631,6 @@ local.syncAliasesGOOD = function(persons, callback) {
 };
 
 local.syncAliases = function(persons, callback) {
-  log.silly('syncAliases started');
 
   //local.resetAliases(persons);
 
@@ -610,6 +651,7 @@ local.syncAliases = function(persons, callback) {
     }
 
     // check if person (P) belongs to an alias group, or if it constitutes a new alias group
+    var aliasesCount = 0;
     for (var p = 0; p < personsLen; p++) {
       var P = persons[p]; // P is the person we arge going to check for aliases
 
@@ -631,11 +673,12 @@ local.syncAliases = function(persons, callback) {
             Q.alias = P.alias;
             local.savePerson(Q); // save group alias to Q
           }
-          log.silly('syncAliases - person:', 1 + p, '/', personsLen, 'key:', Q.key, 'is similar to person:', P.key);
+          aliasesCount++;
+          //log.silly('syncAliases - person:', 1 + p, '/', personsLen, 'key:', Q.key, 'is similar to person:', P.key);
         }
       }
     }
-    log.silly('syncAliases finished');
+    log.silly('' + aliasesCount, 'aliases found');
     callback(); // success    
   });
 };

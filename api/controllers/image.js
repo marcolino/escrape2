@@ -3,7 +3,7 @@ var fs = require('fs') // file-system handling
   , path = require('path') // path handling
   , async = require('async') // to call many async functions in a loop
   , crypto = require('crypto') // to create hashes
-  , Jimp = require('jimp') // image manipulation
+  , jimp = require('jimp') // image manipulation
   , network = require('../controllers/network') // network handling
   , Image = require('../models/image') // images handling
   , config = require('../config') // global configuration
@@ -18,8 +18,231 @@ exports.getByIdPerson = function(idPerson, callback) {
   });
 };
 
-// syncronize all images for persons
 exports.syncPersonsImages = function(persons, callback) {
+//log.debug('syncPersonsImages on', persons.length, 'persons');
+  // get all images in db
+  Image.find({}, function(err, images) {
+    if (err) {
+      return callback('can\'t find images');
+    }
+//log.debug('all images array length:', images.length);
+
+    // for each person imageUrls, and for each imageUrl, download it and che if should be saved
+    async.each(
+      persons,
+      function(person, callbackPerson) {
+        async.each(
+          person.imageUrls,
+          function(imageUrl, callbackImage) {
+log.warn('PRE DOWNLOAD - imageUrl:', imageUrl);
+            download(images, person, imageUrl, function(err, images, image) {
+log.warn('AFTER DOWNLOAD - image etag:', image ? image.etag: 'no image');
+              check(images, image, callbackImage);
+            });
+          },
+          function(err) {
+            callbackPerson();
+          }
+        );
+      },
+      function(err) {
+        callback(null, persons);
+      }
+    );
+
+  });
+
+  function download(images, person, imageUrl, callback) {
+    var imageFilter = images.filter(function(img) {
+      return ((img.personKey === person.key) && (img.url === imageUrl));
+    });
+    if (imageFilter.length > 1) { // should not happen
+log.warn('found more than one (', imageFilter.length, ') images for person', person.key, ', url:', imageUrl, ', skipping');
+      return callback('more than one image for person ' + person.key, images, image);
+    }
+    if (imageFilter.length === 1) { // existing image url
+      image = imageFilter['0']; // flatten single item array to first and only item
+      image.isNew = false;
+    } else { // new image url
+      image = new Image();
+      image.isNew = true;
+      image.url = imageUrl;
+      image.personKey = person.key;
+    }
+    image.type = 'image';
+    image.destination = config.images.path;
+
+    network.requestRetryAnonymous(
+      image,
+      function(err) {
+        callback(err, images, image);
+      },
+      function(contents, response) {
+        if (response.statusCode === 304) { // not changed
+          image.isChanged = false;
+if (image.etag !== response.etagNew) {
+  log.warn('DOWNLOAD !!!!! - statusCode:', response.statusCode, '- old etag:', image.etag, 'new etag:', response.etagNew, 'contents len:', contents.length);
+  //image.etag = response.etagNew; // ???
+}
+          return callback(null, images, image); // do not save to disk
+        }
+        // TODO: we should not need this this following test, can remove on production
+        if (image.etag === response.etagNew) { // this event should have already been catched by '304' previous test
+          // contents downloaded but etag does not change, If-None-Match not honoured?
+          log.warn(
+            'image', image.url, '(person:', image.personKey, ') downloaded, but etag does not change, If-None-Match not honoured;',
+            'response status code:', response.statusCode, ';',
+            'eTags - image:', image.etag, ', response:', response.etag, ';',
+            'contents length:', (contents ? contents.length : 'zero')
+          );
+          return callback(null, images, image);
+        }
+        image.contents = contents;
+        image.isChanged = true;
+        image.etag = response.etagNew;
+log.warn('DOWNLOAD - statusCode:', response.statusCode, '- etag:', response.etagNew);
+
+        return callback(null, images, image);
+      }
+    );
+  }
+
+  function check(images, image, callback) {
+log.warn('CHECK - image:', image.personKey, image.etag);
+    if (!image.isChanged) {
+console.log('CHECK image', image.personKey, image.basename, 'not changed');
+      return callback();
+    }
+    log.warn('CHECK - image is changed');
+    log.warn('CHECK - image contents length:', image.contents ? image.contents.length : 'EMPTY');
+
+    async.waterfall(
+      [
+        function(callback) { getSignatureFromImage(images, image, callback); },
+        findSimilarSignatureImage,
+        saveImage,
+      ],
+      function (err, image) {
+        return callback();
+      }
+    );
+  }
+
+  var getSignatureFromImage = function(images, image, callback) {
+    if (!image || !image.contents) { // image undefined or with no contents
+      return callback(null, images, image);
+    }
+    jimp.read(new Buffer(image.contents, 'ascii'), function(err, imageContents) {
+      if (err) {
+        callback('can\'t read image contents:', err, images, image);
+      }
+      exports.signature(imageContents, function(err, signature) {
+        if (err) {
+          return callback(err, images, image);
+        }
+        image.signature = signature;
+        return callback(null, images, image);
+      });
+    });
+  };
+
+  var findSimilarSignatureImage = function(images, image, callback) {
+    if (Math.random() < 0.5) {
+      image.hasSimilarImages = true;
+    }
+image.hasSimilarImages = false;
+    callback(null, image);
+  };
+
+  var saveImage = function(image, callback) {
+    if (image.hasSimilarImages) {
+      console.log('image', image.url, 'has a similar image in the same person, not saved');
+      return callback(null, null);
+    }
+
+    // save image to db/fs
+    var destinationDir = image.destination + '/' + image.personKey;
+    mkdirp(destinationDir, function(err) {
+      if (err) {
+        log.warn('can\'t make directory ', destinationDir, ':', err);
+        return callback(err, image);
+      }
+      // use a hash of response url + current timestamp as filename
+      var hash = crypto.createHash('md5').update(image.url + Date.now()).digest('hex');
+      // use response url extension as filename extension
+      var ext = path.extname(image.url);
+      ext = local.normalizeExtension(ext);
+      var basename = hash + ext;
+      destinationDir += '/' + basename;
+      image.basename = image.personKey + '/' + basename;
+
+      // save image contents to fs
+      fs.writeFile(
+        destinationDir,
+        image.contents,
+        'binary',
+        function(err) {
+          if (err) {
+            log.warn('can\'t write file to file system:', err);
+            return callback(err, image);
+          }
+          console.log('image', image.url, 'saved');
+          callback(null, image); // success
+        }
+      );
+    });
+  };
+
+};
+
+exports.signature = function(contents, callback) {
+  var signature = contents.hash(2);
+  if (signature.length !== 64) { // ( 11 = ceil(64 / log₂(64)) )
+    return callback('wrong signature length: ' + signature.length, signature);
+  }
+  //log.info('signature:', signature);
+  callback(null, signature); // success
+};
+
+exports.distance = function(signature1, signature2) {
+  if (!signature1 || !signature2) {
+    return 1; // maximum possible distance
+  }
+  var counter = 0;
+  for (var k = 0; k < signature1.length; k++) {
+    if (signature1[k] != signature2[k]) {
+      counter++;
+    }
+  }
+  return (counter / signature1.length);
+};
+
+// TODO: test this (rebuild ALL images signatures, before...)
+exports.signatureBASE16 = function(image, callback) {
+  var signature = image.hash(16);
+  if (signature.length !== 11) { // ( 11 = ceil(64 / log₂(64)) )
+    return callback('wrong signature length: ' + signature.length, signature);
+  }
+  //log.info('signature:', signature);
+  callback(null, signature); // success
+};
+
+// TODO: test this
+exports.distanceONHEXSIGNATURES = function(signature1, signature2) {
+  if (!signature1 || !signature2) {
+    return 1; // maximum possible distance
+  }
+  var counter = 0;
+  for (var k = 0; k < signature1.length; k++) {
+    counter += (signature1[k] ^ signature2[k]); // bitwise XOR
+  }
+  return (counter / signature1.length);
+};
+
+
+
+// syncronize all images for persons
+exports.syncPersonsImagesLAST = function(persons, callback) {
   if (!persons) {
     return callback('no persons to sync images for');
   }
@@ -56,7 +279,7 @@ exports.syncPersonsImages = function(persons, callback) {
         callback(persons);
       }
     );
-  });
+  };
 
   function downloadPost(image, callback) {
     async.waterfall(
@@ -578,7 +801,7 @@ exports.findSimilarSignature = function(img, filter, thresholdDistance, callback
   });
 };
 
-local.signature = function(image, callback) {
+local.signatureOLD = function(image, callback) {
   var signature = image.hash(2);
   if (signature.length !== 64) { // ( 11 = ceil(64 / log₂(64)) )
     return callback('wrong signature length: ' + signature.length, signature);
@@ -587,7 +810,7 @@ local.signature = function(image, callback) {
   callback(null, signature); // success
 };
 
-exports.distance = function(signature1, signature2) {
+exports.distanceOLD = function(signature1, signature2) {
   if (!signature1 || !signature2) {
     return 1; // maximum possible distance
   }
@@ -601,7 +824,7 @@ exports.distance = function(signature1, signature2) {
 };
 
 local.signatureFromResourceContents = function(img, callback) {
-  Jimp.read(new Buffer(img.contents, "ascii"), function(err, image) {
+  jimp.read(new Buffer(img.contents, "ascii"), function(err, image) {
     if (err) {
       callback('can\'t read image contents:', err);
     }

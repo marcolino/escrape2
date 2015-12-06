@@ -55,7 +55,7 @@
               var image = {}; // new Image() omitted for simplicity
               image.url = response.request.uri.href;
               image.contents = contents;
-              callback(null, image);              
+              callback(null, image);
             } else {
               log.error('err in image download:', err, response.statusCode);              
             }
@@ -77,17 +77,16 @@
       }
     
       var getSignatureFromImage = function(image, callback) {
-        var image = {}; image.url = 'http://dummyimage.com/250x250/f00/fff'; // TODO: how to pass parameters to first waterfall function?
         image.signature = crypto.createHash('md5').update('image.url').digest('hex');
         callback(null, image);
-      }
+      };
     
       var findSimilarSignatureImage = function(image, callback) {
         if (existsAlready(image.signature)) {
           image.isNew = true;
         }
         callback(null, image);
-      }
+      };
     
       var saveImage = function(image, callback) {
         if (image.isNew) {
@@ -98,7 +97,7 @@
           console.log('image', image.url, 'not saved');
           callback(null, null);
         }   
-      }
+      };
     
       function existsAlready(signature) {
         return Math.random() < 0.5; // random value, for simplicity

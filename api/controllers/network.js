@@ -29,10 +29,9 @@ exports.requestRetryAnonymous = function(resource, error, success) {
     timeout: config.networking.timeout // number of milliseconds to wait for a server to send response headers before aborting the request
   };
   if (resource.etag) { // set header's If-None-Match tag if we have an etag
-log.info('>network downloading resource with etag set');
+    //log.info('>network downloading resource with etag set');
     options.headers['If-None-Match'] = resource.etag;
-  }
-else log.info('>network downloading resource with etag NOT set');
+  } //else log.info('>network downloading resource with etag NOT set');
   if (config.tor.available) { // TOR is available
     options.agentClass = agent;
     options.agentOptions = { // TOR socks host/port
@@ -47,7 +46,7 @@ else log.info('>network downloading resource with etag NOT set');
       if (err) {
         return error(err);
       }
-
+/*
 if (response.headers.etag) log.info('<network downloaded resource with etag set');
 else log.info('<network downloaded resource with etag NOT set');
 
@@ -58,6 +57,11 @@ log.info('<network downloaded resource with etag NOT set');
         if (response.headers.etag)
           log.info('<network downloaded resource with statusCode < 300(' + response.statusCode < 300 + '), reporting it to response');
           resource.etag = response.headers.etag;
+      }
+*/
+      resource.statusCode = response.statusCode;    
+      if (response.headers.etag) {
+        resource.etagNew = response.headers.etag;
       }
       success(contents, resource);
     }
