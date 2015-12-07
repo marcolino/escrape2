@@ -12,6 +12,8 @@ var log = config.log;
  * requests url contents, retrying and anonymously
  */
 exports.requestRetryAnonymous = function(resource, error, success) {
+//if (resource.type === 'image') { return success('contents', resource); }
+//if (resource.type === 'image') { log.silly('request url 1:', resource.url); }
   var encoding = // set encoding to null (auto) for text resources, to binary for images
     (resource.type === 'text') ? null :
     (resource.type === 'image') ? 'binary' :
@@ -40,12 +42,14 @@ exports.requestRetryAnonymous = function(resource, error, success) {
     };
   }
 
+//log.silly('STARTING REQUESTRETRY WITH URL:', resource.url);
   requestretry(
     options,
     function(err, response, contents) {
       if (err) {
         return error(err);
       }
+if (resource.type === 'image') {log.info('RESPONSE:', response.request.uri.href); }
 /*
 if (response.headers.etag) log.info('<network downloaded resource with etag set');
 else log.info('<network downloaded resource with etag NOT set');
@@ -59,10 +63,13 @@ log.info('<network downloaded resource with etag NOT set');
           resource.etag = response.headers.etag;
       }
 */
+      //resource.url = response.request.uri.href; // copy request url to response
       resource.statusCode = response.statusCode;    
       if (response.headers.etag) {
         resource.etagNew = response.headers.etag;
       }
+//log.silly('request url 2:', resource.url);
+//log.silly('ENDING REQUESTRETRY WITH URL:', resource.url);
       success(contents, resource);
     }
 /*

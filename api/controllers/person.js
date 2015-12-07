@@ -87,7 +87,7 @@ exports.sync = function() { // sync persons
     if (err) {
       return log.error('error getting providers:', err);
     }
-providers = providers.slice(0, 1); log.info('providers length:', providers.length); // to debug: limit providers
+//providers = providers.slice(1, 2); // to debug: limit list
     totalProvidersCount = providers.length;
 
     // loop to get list page from all providers
@@ -126,7 +126,7 @@ providers = providers.slice(0, 1); log.info('providers length:', providers.lengt
             $ = cheerio.load(contents);
             var list = local.getList(provider, $);
             totalPersonsCount += list.length;
-list = list.slice(0, 1); log.info('list:', list); // to debug: limit list
+list = list.slice(0, 7); log.info('list:', list); // to debug: limit list
             async.each(
               list, // 1st param is the array of items
               function(element, callbackInner) { // 2nd param is the function that each item is passed to
@@ -242,6 +242,7 @@ list = list.slice(0, 1); log.info('list:', list); // to debug: limit list
             // success
             log.info('persons images sync finished');
 
+/*
             // sync persons aliases
             log.info('persons aliases sync started');
             // TODO: test syncAliasesBatch() to avoid alias groups with just one people...
@@ -252,7 +253,7 @@ list = list.slice(0, 1); log.info('list:', list); // to debug: limit list
               }
               log.info('persons aliases sync finished');
             });
-
+*/
           });
         });
         /*
