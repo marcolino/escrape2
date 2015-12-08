@@ -5,8 +5,12 @@ var fs = require('fs') // file-system handling
   , crypto = require('crypto') // to create hashes
   , jimp = require('jimp') // image manipulation
   , network = require('../controllers/network') // network handling
+
 //, request = require('request')
 , requestretry = require('requestretry')
+, randomUseragent = require('random-ua') // to use a random user-agent
+, agent = require('socks5-http-client/lib/Agent')
+
   , Image = require('../models/image') // images handling
   , config = require('../config') // global configuration
 ;
@@ -36,10 +40,10 @@ exports.getByIdPerson = function(idPerson, callback) {
               function(imageUrl, callbackImage) {
                 download(imageUrl, person, images, function(err, image) {
                   if (err) {
-                    return callbackImage(err); // err
+                    return callbackImage(err);
                   }
-                  if (!image) {
-                    return callbackImage(); // 304
+                  if (!image || !image.isChanged) { // 40x or 304
+                    return callbackImage();
                   }
                   check(image, images, callbackImage);
                 });
@@ -77,75 +81,94 @@ exports.getByIdPerson = function(idPerson, callback) {
           //image = imageFilter['0']; // flatten single item array to first and only item
           image.isNew = false;
           image.etag = imageFilter['0'].etag;
-          image.uri = imageFilter['0'].url;
+          image.url = imageFilter['0'].url;
+          image.personKey = imageFilter['0'].personKey;
         } else { // new image url
           //image = new Image();
           image.isNew = true;
-          image.uri = imageUrl;
+          image.url = imageUrl;
           image.etag = null;
-          //image.personKey = person.key;
+          image.personKey = person.key;
         }
         image.type = 'image';
-        image.destination = config.images.path;
+log.debug('image.personKey:', image.personKey);
 
-        fetchImage(image, function(err, image) {
-          log.info('fetched', image.url ? image.url : 'nothing, 304');
-          return callback(err, image.url ? image : null);
+        fetch(image, function(err, image) {
+          if (err) {
+            return callback(err, null);
+          }
+          if (image) {
+            log.info('fetched', image.url, 'is changed:', image.isChanged);
+          }
+          return callback(null, image);
         });
       }
 
-      function fetchImage(image, callback) { // TODO: => to network.js ...
-        log.debug('fetching:', image.uri);
-        if (image.etag) { // set header's If-None-Match tag if we have an etag
-    //log.info('>network downloading resource with etag set');
-          image.headers = {};
-          image.headers['If-None-Match'] = image.etag;
-        }
+      function fetch(resource, callback) { // TODO: => to network.js ...
+        var options = {
+          url: resource.url, // url to download
+          maxAttempts: config.networking.maxAttempts, // number of attempts to retry after the first one
+          retryDelay: config.networking.retryDelay, // number of milliseconds to wait for before trying again
+          retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
+          timeout: config.networking.timeout, // number of milliseconds to wait for a server to send response headers before aborting the request
+          encoding: ((resource.type === 'text') ? null : (resource.type === 'image') ? 'binary' : null),
+          headers: {
+            'User-Agent': randomUseragent.generate(), // user agent: pick a random one
+            'If-None-Match': resource.etag ? resource.etag : null,
+          },
+          agentClass: agent, // socks5-http-client/lib/Agent
+          agentOptions: { // TOR socks host/port
+            socksHost: config.tor.available ? config.tor.host : null,
+            socksPort: config.tor.available ? config.tor.port : null,
+          },
+                      personKey: resource.personKey, // TODO: TEST THIS !!!!!!!!!!!!!!!!!!
+        };
+
+        //log.debug('fetching:', resource.url, options);
+        log.debug('fetching:', resource.url);
+
         requestretry(
-          image,
+          options,
           function(err, response, contents) {
             if (!err && (response.statusCode === 200 || response.statusCode === 304)) {
-              var image = {}; // !!!!!!!!!!!!!!!!!!!!!!!!!
+              var resource = {};
+              resource.url = response.request.uri.href;
+              resource.etag = response.request.headers['If-None-Match'];
               if (response.statusCode === 304) { // not changed
-                image.isChanged = false;
-                if (image.etag !== response.etag) { // just to be safe, should not need this test on production
-                  log.warn('DOWNLOAD: 304 BUT ETAG CHANGED! - statusCode:', response.statusCode, '- old etag:', image.etag, 'new etag:', response.etagNew, 'contents len:', contents.length);
-                }
-                return callback(null, image); // do not save to disk
-              }
-              // TODO: we should not need this this following test, can remove on production
-              if (image.etag === response.headers.etag) { // this event should have already been catched by '304' previous test
-                // contents downloaded but etag does not change, If-None-Match not honoured?
-                log.warn(
-                  'image', response.url, 'downloaded, but etag does not change, If-None-Match not honoured;',
-                  'response status code:', response.statusCode, ';',
-                  'eTags - image:', image.etag, ', response:', response.headers.etag, ';',
-                  'contents length:', (contents ? contents.length : 'zero')
-                );
-                return callback(null, image);
-              }
-              image.contents = contents;
-              image.isChanged = true;
-              image.etag = response.etag;
-              image.url = response.request.uri.href;
-              log.debug('just fetched:', image.url);
+                resource.isChanged = false;
 
-              return callback(null, image);
+                if (resource.etag !== response.headers.etag) { // TODO: just to be safe, should not need this test on production
+                  log.warn(
+                    'resource', response.url, 'not downloaded, but etag does change, If-None-Match not honoured;',
+                    'response status code:', response.statusCode, ';',
+                    'eTags - resource:', resource.etag, ', response:', response.headers.etag, ';',
+                    'contents length:', (contents ? contents.length : 'zero')
+                  );
+                  return callback(null, resource);
+                }
+
+              } else {
+
+                if (resource.etag === response.headers.etag) {  // TODO: just to be safe, should not need this test on production
+                  log.warn(
+                    'resource', response.url, 'downloaded, but etag does not change, If-None-Match not honoured;',
+                    'response status code:', response.statusCode, ';',
+                    'eTags - resource:', resource.etag, ', response:', response.headers.etag, ';',
+                    'contents length:', (contents ? contents.length : 'zero')
+                  );
+                  return callback(null, resource);
+                }
+
+                resource.isChanged = true;
+                resource.contents = contents;
+                resource.etag = response.headers.etag;
+                resource.personkKey = options.personKey; // TODO: TEST THIS !!!!!!!!!!!!!!!!!!
+              }
+              return callback(null, resource);
             } else {
-              log.error('error in image download:', err, response ? response.statusCode : null);
+              //log.error('error in image download:', err ? err : '', response ? response.statusCode : null);
               callback(err, null);
             }
-/*
-            if (!err && response.statusCode === 200) {
-              var image = {}; // new Image() omitted for simplicity
-              image.url = response.request.uri.href;
-              image.contents = contents;
-              callback(null, image);
-            } else {
-              log.error('error in image download:', err, response.statusCode);
-              callback(err, null);
-            }
-*/
           }
         );
       }
@@ -168,33 +191,233 @@ exports.getByIdPerson = function(idPerson, callback) {
       }
     
       var getSignatureFromImage = function(image, images, callback) {
-        image.signature = crypto.createHash('md5').update('image.url').digest('hex');
-        callback(null, image, images);
+        //image.signature = crypto.createHash('md5').update('image.url').digest('hex');
+        //callback(null, image, images);
+        jimp.read(new Buffer(image.contents, "ascii"), function(err, img) {
+          if (err) {
+            return callback('can\'t read image contents:', err);
+          }
+          local.signature(img, function(err, signature) {
+            if (err) {
+              return callback(err);
+            }
+            image.signature = signature;
+            callback(null, image, images);
+          });
+        });
       };
     
       var findSimilarSignatureImage = function(image, images, callback) {
-        if (existsAlready(image.signature)) {
+        /*
+        if (!existsAlready(image.signature)) {
           image.isNew = true;
         }
         callback(null, image);
+        function existsAlready(signature) {
+          return 1; // ...
+        }
+        */
+      //exports.findSimilarSignature = function(img, filter, thresholdDistance, callback) {
+        //Image.find(filter, '_id personKey signature url', function(err, images) {
+        //if (err) {
+        //  return callback('can\'t find images');
+        //}
+        var minDistance = 1; // maximum distance possible
+        var personKey = null;
+        
+        var personImages = images.filter(function(img) {
+          return ((image.personKey === img.personKey)/* && img.signature*/);
+        });
+
+        personImages.forEach(function(img, i) {
+          //log.info('image:', image.url);
+          if (!image.signature) { // TODO: remove this thes and use '&& img.signature' in previous filter...
+            log.warn('findSimilarSignatureImage - image with no signature:', img.url);
+            return; // skip this image without signature
+          }        
+          image.personKey = img.personKey; // set personKey in image
+          var distance = exports.distance(image.signature, img.signature);
+          if (distance <= minDistance) {
+            minDistance = distance;
+          }
+        });
+        image.isUnique = true;
+        if (minDistance <= config.thresholdDistanceSamePerson) {
+          log.warn('findSimilarSignatureImage - FOUND SIMILAR IMAGE:', image.url);
+          image.isUnique = false;
+        }
+        //else log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url);
+        return callback(null, image);
       };
     
+      /**
+       * save image to DB and FS, if unique
+       */
       var saveImage = function(image, callback) {
-        if (image.isNew) {
-          // save image to db/fs omitted for simplicity
-          log.info('image', image.url, 'saved');
-          callback(null, image);
-        } else {
-          log.info('image', image.url, 'not saved');
-          callback(null, null);
-        }   
-      };
+        if (!image.isUnique) {
+          log.silly('image', image.url, 'DUPLICATED, NOT SAVED');
+          return callback(null, null);
+        }
+
+        // save image to DB and FS
+        var destinationDir = config.images.path + '/' + image.personKey;
+console.error('saveImage() - destinationDir:', destinationDir);
+console.error('saveImage() - image.personKey:', image.personKey);
+        mkdirp(destinationDir, function(err, made) {
+          if (err) {
+            log.warn('can\'t make directory ', destinationDir);
+            return callback(err, image);
+          }
+          // use a hash of response url + current timestamp as filename
+          var hash = crypto.createHash('md5').update(image.url + Date.now()).digest('hex');
+          // use response url extension as filename extension
+          var ext = path.extname(image.url);
+          ext = local.normalizeExtension(ext);
+          var basename = hash + ext;
+          destinationDir += '/' + basename;
+          //image.contents = contents;
+          image.basename = image.personKey + '/' + basename;
     
-      function existsAlready(signature) {
-        return Math.random() < 0.5; // random value, for simplicity
-      }
+          // save image contents to filesystem
+          log.info('download() saving image to: ', destinationDir);
+          fs.writeFile(
+            destinationDir,
+            image.contents,
+            'binary',
+            function(err) {
+              if (err) {
+                log.warn('can\'t write file to file system:', err);
+                return callback(err, image);
+              }
+              log.info('image', image.url, 'SAVED');
+              callback(null, image); // success
+            }
+          );
+        });
+      };
 
     };
+
+    local.signature = function(image, callback) {
+      var signature = image.hash(2);
+      if (signature.length !== 64) { // ( 11 = ceil(64 / log₂(64)) )
+        return callback('wrong signature length: ' + signature.length, signature);
+      }
+      //log.info('signature:', signature);
+      callback(null, signature); // success
+    };
+    
+    exports.distance = function(signature1, signature2) {
+      if (!signature1 || !signature2) {
+        return 1; // maximum possible distance
+      }
+      var counter = 0;
+      for (var k = 0; k < signature1.length; k++) {
+        if (signature1[k] != signature2[k]) {
+          counter++;
+        }
+      }
+      return (counter / signature1.length);
+    };
+    
+    // TODO: test this (rebuild ALL images signatures, before...)
+    exports.signatureBASE16 = function(image, callback) {
+      var signature = image.hash(16);
+      if (signature.length !== 11) { // ( 11 = ceil(64 / log₂(64)) )
+        return callback('wrong signature length:', signature.length, signature);
+      }
+      //log.info('signature:', signature);
+      callback(null, signature); // success
+    };
+    
+    // TODO: test this
+    exports.distanceBASE16 = function(signature1, signature2) {
+      if (!signature1 || !signature2) {
+        return 1; // maximum possible distance
+      }
+      var counter = 0;
+      for (var k = 0; k < signature1.length; k++) {
+        counter += popCount(signature1[k] ^ signature2[k]); // bitwise XOR
+      }
+      return (counter / signature1.length);
+    };
+
+
+
+  /**
+   * request-retry strategies
+   */
+
+  /**
+   * @param  {Null | Object} err
+   * @param  {Object} response
+   * @return {Boolean} true if the request should be retried
+   */
+  function retryStrategyForbidden(err, response) { // TODO: use a more generic name than '...Forbidden'...
+    /*
+    // TODO: debug only
+    if (response &&
+        response.statusCode !== 200 &&
+        response.statusCode !== 304 &&
+        //response.statusCode !== 400 &&
+        response.statusCode !== 403 &&
+        response.statusCode !== 404 &&
+        response.statusCode !== 502 &&
+        response.statusCode !== 503 &&
+        response.statusCode !== 524
+      ) {
+      log.warn('retry strategy forbidden ignored response status code ', response.statusCode);
+    }
+    */
+
+    /*
+     * retry the request if the response was a 403 one (forbidden),
+     * or if response was 200 (success), but content contain a forbidden message
+     */
+    //console.log('response.body:', response.body.toString());
+    var forbidden = (
+      response && (
+        //(response.statusCode === 400) || // 400 status code (bad request) (???)
+        (response.statusCode === 403) || // 403 status code (forbidden)
+        (response.statusCode === 404) || // 404 status code (not found)
+        (response.statusCode === 502) || // 502 status code (bad gateway, tor proxy problem?)
+        (response.statusCode === 503) || // 503 status code (service unavailable, tor proxy problem?)
+        (response.statusCode === 524) || // 524 status code (cloudfare timeout)
+          (
+            (response.statusCode === 200) &&
+            (response.body && (
+              response.body.toString().match(
+                /<title>404 - .*?<\/title>/ // TOE page not found
+              ) ||
+              response.body.toString().match(
+                /<title>.*?A timeout occurred.*?<\/title>/ // SGI timeout signature
+              ) ||
+              response.body.toString().match(
+                /<title>Attention Required!\s*\|\s*CloudFlare<\/title>/ // SGI CloudFlare warning
+              ) ||
+              response.body.toString().match(
+                /<title>.*?\| 522: Connection timed out<\/title>/ // SGI connection timed out
+              )
+            )
+          )
+        )
+      )
+    );
+
+    if (forbidden) {
+      log.warn('request was forbidden for uri', response.request.uri.href, '(', (response ? response.statusCode : '?'), ')');
+    } else {
+      if (response && response.statusCode >= 400) {
+        log.warn('retry strategy - unhandled condition for uri', response.request.uri.href, '(status code is:', response.statusCode + '), giving up');
+      }
+    }
+
+    return forbidden;
+  }
+
+
+
+
 
 /*
 exports.syncPersonsImages = function(persons, callback) {
@@ -454,28 +677,6 @@ exports.distance = function(signature1, signature2) {
     if (signature1[k] != signature2[k]) {
       counter++;
     }
-  }
-  return (counter / signature1.length);
-};
-
-// TODO: test this (rebuild ALL images signatures, before...)
-exports.signatureBASE16 = function(image, callback) {
-  var signature = image.hash(16);
-  if (signature.length !== 11) { // ( 11 = ceil(64 / log₂(64)) )
-    return callback('wrong signature length:', signature.length, signature);
-  }
-  //log.info('signature:', signature);
-  callback(null, signature); // success
-};
-
-// TODO: test this
-exports.distanceBASE16 = function(signature1, signature2) {
-  if (!signature1 || !signature2) {
-    return 1; // maximum possible distance
-  }
-  var counter = 0;
-  for (var k = 0; k < signature1.length; k++) {
-    counter += popCount(signature1[k] ^ signature2[k]); // bitwise XOR
   }
   return (counter / signature1.length);
 };

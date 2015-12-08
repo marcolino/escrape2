@@ -126,7 +126,7 @@ exports.sync = function() { // sync persons
             $ = cheerio.load(contents);
             var list = local.getList(provider, $);
             totalPersonsCount += list.length;
-list = list.slice(0, 7); log.info('list:', list); // to debug: limit list
+list = list.slice(0, 3); log.info('list:', list); // to debug: limit list
             async.each(
               list, // 1st param is the array of items
               function(element, callbackInner) { // 2nd param is the function that each item is passed to
@@ -327,38 +327,17 @@ exports.upsert = function(person, callback) {
 };
 
 // TODO: can suppress on production (and remember to remove dependencies from packages.json...)
-local.diffColor1 = function(string1, string2) {
-  var colors = require('colors');
-  var diff = require('diff').diffChars;
-  var differences = diff(doc[prop], person[prop]);
-  var differencesColored = '';
-  differences.forEach(function(part) {
-    // green for additions, red for deletions, grey for common parts
-    var color =
-      part.added ? 'green' :
-      part.removed ? 'red' :
-      'grey'
-    ;
-    differencesColored += part.value[color];
-  });
-  differencesColored += '\n';
-  return differencesColored;
-};
-
-// TODO: can suppress on production (and remember to remove dependencies from packages.json...)
 local.diffColor = function(string1, string2) {
   var colors = require('colors');
-  var diffMatchPatch = require('diff-match-patch-node');
+  var jsdiff = require('diff');
 
-  var differences = diffMatchPatch().diff_main(string1, string2);
-// 'test A B', 'test B B');
-// => [ [ 0, 'test ' ], [ -1, 'A' ], [ 1, 'B' ], [ 0, ' B' ] ]
+  var differences = jsdiff.diffWordsWithSpace(string1 ? string1 : '', string2 ? string2 : '');
   var differencesColored = '';
   differences.forEach(function(part) {
     // green for additions, red for deletions, grey for common parts
     var color =
-      (part[0] === 1) ? 'green' : // added
-      (part[0] === -1) ? 'red' : // removed
+      (part.added) ? 'green' : // added
+      (part.removed) ? 'red' : // removed
       'grey' // unchanged
     ;
     differencesColored += part.value[color];

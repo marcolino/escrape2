@@ -30,9 +30,9 @@ var config = {
     name: 'escrape'
   },
   networking: {
-    timeout: 5 * 60 * 1000, // wait for 1' before throwing a timeout
+    timeout: 5 * 60 * 1000, // wait for 5' before throwing a timeout (5' is the default)
     maxAttempts: 3, // retry for 3 attempts more after the first one
-    retryDelay: 3 * 1000 // wait for 3" before trying again
+    retryDelay: 30 * 1000 // wait for 30" before trying again
   },
   tor: {
     available: (os.hostname() === 'malibox'), // TOR is available only @malibox, at the moment...
