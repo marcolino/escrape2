@@ -12,7 +12,7 @@ var config = {
   images: {
     path: __dirname + '/..' + '/data/images',
     thresholdDistance: (os.hostname() === 'malibox') ? 0.04 : 0.125, // TODO: debug only, fix on 0.04 on production
-    thresholdDistanceSamePerson: 0.02
+    thresholdDistanceSamePerson: (os.hostname() === 'malibox') ? 0.02 : 0.125, // TODO: debug only, fix on 0.02 on production
   },
   logger: {
     levelConsole: 'silly', // 'error' to production

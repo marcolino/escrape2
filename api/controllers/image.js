@@ -1,5 +1,5 @@
-var fs = require('fs') // file-system handling
-  , mkdirp = require('mkdirp') // to make directories with parents
+//var fs = require('fs') // file-system handling
+var mkdirp = require('mkdirp') // to make directories with parents
   , path = require('path') // path handling
   , async = require('async') // to call many async functions in a loop
   , crypto = require('crypto') // to create hashes
@@ -64,12 +64,16 @@ exports.getByIdPerson = function(idPerson, callback) {
       });
 
       function download(imageUrl, person, images, callback) {
-        //var options = {
-        //  url: imageUrl,
-        //};
+        // !!! WE HAVE HTTP: IN imageUrl and HTTPS in images!!!
+//log.debug('DOWNLOAD - images:', images);
+log.debug('DOWNLOAD - filtering on person.key', person.key, 'and', 'imageUrl:', imageUrl);
         var imageFilter = images.filter(function(img) {
-          return ((img.personKey === person.key) && (img.url === imageUrl));
+          log.error(img._doc);
+          log.info ((img._doc.personKey === person.key) ? 'k YYYYYYYYYYYY' : 'k NNNNNNNNNNNN');
+          log.info ((img._doc.url === imageUrl) ? 'u YYYYYYYYYYYY' : 'u NNNNNNNNNNNN');
+          return ((img._doc.personKey === person.key) && (img._doc.url === imageUrl));
         });
+log.debug('DOWNLOAD - image filter length:', imageFilter.length);
     
         if (imageFilter.length > 1) { // should not happen
           log.error('found more than one (', imageFilter.length, ') images for person', person.key, ', url:', imageUrl, ', skipping');
@@ -78,11 +82,12 @@ exports.getByIdPerson = function(idPerson, callback) {
     
         var image = {}; // image => options, here...
         if (imageFilter.length === 1) { // existing image url
+log.debug('DOWNLOAD - image FOUND in images');
           //image = imageFilter['0']; // flatten single item array to first and only item
           image.isNew = false;
-          image.etag = imageFilter['0'].etag;
-          image.url = imageFilter['0'].url;
-          image.personKey = imageFilter['0'].personKey;
+          image.etag = imageFilter['0'].toObject().etag;
+          image.url = imageFilter['0'].toObject().url;
+          image.personKey = imageFilter['0'].toObject().personKey;
         } else { // new image url
           //image = new Image();
           image.isNew = true;
@@ -91,15 +96,18 @@ exports.getByIdPerson = function(idPerson, callback) {
           image.personKey = person.key;
         }
         image.type = 'image';
-log.debug('image.personKey:', image.personKey);
+//log.debug('DOWNLOAD - image.personKey:', image.personKey);
+log.debug('DOWNLOAD - image.etag:', image.etag);
 
         fetch(image, function(err, image) {
           if (err) {
             return callback(err, null);
           }
+          /*
           if (image) {
             log.info('fetched', image.url, 'is changed:', image.isChanged);
           }
+          */
           return callback(null, image);
         });
       }
@@ -111,21 +119,19 @@ log.debug('image.personKey:', image.personKey);
           retryDelay: config.networking.retryDelay, // number of milliseconds to wait for before trying again
           retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
           timeout: config.networking.timeout, // number of milliseconds to wait for a server to send response headers before aborting the request
-          encoding: ((resource.type === 'text') ? null : (resource.type === 'image') ? 'binary' : null),
+          encoding: ((resource.type === 'text') ? null : (resource.type === 'image') ? 'binary' : null), // encoding
           headers: {
             'User-Agent': randomUseragent.generate(), // user agent: pick a random one
-            'If-None-Match': resource.etag ? resource.etag : null,
+            'If-None-Match': resource.etag ? resource.etag : null, // eTag field
           },
-          agentClass: agent, // socks5-http-client/lib/Agent
+          agentClass: config.tor.available ? agent : null, // socks5-http-client/lib/Agent
           agentOptions: { // TOR socks host/port
-            socksHost: config.tor.available ? config.tor.host : null,
-            socksPort: config.tor.available ? config.tor.port : null,
+            socksHost: config.tor.available ? config.tor.host : null, // TOR socks host
+            socksPort: config.tor.available ? config.tor.port : null, // TOR socks port
           },
-                      personKey: resource.personKey, // TODO: TEST THIS !!!!!!!!!!!!!!!!!!
+          personKey: resource.personKey, // person key
         };
-
-        //log.debug('fetching:', resource.url, options);
-        log.debug('fetching:', resource.url);
+        //log.debug('fetching:', resource.url);
 
         requestretry(
           options,
@@ -149,7 +155,7 @@ log.debug('image.personKey:', image.personKey);
 
               } else {
 
-                if (resource.etag === response.headers.etag) {  // TODO: just to be safe, should not need this test on production
+                if (resource.etag === response.headers.etag) { // TODO: just to be safe, should not need this test on production
                   log.warn(
                     'resource', response.url, 'downloaded, but etag does not change, If-None-Match not honoured;',
                     'response status code:', response.statusCode, ';',
@@ -158,16 +164,14 @@ log.debug('image.personKey:', image.personKey);
                   );
                   return callback(null, resource);
                 }
-
                 resource.isChanged = true;
                 resource.contents = contents;
                 resource.etag = response.headers.etag;
-                resource.personkKey = options.personKey; // TODO: TEST THIS !!!!!!!!!!!!!!!!!!
+                resource.personKey = response.request.personKey;
               }
-              return callback(null, resource);
+              callback(null, resource); // success
             } else {
-              //log.error('error in image download:', err ? err : '', response ? response.statusCode : null);
-              callback(err, null);
+              callback(err, null); // error
             }
           }
         );
@@ -181,18 +185,12 @@ log.debug('image.personKey:', image.personKey);
             saveImage,
           ],
           function (err, image) {
-            //callback(err);
-            if (err) {
-              log.error('error checking image uniqueness:', err);
-            }
             callback(err);
           }
         );
       }
     
       var getSignatureFromImage = function(image, images, callback) {
-        //image.signature = crypto.createHash('md5').update('image.url').digest('hex');
-        //callback(null, image, images);
         jimp.read(new Buffer(image.contents, "ascii"), function(err, img) {
           if (err) {
             return callback('can\'t read image contents:', err);
@@ -208,20 +206,6 @@ log.debug('image.personKey:', image.personKey);
       };
     
       var findSimilarSignatureImage = function(image, images, callback) {
-        /*
-        if (!existsAlready(image.signature)) {
-          image.isNew = true;
-        }
-        callback(null, image);
-        function existsAlready(signature) {
-          return 1; // ...
-        }
-        */
-      //exports.findSimilarSignature = function(img, filter, thresholdDistance, callback) {
-        //Image.find(filter, '_id personKey signature url', function(err, images) {
-        //if (err) {
-        //  return callback('can\'t find images');
-        //}
         var minDistance = 1; // maximum distance possible
         var personKey = null;
         
@@ -241,28 +225,27 @@ log.debug('image.personKey:', image.personKey);
             minDistance = distance;
           }
         });
-        image.isUnique = true;
         if (minDistance <= config.thresholdDistanceSamePerson) {
-          log.warn('findSimilarSignatureImage - FOUND SIMILAR IMAGE:', image.url);
-          image.isUnique = false;
+          log.warn('found simimilar signature:', image.url);
+          image.hasDuplicate = true;
         }
         //else log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url);
-        return callback(null, image);
+        return callback(null, image, images);
       };
     
       /**
        * save image to DB and FS, if unique
        */
-      var saveImage = function(image, callback) {
-        if (!image.isUnique) {
+      var saveImage = function(image, images, callback) {
+        var showcaseWidth = 320; // TODO: choose this in config(and pass to client...)
+
+        if (image.hasDuplicate) {
           log.silly('image', image.url, 'DUPLICATED, NOT SAVED');
           return callback(null, null);
         }
 
-        // save image to DB and FS
+        // save image to FS and DB
         var destinationDir = config.images.path + '/' + image.personKey;
-console.error('saveImage() - destinationDir:', destinationDir);
-console.error('saveImage() - image.personKey:', image.personKey);
         mkdirp(destinationDir, function(err, made) {
           if (err) {
             log.warn('can\'t make directory ', destinationDir);
@@ -274,14 +257,15 @@ console.error('saveImage() - image.personKey:', image.personKey);
           var ext = path.extname(image.url);
           ext = local.normalizeExtension(ext);
           var basename = hash + ext;
-          destinationDir += '/' + basename;
-          //image.contents = contents;
           image.basename = image.personKey + '/' + basename;
+          //var destination = destinationDir + '/' + basename;
+          var destinationFull = destinationDir + '/' + 'full-' + basename;
+          var destinationShowcase = destinationDir + '/' + showcaseWidth + 'x' + '-' + basename;
     
+/*
           // save image contents to filesystem
-          log.info('download() saving image to: ', destinationDir);
           fs.writeFile(
-            destinationDir,
+            destination,
             image.contents,
             'binary',
             function(err) {
@@ -289,10 +273,67 @@ console.error('saveImage() - image.personKey:', image.personKey);
                 log.warn('can\'t write file to file system:', err);
                 return callback(err, image);
               }
-              log.info('image', image.url, 'SAVED');
+              log.info('image', image.url, 'saved to', destination);
               callback(null, image); // success
             }
           );
+*/
+
+          // save image contents to FS
+          // let use jimp to save full-sized and showcase-sized images
+          jimp.read(new Buffer(image.contents, 'binary'), function(err, img) {
+            if (err) {
+              log.warn(err);
+              return callback(err, image);
+            }
+            img // write full size image
+              .write(destinationFull, function(err) {
+                if (err) {
+                  log.warn(err);
+                  return callback(err, image);
+                }
+              })
+            ;
+            img // write showcase-resized image
+              //.resize(showcaseWidth, jimp.AUTO) // should use Math.min(showcaseWidth, img.bitmap.width), to avoid enlarging small showcase images?
+              .resize(Math.min(showcaseWidth, img.bitmap.width), jimp.AUTO) // to avoid enlarging small showcase images
+              .write(destinationShowcase, function(err) {
+                if (err) {
+                  log.warn(err);
+                  return callback(err, image);
+                }
+              })
+            ;
+          });
+
+          // save image to DB
+          /*
+          var imageObjects = images.filter(function(img) {
+            return ((img.personKey === image.personKey) && (img.url === image.url));
+          });
+          if (imageObjects.length > 1) { // should not happen
+            log.error('found more than one (', imageObjects.length, ') images for person', image.personKey, ', url:', image.url, ', skipping');
+            return callback('>1', image); // TODO: ...
+          }
+          if (imageObjects.length < 1) { // should not happen
+            log.error('found more than one (', imageObjects.length, ') images for person', image.personKey, ', url:', image.url, ', skipping');
+            return callback('<1', image); // TODO: ...
+          }
+          var imageObject = imageObjects['0'];
+          //image = imageObjects[0]; // TODO: why not a number?
+          */
+          var imageObj = new Image();
+          for (var p in image) imageObj[p] = image[p]; // clone image properties to imageObj
+
+          imageObj.save(function(err) {
+            if (err) {
+              log.warn('can\'t save image', imageObj.basename, ':', err);
+            } else {
+              log.info('image', imageObj.basename, 'added');
+            }
+            callback(null, image); // success
+          });
+
         });
       };
 
