@@ -65,15 +65,14 @@ exports.getByIdPerson = function(idPerson, callback) {
 
       function download(imageUrl, person, images, callback) {
         // !!! WE HAVE HTTP: IN imageUrl and HTTPS in images!!!
-//log.debug('DOWNLOAD - images:', images);
-log.debug('DOWNLOAD - filtering on person.key', person.key, 'and', 'imageUrl:', imageUrl);
+//log.debug('DOWNLOAD - filtering on person.key', person.key, 'and', 'imageUrl:', imageUrl);
         var imageFilter = images.filter(function(img) {
-          log.error(img._doc);
-          log.info ((img._doc.personKey === person.key) ? 'k YYYYYYYYYYYY' : 'k NNNNNNNNNNNN');
-          log.info ((img._doc.url === imageUrl) ? 'u YYYYYYYYYYYY' : 'u NNNNNNNNNNNN');
+          //log.error(img._doc);
+          //log.info ((img._doc.personKey === person.key) ? 'k YYYYYYYYYYYY' : 'k NNNNNNNNNNNN');
+          //log.info ((img._doc.url === imageUrl) ? 'u YYYYYYYYYYYY' : 'u NNNNNNNNNNNN');
           return ((img._doc.personKey === person.key) && (img._doc.url === imageUrl));
         });
-log.debug('DOWNLOAD - image filter length:', imageFilter.length);
+//log.debug('DOWNLOAD - image filter length:', imageFilter.length);
     
         if (imageFilter.length > 1) { // should not happen
           log.error('found more than one (', imageFilter.length, ') images for person', person.key, ', url:', imageUrl, ', skipping');
@@ -82,7 +81,7 @@ log.debug('DOWNLOAD - image filter length:', imageFilter.length);
     
         var image = {}; // image => options, here...
         if (imageFilter.length === 1) { // existing image url
-log.debug('DOWNLOAD - image FOUND in images');
+//log.debug('DOWNLOAD - image FOUND in images');
           //image = imageFilter['0']; // flatten single item array to first and only item
           image.isNew = false;
           image.etag = imageFilter['0'].toObject().etag;
@@ -96,8 +95,7 @@ log.debug('DOWNLOAD - image FOUND in images');
           image.personKey = person.key;
         }
         image.type = 'image';
-//log.debug('DOWNLOAD - image.personKey:', image.personKey);
-log.debug('DOWNLOAD - image.etag:', image.etag);
+//log.debug('DOWNLOAD - image.etag:', image.etag);
 
         fetch(image, function(err, image) {
           if (err) {
@@ -131,7 +129,7 @@ log.debug('DOWNLOAD - image.etag:', image.etag);
           },
           personKey: resource.personKey, // person key
         };
-        //log.debug('fetching:', resource.url);
+//if (!resource.isNew) { log.debug('fetching:', resource.url, 'OPTIONS:', options); }
 
         requestretry(
           options,
@@ -258,6 +256,7 @@ log.debug('DOWNLOAD - image.etag:', image.etag);
           ext = local.normalizeExtension(ext);
           var basename = hash + ext;
           image.basename = image.personKey + '/' + basename;
+image.basename = image.personKey + '/' + showcaseWidth + 'x' + '-' + basename;
           //var destination = destinationDir + '/' + basename;
           var destinationFull = destinationDir + '/' + 'full-' + basename;
           var destinationShowcase = destinationDir + '/' + showcaseWidth + 'x' + '-' + basename;
@@ -297,6 +296,7 @@ log.debug('DOWNLOAD - image.etag:', image.etag);
             img // write showcase-resized image
               //.resize(showcaseWidth, jimp.AUTO) // should use Math.min(showcaseWidth, img.bitmap.width), to avoid enlarging small showcase images?
               .resize(Math.min(showcaseWidth, img.bitmap.width), jimp.AUTO) // to avoid enlarging small showcase images
+              .quality(75)
               .write(destinationShowcase, function(err) {
                 if (err) {
                   log.warn(err);

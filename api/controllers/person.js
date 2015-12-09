@@ -126,7 +126,7 @@ exports.sync = function() { // sync persons
             $ = cheerio.load(contents);
             var list = local.getList(provider, $);
             totalPersonsCount += list.length;
-list = list.slice(0, 1); log.info('list:', list); // to debug: limit list
+//list = list.slice(0, 12); log.info('list:', list); // to debug: limit list
             async.each(
               list, // 1st param is the array of items
               function(element, callbackInner) { // 2nd param is the function that each item is passed to
@@ -242,7 +242,7 @@ list = list.slice(0, 1); log.info('list:', list); // to debug: limit list
             // success
             log.info('persons images sync finished');
 
-/*
+/**/
             // sync persons aliases
             log.info('persons aliases sync started');
             // TODO: test syncAliasesBatch() to avoid alias groups with just one people...
@@ -253,7 +253,7 @@ list = list.slice(0, 1); log.info('list:', list); // to debug: limit list
               }
               log.info('persons aliases sync finished');
             });
-*/
+/**/
           });
         });
         /*

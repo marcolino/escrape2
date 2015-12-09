@@ -28,9 +28,10 @@ angular.module('PersonCtrl', []).controller('PersonController', function($rootSc
   $scope.getShowcaseUrl = function(person) {
     var url;
     if (person.showcaseBasename) {
-      url = '/images/' + '/' + person.showcaseBasename;
+      url = '/images' + '/' + person.showcaseBasename;
+//url = 'images/SGI/adv449/320x-00abf569ace95af648d9e0189cc551e7.jpg';
     } else { // no showcase url for this person: use default person showcase url
-      url = '/images/' + 'person-showcase-default.png';
+      url = '/images' + '/' + 'person-showcase-default.png';
     }
     return encodeURIComponent(url);
   };
