@@ -1,4 +1,4 @@
-//var fs = require('fs') // file-system handling
+var fs = require('fs'); // file-system handling
 var mkdirp = require('mkdirp') // to make directories with parents
   , path = require('path') // path handling
   , async = require('async') // to call many async functions in a loop
@@ -65,11 +65,14 @@ exports.getByIdPerson = function(idPerson, callback) {
 
       function download(imageUrl, person, images, callback) {
         // !!! WE HAVE HTTP: IN imageUrl and HTTPS in images!!!
-//log.debug('DOWNLOAD - filtering on person.key', person.key, 'and', 'imageUrl:', imageUrl);
+log.debug('DOWNLOAD - filtering on person.key', person.key, 'and', 'imageUrl:', imageUrl);
         var imageFilter = images.filter(function(img) {
-          //log.error(img._doc);
-          //log.info ((img._doc.personKey === person.key) ? 'k YYYYYYYYYYYY' : 'k NNNNNNNNNNNN');
-          //log.info ((img._doc.url === imageUrl) ? 'u YYYYYYYYYYYY' : 'u NNNNNNNNNNNN');
+          log.info ((img._doc.personKey === person.key) ? 'k YYYYYYYYYYYY' : 'k NNNNNNNNNNNN');
+// TODO: on FORBES imageUrl is http://... and _doc.url is https://... : WHY??????????????
+if (img._doc.personKey === person.key) {
+log.silly(img._doc.url);
+}
+          log.info ((img._doc.url === imageUrl) ? 'u YYYYYYYYYYYY' : 'u NNNNNNNNNNNN');
           return ((img._doc.personKey === person.key) && (img._doc.url === imageUrl));
         });
 //log.debug('DOWNLOAD - image filter length:', imageFilter.length);
@@ -96,6 +99,7 @@ exports.getByIdPerson = function(idPerson, callback) {
         }
         image.type = 'image';
 //log.debug('DOWNLOAD - image.etag:', image.etag);
+log.debug('DOWNLOAD - image.isNew:', image.isNew);
 
         fetch(image, function(err, image) {
           if (err) {
@@ -111,6 +115,13 @@ exports.getByIdPerson = function(idPerson, callback) {
       }
 
       function fetch(resource, callback) { // TODO: => to network.js ...
+/* THIS IS FAST
+if (1) {
+log.silly('image', resource.url.substr(Math.max(resource.url.length - 32, 0), 32), 'FAKE FETCH...');
+resource.isChanged = false;
+return callback(null, resource);
+}
+*/
         var options = {
           url: resource.url, // url to download
           maxAttempts: config.networking.maxAttempts, // number of attempts to retry after the first one
@@ -128,12 +139,33 @@ exports.getByIdPerson = function(idPerson, callback) {
             socksPort: config.tor.available ? config.tor.port : null, // TOR socks port
           },
           personKey: resource.personKey, // person key
+          isNew: resource.isNew,
         };
 //if (!resource.isNew) { log.debug('fetching:', resource.url, 'OPTIONS:', options); }
 
+/* THIS IS FAST
+if (1) {
+log.silly('image', resource.url.substr(Math.max(resource.url.length - 32, 0), 32), 'FAKE FETCH...');
+resource.isChanged = false;
+return callback(null, resource);
+}
+*/
+/*
+log.debug('config.networking.timeout:', config.networking.timeout);
+log.debug('resource.type:', resource.type);
+log.debug('resource.etag:', resource.etag);
+*/
         requestretry(
           options,
           function(err, response, contents) {
+
+/* THIS IS FAST
+if (1) {
+log.silly('image', resource.url.substr(Math.max(resource.url.length - 32, 0), 32), 'FAKE FETCH...');
+resource.isChanged = false;
+return callback(null, resource);
+}
+*/
             if (!err && (response.statusCode === 200 || response.statusCode === 304)) {
               var resource = {};
               resource.url = response.request.uri.href;
@@ -166,6 +198,7 @@ exports.getByIdPerson = function(idPerson, callback) {
                 resource.contents = contents;
                 resource.etag = response.headers.etag;
                 resource.personKey = response.request.personKey;
+                resource.isNew = response.request.isNew;
               }
               callback(null, resource); // success
             } else {
@@ -223,11 +256,12 @@ exports.getByIdPerson = function(idPerson, callback) {
             minDistance = distance;
           }
         });
-        if (minDistance <= config.thresholdDistanceSamePerson) {
-          log.warn('found simimilar signature:', image.url);
+        if (minDistance <= config.images.thresholdDistanceSamePerson) {
+          //log.warn('found simimilar signature:', image.url);
           image.hasDuplicate = true;
+     //log.info('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.url);
         }
-        //else log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url);
+//else log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, minDistance);
         return callback(null, image, images);
       };
     
@@ -261,10 +295,10 @@ image.basename = image.personKey + '/' + showcaseWidth + 'x' + '-' + basename;
           var destinationFull = destinationDir + '/' + 'full-' + basename;
           var destinationShowcase = destinationDir + '/' + showcaseWidth + 'x' + '-' + basename;
     
-/*
+/**/
           // save image contents to filesystem
           fs.writeFile(
-            destination,
+            destinationFull,
             image.contents,
             'binary',
             function(err) {
@@ -272,15 +306,17 @@ image.basename = image.personKey + '/' + showcaseWidth + 'x' + '-' + basename;
                 log.warn('can\'t write file to file system:', err);
                 return callback(err, image);
               }
-              log.info('image', image.url, 'saved to', destination);
+              log.info('image', image.url, 'saved to', destinationFull);
               callback(null, image); // success
             }
           );
-*/
+/**/
 
+/*
           // save image contents to FS
           // let use jimp to save full-sized and showcase-sized images
-          jimp.read(new Buffer(image.contents, 'binary'), function(err, img) {
+          var buf = new Buffer(image.contents, 'binary');
+          jimp.read(buf, function(err, img) {
             if (err) {
               log.warn(err);
               return callback(err, image);
@@ -305,6 +341,8 @@ image.basename = image.personKey + '/' + showcaseWidth + 'x' + '-' + basename;
               })
             ;
           });
+          buf = null; // delete Buffer object
+*/
 
           // save image to DB
           /*
@@ -322,8 +360,28 @@ image.basename = image.personKey + '/' + showcaseWidth + 'x' + '-' + basename;
           var imageObject = imageObjects['0'];
           //image = imageObjects[0]; // TODO: why not a number?
           */
+
+          var imageObj;
+          if (image.isNew) {
+            imageObj = new Image();
+            for (var p in image) {
+              imageObj[p] = image[p]; // clone image properties to imageObj
+            }
+log.error('NEW imageObj'); //, imageObj);
+          } else {
+            var imageFilter = images.filter(function(img) {
+              return ((img._doc.personKey === image.personKey) && (img._doc.url === image.url));
+            });
+            imageObj = imageFilter[0];
+log.error('OLD imageObj'); //, imageObj);
+          }
+/*
           var imageObj = new Image();
-          for (var p in image) imageObj[p] = image[p]; // clone image properties to imageObj
+          for (var p in image) {
+            imageObj[p] = image[p]; // clone image properties to imageObj
+          }
+          //log.debug(''+count, 'properties in image object'); // 7
+*/
 
           imageObj.save(function(err) {
             if (err) {
@@ -395,7 +453,6 @@ image.basename = image.personKey + '/' + showcaseWidth + 'x' + '-' + basename;
    * @return {Boolean} true if the request should be retried
    */
   function retryStrategyForbidden(err, response) { // TODO: use a more generic name than '...Forbidden'...
-    /*
     // TODO: debug only
     if (response &&
         response.statusCode !== 200 &&
@@ -409,7 +466,6 @@ image.basename = image.personKey + '/' + showcaseWidth + 'x' + '-' + basename;
       ) {
       log.warn('retry strategy forbidden ignored response status code ', response.statusCode);
     }
-    */
 
     /*
      * retry the request if the response was a 403 one (forbidden),
