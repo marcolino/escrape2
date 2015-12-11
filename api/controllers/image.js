@@ -3,6 +3,7 @@ var mkdirp = require('mkdirp') // to make directories with parents
   , path = require('path') // path handling
   , async = require('async') // to call many async functions in a loop
   , crypto = require('crypto') // to create hashes
+  //, assert = require('assert') // to make assertions
   , jimp = require('jimp') // image manipulation
   , network = require('../controllers/network') // network handling
 
@@ -30,12 +31,13 @@ exports.getByIdPerson = function(idPerson, callback) {
         if (err) {
           return callback('can\'t find images');
         }
+        // TODO: could we map here images to image.toObject()? If so, we could avoid grepObject and all that stuff...
         log.debug('all images array length:', images.length);
 
-        async.each(
+        async.eachSeries( // TODO: should we better serialize persons?
           persons,
           function(person, callbackPerson) {
-            async.each(
+            async.each/*Series*/( // TODO: should we better serialize images?
               person.imageUrls,
               function(imageUrl, callbackImage) {
                 download(imageUrl, person, images, function(err, image) {
@@ -63,65 +65,60 @@ exports.getByIdPerson = function(idPerson, callback) {
 
       });
 
+      function grep(what, where) {
+        return where.filter(function(item) {
+          var match = true;
+          Object.keys(what).map(function(property, index) {
+            match = match && (item[property] === what[property]);
+          });
+          return match;
+        });  
+      }
+
+      function grepObj(what, where) {
+        return where.filter(function(item) {
+          item = item.toObject();
+          var match = true;
+          Object.keys(what).map(function(property, index) {
+            match = match && (item[property] === what[property]);
+          });
+          return match;
+        });  
+      }
+
       function download(imageUrl, person, images, callback) {
-        // !!! WE HAVE HTTP: IN imageUrl and HTTPS in images!!!
-log.debug('DOWNLOAD - filtering on person.key', person.key, 'and', 'imageUrl:', imageUrl);
-        var imageFilter = images.filter(function(img) {
-          log.info ((img._doc.personKey === person.key) ? 'k YYYYYYYYYYYY' : 'k NNNNNNNNNNNN');
-// TODO: on FORBES imageUrl is http://... and _doc.url is https://... : WHY??????????????
-if (img._doc.personKey === person.key) {
-log.silly(img._doc.url);
-}
-          log.info ((img._doc.url === imageUrl) ? 'u YYYYYYYYYYYY' : 'u NNNNNNNNNNNN');
-          return ((img._doc.personKey === person.key) && (img._doc.url === imageUrl));
-        });
-//log.debug('DOWNLOAD - image filter length:', imageFilter.length);
-    
-        if (imageFilter.length > 1) { // should not happen
-          log.error('found more than one (', imageFilter.length, ') images for person', person.key, ', url:', imageUrl, ', skipping');
-          return callback('more than one image for person ' + person.key, image);
-        }
-    
-        var image = {}; // image => options, here...
-        if (imageFilter.length === 1) { // existing image url
-//log.debug('DOWNLOAD - image FOUND in images');
-          //image = imageFilter['0']; // flatten single item array to first and only item
+        var imageUrlHref = imageUrl.href;
+        var imageUrlIsShowcase = imageUrl.isShowcase; // TODO: handle imageUrl.isShowcase and imageUrl.dateOfLastSync...
+        var grep = grepObj([
+          { personKey: person.toObject().key },
+          { url: imageUrlHref }
+        ], images);
+        // assert for at most one result (TODO: only while developing)
+        if (grep.length > 1) { throw new Error('more than one image found for person key ' + person.toObject().key, ' and url ' + imageUrl); }
+        var image = {};
+        if (grep.length === 1) { // existing image url
           image.isNew = false;
-          image.etag = imageFilter['0'].toObject().etag;
-          image.url = imageFilter['0'].toObject().url;
-          image.personKey = imageFilter['0'].toObject().personKey;
+          image.url = grep[0].url;
+          image.etag = grep[0].etag;
+          image.personKey = grep[0].personKey;
         } else { // new image url
-          //image = new Image();
           image.isNew = true;
           image.url = imageUrl;
           image.etag = null;
           image.personKey = person.key;
         }
         image.type = 'image';
-//log.debug('DOWNLOAD - image.etag:', image.etag);
-log.debug('DOWNLOAD - image.isNew:', image.isNew);
 
         fetch(image, function(err, image) {
           if (err) {
             return callback(err, null);
           }
-          /*
-          if (image) {
-            log.info('fetched', image.url, 'is changed:', image.isChanged);
-          }
-          */
           return callback(null, image);
+          // TODO: could just use `return callback(err, image);` ? Test it...
         });
       }
 
       function fetch(resource, callback) { // TODO: => to network.js ...
-/* THIS IS FAST
-if (1) {
-log.silly('image', resource.url.substr(Math.max(resource.url.length - 32, 0), 32), 'FAKE FETCH...');
-resource.isChanged = false;
-return callback(null, resource);
-}
-*/
         var options = {
           url: resource.url, // url to download
           maxAttempts: config.networking.maxAttempts, // number of attempts to retry after the first one
@@ -141,31 +138,11 @@ return callback(null, resource);
           personKey: resource.personKey, // person key
           isNew: resource.isNew,
         };
-//if (!resource.isNew) { log.debug('fetching:', resource.url, 'OPTIONS:', options); }
 
-/* THIS IS FAST
-if (1) {
-log.silly('image', resource.url.substr(Math.max(resource.url.length - 32, 0), 32), 'FAKE FETCH...');
-resource.isChanged = false;
-return callback(null, resource);
-}
-*/
-/*
-log.debug('config.networking.timeout:', config.networking.timeout);
-log.debug('resource.type:', resource.type);
-log.debug('resource.etag:', resource.etag);
-*/
         requestretry(
           options,
           function(err, response, contents) {
 
-/* THIS IS FAST
-if (1) {
-log.silly('image', resource.url.substr(Math.max(resource.url.length - 32, 0), 32), 'FAKE FETCH...');
-resource.isChanged = false;
-return callback(null, resource);
-}
-*/
             if (!err && (response.statusCode === 200 || response.statusCode === 304)) {
               var resource = {};
               resource.url = response.request.uri.href;
@@ -240,13 +217,18 @@ return callback(null, resource);
         var minDistance = 1; // maximum distance possible
         var personKey = null;
         
+        /*
         var personImages = images.filter(function(img) {
-          return ((image.personKey === img.personKey)/* && img.signature*/);
+          return ((image.personKey === img.personKey) && img.signature);
         });
+        */
+        var personImages = grep([
+          { personKey: image.personKey },
+        ], images);
 
         personImages.forEach(function(img, i) {
           //log.info('image:', image.url);
-          if (!image.signature) { // TODO: remove this thes and use '&& img.signature' in previous filter...
+          if (!image.signature) {
             log.warn('findSimilarSignatureImage - image with no signature:', img.url);
             return; // skip this image without signature
           }        
@@ -259,14 +241,14 @@ return callback(null, resource);
         if (minDistance <= config.images.thresholdDistanceSamePerson) {
           //log.warn('found simimilar signature:', image.url);
           image.hasDuplicate = true;
-     //log.info('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.url);
+          //log.info('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.url);
         }
-//else log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, minDistance);
+        //else log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, minDistance);
         return callback(null, image, images);
       };
     
       /**
-       * save image to DB and FS, if unique
+       * save image to DB and FS, if it has not any duplicate
        */
       var saveImage = function(image, images, callback) {
         var showcaseWidth = 320; // TODO: choose this in config(and pass to client...)
@@ -295,7 +277,7 @@ image.basename = image.personKey + '/' + showcaseWidth + 'x' + '-' + basename;
           var destinationFull = destinationDir + '/' + 'full-' + basename;
           var destinationShowcase = destinationDir + '/' + showcaseWidth + 'x' + '-' + basename;
     
-/**/
+/*
           // save image contents to filesystem
           fs.writeFile(
             destinationFull,
@@ -310,9 +292,9 @@ image.basename = image.personKey + '/' + showcaseWidth + 'x' + '-' + basename;
               callback(null, image); // success
             }
           );
-/**/
+*/
 
-/*
+/**/
           // save image contents to FS
           // let use jimp to save full-sized and showcase-sized images
           var buf = new Buffer(image.contents, 'binary');
@@ -321,16 +303,16 @@ image.basename = image.personKey + '/' + showcaseWidth + 'x' + '-' + basename;
               log.warn(err);
               return callback(err, image);
             }
-            img // write full size image
+
+            img
+              // write full size image
               .write(destinationFull, function(err) {
                 if (err) {
                   log.warn(err);
                   return callback(err, image);
                 }
               })
-            ;
-            img // write showcase-resized image
-              //.resize(showcaseWidth, jimp.AUTO) // should use Math.min(showcaseWidth, img.bitmap.width), to avoid enlarging small showcase images?
+              // write showcase-resized image
               .resize(Math.min(showcaseWidth, img.bitmap.width), jimp.AUTO) // to avoid enlarging small showcase images
               .quality(75)
               .write(destinationShowcase, function(err) {
@@ -340,9 +322,10 @@ image.basename = image.personKey + '/' + showcaseWidth + 'x' + '-' + basename;
                 }
               })
             ;
+
           });
           buf = null; // delete Buffer object
-*/
+/**/
 
           // save image to DB
           /*
@@ -367,13 +350,13 @@ image.basename = image.personKey + '/' + showcaseWidth + 'x' + '-' + basename;
             for (var p in image) {
               imageObj[p] = image[p]; // clone image properties to imageObj
             }
-log.error('NEW imageObj'); //, imageObj);
+//log.error('NEW imageObj'); //, imageObj);
           } else {
             var imageFilter = images.filter(function(img) {
               return ((img._doc.personKey === image.personKey) && (img._doc.url === image.url));
             });
             imageObj = imageFilter[0];
-log.error('OLD imageObj'); //, imageObj);
+//log.error('OLD imageObj'); //, imageObj);
           }
 /*
           var imageObj = new Image();

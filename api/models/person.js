@@ -18,7 +18,7 @@ var personSchema = new mongoose.Schema({
   vote: Number,
   rating: Number,
   thruthful: Boolean,
-  dateOfFirstSync: { type: Date, default: Date.now /*(?)*/ },
+  dateOfFirstSync: { type: Date, default: Date.now },
   dateOfLastSync: { type: Date, default: Date.now },
   phoneIsAvailable: Boolean,
   isPresent: Boolean,

@@ -18,17 +18,21 @@ var log = config.log;
 exports.getAll = function(filter, options, result) { // get all persons
 
   Person.find(filter, null, options, function(err, persons) {
-    Image.find({}, 'personKey basename', function(err, images) {
+    Image.find({}, 'personKey basename isShowcase dateOfLastSync', function(err, images) {
       if (err) {
         return callback(err);
       }
 
       // add to each person its showcase image
+// TODO: handle isShowcase dateOfLastSync ...
       for (var i = 0, personsLen = persons.length; i < personsLen; i++) {
-        var P = persons[i]._doc;
-        persons[i]._doc.showcaseBasename = null;
+        //var P = persons[i]._doc;
+        var P = persons[i].toObject();
+        //persons[i]._doc.showcaseBasename = null;
+        P.showcaseBasename = null;
         for (var j = 0, len = images.length; j < len; j++) {
-          var I = images[j]._doc;
+          //var I = images[j]._doc;
+          var I = images[j].toObject();
           if (I.personKey === P.key) {
             if (P.showcaseBasename === null) { // TODO: add a isShowcase function...
               P.showcaseBasename = I.basename;
@@ -126,7 +130,7 @@ exports.sync = function() { // sync persons
             $ = cheerio.load(contents);
             var list = local.getList(provider, $);
             totalPersonsCount += list.length;
-//list = list.slice(0, 12); log.info('list:', list); // to debug: limit list
+//list = list.slice(0, 3); log.info('list:', list); // to debug: limit list
             async.each(
               list, // 1st param is the array of items
               function(element, callbackInner) { // 2nd param is the function that each item is passed to
@@ -234,15 +238,18 @@ exports.sync = function() { // sync persons
 
           // sync persons images
           log.info('persons images sync started');
+          config.timeStart = process.hrtime(); // (TODO: development only)
           image.syncPersonsImages(persons, function(err, persons) {
           //local.syncImages(persons, function(err, persons) {
             if (err) {
               return log.warn('can\'t sync persons images:', err);
             }
-            // success
-            log.info('persons images sync finished');
+            // success (TODO: development only)
+            log.info(
+              'persons images sync finished',
+              ' - elapsed time:', process.hrtime(config.timeStart)[0], 'seconds'
+            );
 
-/**/
             // sync persons aliases
             log.info('persons aliases sync started');
             // TODO: test syncAliasesBatch() to avoid alias groups with just one people...
@@ -253,7 +260,7 @@ exports.sync = function() { // sync persons
               }
               log.info('persons aliases sync finished');
             });
-/**/
+
           });
         });
         /*
@@ -1092,7 +1099,17 @@ local.getDetailsPhone = function($, provider) {
 local.getDetailsImageUrls = function($, provider) {
   var val = [];
   if (provider.key === 'SGI') {
-    $('a[rel="group"][class="fancybox"]').each(function(index, element) {
+//<img id="ctl00_content_FotoAnteprima"
+    var href = $('img[id="mainImgRef"]').attr('src') // showcase image
+    if (href) {
+      href = href
+        .replace(/\.\.\//g, '')
+        .replace(/\?t=.*/, '')
+      ;
+    }
+    var href = provider.url + '/' + href;
+    val.push({ href: href, isShowcase: true });
+    $('a[rel="group"][class="fancybox"]').each(function(index, element) { //other images
       var href = $(element).attr('href');
       if (href) {
         href = href
@@ -1101,25 +1118,27 @@ local.getDetailsImageUrls = function($, provider) {
         ;
       }
       href = provider.url + '/' + href;
-      val.push(href);
+      val.push({ href: href, isShowcase: false });
     });
   }
   if (provider.key === 'TOE') {
-    $('div[id="links"]').find('a').each(function(index, element) {
-      var href = $(element).attr('href');
-      href = provider.url + '/' + href;
-      val.push(href);
+//<img src="./photo-escort/90616-3903/s/4-603338786-3657031986.jpg" title="Milla molto dolce, vera dea del piacere" data-id="3903" data-link="http://www.torinoerotica.com/photo-escort/90616-3903/s/4-603338786-3657031986.jpg" id="mainImgRef"
+    var href = provider.url + '/' + $('img[id="mainImgRef"]').attr('src'); // showcase image
+    val.push({ href: href, isShowcase: true });
+    $('div[id="links"]').find('a').each(function(index, element) { // other images
+      var href = provider.url + '/' + $(element).attr('href');
+      val.push({ href: href, isShowcase: false });
     });
   }
   if (provider.key === 'FORBES') {
-    $('table[class="sinottico"]').find('tr').eq(1).find('a > img').each(function(index, element) {
-      var href = 'http:' + $(element).attr('src'); // TODO: do not add 'http', make network.request work without schema...
-      val.push(href);
+    $('table[class="sinottico"]').find('tr').eq(1).find('a > img').each(function(index, element) { // showcase image
+      var href = 'https:' + $(element).attr('src');
+      val.push({ href: href, isShowcase: true });
     });
     $('div[class="thumbinner"]').find('a > img').each(function(index, element) {
-      if ($(element).attr('src').match(/\.jpg$/i)) {
-        var href = 'http:' + $(element).attr('src'); // TODO: do not add 'http', make network.request work without schema...
-        val.push(href);
+      if ($(element).attr('src').match(/\.jpg$/i)) { // other images
+        var href = 'https:' + $(element).attr('src');
+        val.push({ href: href, isShowcase: false });
       }
     });
   }
