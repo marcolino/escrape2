@@ -17,7 +17,7 @@ var imageSchema = new mongoose.Schema({
 {
   autoIndex: config.debug
 });
-imageSchema.index({ url: 1 }, { unique: true });
+//imageSchema.index({ url: 1 }, { unique: true }); // for some provider issue, more persons could share same image url...
 
 imageSchema.methods.xSave = function(callback) {
   return this.model('Image').savefind({ type: this.type }, callback);

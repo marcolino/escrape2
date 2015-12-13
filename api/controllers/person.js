@@ -130,7 +130,7 @@ exports.sync = function() { // sync persons
             $ = cheerio.load(contents);
             var list = local.getList(provider, $);
             totalPersonsCount += list.length;
-//list = list.slice(0, 3); log.info('list:', list); // to debug: limit list
+list = list.slice(0, 10); log.info('list:', list); // to debug: limit list
             async.each(
               list, // 1st param is the array of items
               function(element, callbackInner) { // 2nd param is the function that each item is passed to
@@ -263,26 +263,6 @@ exports.sync = function() { // sync persons
 
           });
         });
-        /*
-        if (
-          (retrievedProvidersCount === totalProvidersCount) &&
-          (retrievedPersonsCount === totalPersonsCount)
-        ) {
-          local.setActivityStatus(syncStartDate, function(err) {
-            if (err) {
-              return log.error('error setting activity status:', err);
-            }
-            log.info('persons sync finished: all', retrievedPersonsCount, 'persons retrieved');
-          });
-        } else {
-          log.warn(
-            'persons sync finished:',
-            retrievedProvidersCount, 'providers out of', totalProvidersCount, 'retrieved,',
-            retrievedPersonsCount, 'persons out of', totalPersonsCount, 'retrieved,',
-            'presence status not asserted'
-          );
-        }
-        */
       }
     );
   });
@@ -366,7 +346,6 @@ local.setActivityStatus = function(providers, syncStartDate, callback) {
   if (!syncdProvidersRegExp) {
     return callback(); // success: no provider sync'd, no activity status set
   }
-  //log.silly('syncdProvidersRegExp:', syncdProvidersRegExp);
 
   async.series(
     [
@@ -443,47 +422,6 @@ local.presenceSet = function(syncdProvidersRegExp, syncStartDate, callback) {
   ;
 };
 
-local.OLDsyncImages = function(persons, callback) {
-  //var personsSyncd = [];
-
-  async.each(
-    persons, // 1st param in async.each() is the array of items
-    function(person, callbackInner) { // 2nd param is the function that each item is passed to
-//log.silly('=== person', person.key, 'sync images start ===');
-
-/* THIS IS DISABLED BECAUSE OF PERSONS WITHOUT IMAGES...
-      // sync images only for new/changed persons
-      // TODO: TO BE TESTED!!!
-      if (!person.isChanged) {
-log.silly('person', person.key, 'is NOT changed, NOT syncing images');
-        return callbackInner();
-      }
-log.silly('person', person.key, 'is changed, syncing images');
-*/
-      // sync this person images
-      image.syncPersonImages(person, function(err, person) {
-        if (err) {
-          log.warn('can\'t sync person images:', err);
-        //} else { // person sync'd
-        //  personsSyncd.push(person);
-        }
-//else log.silly('=== person', person.key, 'sync images done ===');
-        // person images sync'd: sync aliases (in each person we have 'isChanged' property...)
-        callbackInner();
-      });
-    },
-    function(err) { // 3th param is the function to call when everything's done (inner callback)
-      if (err) {
-        return callback('some error in the final async callback:' + err.toString());
-      }
-//log.silly('ALL IMAGES SYNC\'D !!!!!!!!!!!!!!!!!!!!!!!!!');
-      // success
-      callback(null, persons); // all loops finished
-      //callback(null, personsSyncd); // all loops finished
-    }
-  );
-};
-
 /**
  * Sync aliases in "batch" mode, i.e. on all existing persons, resetting all aliases on start
  */
@@ -520,7 +458,7 @@ local.resetAliases = function(persons) {
   }
 };
 
-local.syncAliasesGOOD = function(persons, callback) {
+local.syncAliases = function(persons, callback) {
   /**
    * person   images                                  alias   reason
    *     P1   i1.P1   i2.P1   i3.P1                   aa      Δ(P1, P3) < threshold
@@ -529,97 +467,6 @@ local.syncAliasesGOOD = function(persons, callback) {
    *
    *     P9   i1.P9   i2.P9   i3.P9   i4.P9   i5.p9
    */
-  //log.silly('persons.length:', persons.length);
-  //log.silly('persons:', persons); return callback();
-
-  /* RESET aliases - DEBUG ONLY (?) */
-  local.resetAliases(persons);
-  log.silly('Aliases RESET');
-//return callback(); // JUST CLEAN ALIASES
-
-  /* */
-
-  Image.find({}, 'personKey signature basename', function(err, images) {
-    if (err) {
-      return callback(err);
-    }
-
-    // add to each person its images
-//log.silly(' *** loading persons with their images started ***');
-    for (var i = 0, personsLen = persons.length; i < personsLen; i++) {
-      persons[i].images = [];
-      for (var j = 0, len = images.length; j < len; j++) {
-        if (images[j].personKey === persons[i].key) {
-          persons[i].images.push(images[j]);
-          continue;
-        }
-      }
-    }
-//log.silly(' *** loading persons with their images finished ***');
-
-    // check if person (P) belongs to an alias group, or if it constitutes a new alias group
-    for (var k = 0; k < personsLen; k++) {
-      var P = persons[k]; // P is the person we arge going to check for aliases
-      //log.silly('syncALiases - person:', 1 + k, '/', personsLen);
-/* TODO: COMMENTED OUT JUST FOR DEBUGGING PURPOSES - RE-ENABLE IT!
-      if (!P.isChanged) {
-        log.silly('person:', 1 + k, '/', personsLen, 'is NOT changed, NOT syncing aliases');
-        continue;
-      }
-*/
-      P.aliasOld = P.alias;
-//log.silly('========= P.aliasOld reset to', P.aliasOld);
-
-      for (var l = 0/*k + 1*/; l < personsLen; l++) { // start from 0 inner loop, too, if we reset aliases on top
-        var Q = persons[l]; // Q is the current person from all persons
-        Q.aliasOld = Q.alias;
-        if (P.key === Q.key) { // skip the same person
-          continue;
-        }
-        if (local.areSimilar(P, Q)) {
-          if (Q.alias) { // Q had already an alias
-            if (P.alias && (Q.alias !== P.alias)) {
-              // our person (P) was just assigned an alias, and we find anoter person (Q)
-              // TODO: do not skip, wait creating a new alias at the end of this loop,
-              //       and use the alias found, if any is found;
-              //       bark only if different aliases are found...
-              log.warn('found one more person (with a different alias) similar to person', P.key + ':', Q.key, 'P alias is', P.alias, 'and', 'Q alias is', Q.alias, ', ignored');
-              continue;
-            }
-//log.silly('syncAliases - alias already present:', Q.alias);
-          } else { // Q had not any alias
-            Q.alias = local.aliasCreate();
-//log.silly('syncAliases - alias created:', Q.alias);
-//log.silly('*** Q.alias:', Q.alias);
-            local.savePerson(Q);
-            //log.silly('updated alias for Q person', Q.key);
-          }
-          log.silly('syncAliases - person:', 1 + k, '/', personsLen, 'key:', Q.key, 'is similar to person:', P.key);
-          P.alias = Q.alias;
-//log.silly('* P.alias:', P.alias);
-//log.silly('ooo P.aliasOld:', P.aliasOld);
-          //break; // DEBUG: do not break, to check we do not have duplicated Persons with different aliases
-        } else {
-          //log.silly('syncAliases - person:', 1 + k, '/', personsLen, 'key:', Q.key, 'is NOT similar to person:', P.key);
-        }
-      }
-      // finished check for this person P, save alias if changed
-//log.silly('** P.aliasOld:', P.aliasOld);
-//log.silly('** P.alias:', P.alias);
-      if (P.aliasOld !== P.alias) {
-//log.silly('*** P.alias:', P.alias);
-        local.savePerson(P);
-        //log.silly('updated alias for P person', P.key);
-      }
-//else log.silly('--------- not saved alias for person', P.key, '(unchanged)');
-    }
-    callback(); // success    
-  });
-};
-
-local.syncAliases = function(persons, callback) {
-
-  //local.resetAliases(persons);
 
   Image.find({}, 'personKey signature basename', function(err, images) {
     if (err) {
@@ -1097,47 +944,45 @@ local.getDetailsPhone = function($, provider) {
 };
 
 local.getDetailsImageUrls = function($, provider) {
-  var val = [];
+  var val = [], href;
   if (provider.key === 'SGI') {
-//<img id="ctl00_content_FotoAnteprima"
-    var href = $('img[id="mainImgRef"]').attr('src') // showcase image
-    if (href) {
-      href = href
-        .replace(/\.\.\//g, '')
-        .replace(/\?t=.*/, '')
-      ;
-    }
-    var href = provider.url + '/' + href;
+    href = provider.url + '/' + $('img[id="ctl00_content_FotoAnteprima"]').attr('src'); // showcase image
+    href = href
+      .replace(/\.\.?\//g, '')
+      .replace(/\?t=.*/, '')
+    ;
     val.push({ href: href, isShowcase: true });
     $('a[rel="group"][class="fancybox"]').each(function(index, element) { //other images
-      var href = $(element).attr('href');
-      if (href) {
-        href = href
-          .replace(/\.\.\//g, '')
-          .replace(/\?t=.*/, '')
-        ;
-      }
-      href = provider.url + '/' + href;
+      var href = provider.url + '/' + $(element).attr('href');
+      href = href
+        .replace(/\.\.?\//g, '')
+        .replace(/\?t=.*/, '')
+      ;
       val.push({ href: href, isShowcase: false });
     });
   }
   if (provider.key === 'TOE') {
-//<img src="./photo-escort/90616-3903/s/4-603338786-3657031986.jpg" title="Milla molto dolce, vera dea del piacere" data-id="3903" data-link="http://www.torinoerotica.com/photo-escort/90616-3903/s/4-603338786-3657031986.jpg" id="mainImgRef"
-    var href = provider.url + '/' + $('img[id="mainImgRef"]').attr('src'); // showcase image
+    href = provider.url + '/' + $('img[id="mainImgRef"]').attr('src'); // showcase image
+    href = href
+      .replace(/\.\.?\//g, '')
+    ;
     val.push({ href: href, isShowcase: true });
     $('div[id="links"]').find('a').each(function(index, element) { // other images
-      var href = provider.url + '/' + $(element).attr('href');
+      href = provider.url + '/' + $(element).attr('href');
+      href = href
+        .replace(/\.\.?\//g, '')
+      ;
       val.push({ href: href, isShowcase: false });
     });
   }
   if (provider.key === 'FORBES') {
     $('table[class="sinottico"]').find('tr').eq(1).find('a > img').each(function(index, element) { // showcase image
-      var href = 'https:' + $(element).attr('src');
+      href = 'https:' + $(element).attr('src');
       val.push({ href: href, isShowcase: true });
     });
     $('div[class="thumbinner"]').find('a > img').each(function(index, element) {
       if ($(element).attr('src').match(/\.jpg$/i)) { // other images
-        var href = 'https:' + $(element).attr('src');
+        href = 'https:' + $(element).attr('src');
         val.push({ href: href, isShowcase: false });
       }
     });
