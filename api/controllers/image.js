@@ -26,20 +26,28 @@ exports.getByIdPerson = function(idPerson, callback) {
 };
 
 exports.syncPersonsImages = function(persons, callback) {
+  //log.error(persons);
+  //return callback(null, persons);
+
   // get all images in db
-  Image.find({}, function(err, images) {
+  Image.find().lean().exec(function(err, images) { // lean gets plain objects
     if (err) {
       return callback('can\'t find images');
     }
     // TODO: could we map here images to image.toObject()? If so, we could avoid grepObject and all that stuff...
     log.debug('all images array length:', images.length);
 
+    //log.error(images);
+    //return callback(null, persons);
+
     async.eachSeries( // TODO: should we better serialize persons? (YES?)
       persons,
       function(person, callbackPerson) {
+//log.info(' *** person:', person);
         async.each( // TODO: should we better serialize images? (NO)
           person.imageUrls,
           function(imageUrl, callbackImage) {
+//log.info(' *** imageUrl:', imageUrl);
             download(imageUrl, person, images, function(err, image) {
               if (err) {
                 return callbackImage(err);
@@ -93,18 +101,18 @@ log.debug('grepObj -', item[property], '=?=', what[property]);
 
   function download(imageUrl, person, images, callback) {
     //imageUrl.isShowcase; // TODO: handle imageUrl.isShowcase and imageUrl.dateOfLastSync...
-    var grep = grepObj([
+    var grepped = grep/*Obj*/([
       { personKey: person.toObject().key },
       { url: imageUrl.href }
     ], images);
     // assert for at most one result (TODO: only while developing)
-    if (grep.length > 1) { throw new Error('more than one image found for person key ' + person.toObject().key, ' and url ' + imageUrl); }
+    if (grepped.length > 1) { throw new Error('more than one image found for person key ' + person.toObject().key, ' and url ' + imageUrl); }
     var image = {};
-    if (grep.length === 1) { // existing image url
+    if (grepped.length === 1) { // existing image url
       image.isNew = false;
-      image.url = grep[0].url;
-      image.etag = grep[0].etag;
-      image.personKey = grep[0].personKey;
+      image.url = grepped[0].url;
+      image.etag = grepped[0].etag;
+      image.personKey = grepped[0].personKey;
     } else { // new image url
       image.isNew = true;
       image.url = imageUrl.href;
@@ -252,50 +260,42 @@ log.debug('grepObj -', item[property], '=?=', what[property]);
 
   var findSimilarSignatureImage = function(image, images, callback) {
     var minDistance = 1; // maximum distance possible
-    //var personKey = null;
     var imageMostSimilar;
-    
-log.silly('### image.personKey:', image.personKey);
-log.silly('### images.length:', images.length);
-    var grep = images.filter(function(item) {
-      item = item.toObject();
-log.silly('### item:', item);
-log.debug('grepObj -', item['personKey'], '=?=', image['personKey']);
-    });
-//return callback(true, image, images); // skip to last callback
-
-
-
-//log.silly('### images:', images);
-    var personImages = grepObj([
+    var personImages = grep(
       { personKey: image.personKey },
-    ], images);
+      images
+    );
 
-log.silly('### personImages:', personImages.length);
-
+    //log.silly('### personImages:', personImages.length);
+    image.hasDuplicate = false;
     personImages.forEach(function(img, i) {
-log.silly('### image:', image.url);
+
+      // check image url, beforehand (TODO: but, check why the duplication is not found by signature comparison...)
+      if (image.url === img.url) {
+        image.hasDuplicateXXX = true;
+        //image.hasDuplicate = true;
+        //log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE (SAME URL):', image.url, imageMostSimilar.url);
+        //return false; // same url, break loop here
+      }
+
       if (!image.signature) {
         log.warn('findSimilarSignatureImage - image with no signature:', img.url);
         return; // skip this image without signature
       }        
-      image.personKey = img.personKey; // set personKey in image
-log.silly('findSimilarSignatureImage - signatures:', image.signature, img.signature);
+      ///image.personKey = img.personKey; // set personKey in image (TODO: WHY??? it should be set already...)
       var distance = exports.distance(image.signature, img.signature);
       if (distance <= minDistance) {
         minDistance = distance;
         imageMostSimilar = img;
       }
     });
-log.silly('findSimilarSignatureImage - minDistance:', minDistance);
     if (minDistance <= config.images.thresholdDistanceSamePerson) {
       //log.warn('found simimilar signature:', image.url);
       image.hasDuplicate = true;
       log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.url, imageMostSimilar.url);
-      return callback(true, image, images); // skip to last callback
     }
 else log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, ', distance:', minDistance);
-    return callback(null, image, images);
+    callback(null, image.hasDuplicate ? null : image, images);
   };
 
   /**
@@ -318,12 +318,12 @@ else log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, ', dist
     ];
 
 /*
-   TODO: using true as first parameter to preceding callback, we don't even get here if 
-   image has duplicate. TEST THIS!
+   TODO: using true as first parameter to preceding callback, we shuldn't even get here if 
+   image has duplicate. THIS DOES NOT SEEM TO WORK, BUT FREEZES WATERFALL!
  */
-    if (image.hasDuplicate) {
-      log.silly('image', image.url, '!!!DUPLICATED, NOT SAVED (SHOULD NOT GET HERE!!!)');
-      return callback(null, null);
+    if (!image) {
+      log.silly('createImageVersions !!!DUPLICATED, NOT CREATED');
+      return callback(null, null, null);
     }
 //////////////////////////////////////////////////////////////////////////////////////
 
@@ -405,6 +405,10 @@ else log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, ', dist
    * save image to DB
    */
   var saveImageToDb = function(image, images, callback) {
+    if (!image) {
+      log.silly('saveImageToDb !!!DUPLICATED, NOT SAVED');
+      return callback(null, null);
+    }
     Image.findOneAndUpdate(
       { basename: image.basename, personKey: image.personKey}, // query
       image, // object to save

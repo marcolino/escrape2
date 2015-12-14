@@ -1284,9 +1284,11 @@ if (config.env === 'development') {
 
 module.exports = exports;
 
+/*
 // TODO: DEBUG ONLY ///////////////////////////////////////////////////////////
 var db = require('../models/db'); // database wiring
 exports.sync(function(err) {
   log.info('SYNC RESULT:', err);
 });
 ///////////////////////////////////////////////////////////////////////////////
+*/
