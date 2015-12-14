@@ -130,7 +130,7 @@ exports.sync = function() { // sync persons
             $ = cheerio.load(contents);
             var list = local.getList(provider, $);
             totalPersonsCount += list.length;
-list = list.slice(0, 10); log.info('list:', list); // to debug: limit list
+list = list.slice(0, 1); log.info('list:', list); // to debug: limit list
             async.each(
               list, // 1st param is the array of items
               function(element, callbackInner) { // 2nd param is the function that each item is passed to
@@ -247,7 +247,7 @@ list = list.slice(0, 10); log.info('list:', list); // to debug: limit list
             // success (TODO: development only)
             log.info(
               'persons images sync finished',
-              ' - elapsed time:', process.hrtime(config.timeStart)[0], 'seconds'
+              '- elapsed time:', process.hrtime(config.timeStart)[0], 'seconds'
             );
 
             // sync persons aliases
@@ -468,7 +468,7 @@ local.syncAliases = function(persons, callback) {
    *     P9   i1.P9   i2.P9   i3.P9   i4.P9   i5.p9
    */
 
-  Image.find({}, 'personKey signature basename', function(err, images) {
+  Image.find({}, 'personKey signature', function(err, images) {
     if (err) {
       return callback(err);
     }
@@ -512,7 +512,7 @@ local.syncAliases = function(persons, callback) {
         }
       }
     }
-    log.silly('' + aliasesCount, 'aliases found');
+    log.info('' + aliasesCount, 'aliases found');
     callback(); // success    
   });
 };
@@ -524,6 +524,7 @@ exports.listAliasGroups = function(callback) {
       return callback(err);
     }
     Image.find({}, 'personKey signature basename', function(err, images) {
+      // TODO: do we need basename?
       if (err) {
         return callback(err);
       }
@@ -715,7 +716,9 @@ exports.checkImages = function(callback) {
           [
             function(callbackParallel) {
               // check exactly one image document matches each image file
-              var basename = file.replace(new RegExp(config.images.path + '/'), '');
+              //var basename = file.replace(new RegExp(config.images.path + '/'), '');
+              //var basename = file.replace(config.images.path + '/', '');
+              var basename = file.replace(new RegExp(config.images.path + '/.*?/.*?/'), '');
               Image.find({ basename: basename }, 'basename', function(err, docs) {
                 checkImage(err, docs, basename);
                 callbackParallel();
@@ -1280,3 +1283,10 @@ if (config.env === 'development') {
 }
 
 module.exports = exports;
+
+// TODO: DEBUG ONLY ///////////////////////////////////////////////////////////
+var db = require('../models/db'); // database wiring
+exports.sync(function(err) {
+  log.info('SYNC RESULT:', err);
+});
+///////////////////////////////////////////////////////////////////////////////

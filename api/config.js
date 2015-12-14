@@ -11,6 +11,7 @@ var config = {
   providers: providers, // imported providers
   images: {
     path: __dirname + '/..' + '/data/images',
+    showcaseWidth: 32,
     thresholdDistance: (os.hostname() === 'malibox') ? 0.04 : 0.125, // TODO: debug only, fix on 0.04 on production
     thresholdDistanceSamePerson: (os.hostname() === 'malibox') ? 0.02 : 0.125, // TODO: debug only, fix on 0.02 on production
   },

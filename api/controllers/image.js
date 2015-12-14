@@ -8,7 +8,6 @@ var mkdirp = require('mkdirp') // to make directories with parents
   , network = require('../controllers/network') // network handling
 
 , request = require('request')
-
 , requestretry = require('requestretry')
 , randomUseragent = require('random-ua') // to use a random user-agent
 , agent = require('socks5-http-client/lib/Agent')
@@ -70,18 +69,23 @@ exports.syncPersonsImages = function(persons, callback) {
     return where.filter(function(item) {
       var match = true;
       Object.keys(what).map(function(property, index) {
-        match = match && (item[property] === what[property]);
+        match = (match && (item[property] === what[property]));
       });
       return match;
     });  
   }
 
   function grepObj(what, where) {
+log.debug('grepObj - what:', what);
     return where.filter(function(item) {
       item = item.toObject();
+log.debug('grepObj - item:', item);
       var match = true;
       Object.keys(what).map(function(property, index) {
-        match = match && (item[property] === what[property]);
+log.debug('grepObj - index:', index);
+log.debug('grepObj - property:', property);
+log.debug('grepObj -', item[property], '=?=', what[property]);
+        match = (match && (item[property] === what[property]));
       });
       return match;
     });  
@@ -110,11 +114,14 @@ exports.syncPersonsImages = function(persons, callback) {
     image.type = 'image';
 
     fetch(image, function(err, image) {
+/*
       if (err) {
         return callback(err, null);
       }
       return callback(null, image);
       // TODO: could just use `return callback(err, image);` ? Test it...
+*/
+      callback(err, image);
     });
   }
 
@@ -151,7 +158,6 @@ exports.syncPersonsImages = function(persons, callback) {
       encoding: ((resource.type === 'text') ? null : (resource.type === 'image') ? 'binary' : null), // encoding
       headers: {
         'User-Agent': randomUseragent.generate(), // user agent: pick a random one
-        ///////////'If-None-Match': resource.etag ? resource.etag : null, // eTag field
       },
       agentClass: config.tor.available ? agent : null, // socks5-http-client/lib/Agent
       agentOptions: { // TOR socks host/port
@@ -161,7 +167,7 @@ exports.syncPersonsImages = function(persons, callback) {
       personKey: resource.personKey, // person key
       isNew: resource.isNew,
     };
-    if (resource.etag) {
+    if (resource.etag) { // must check etag is not null, can't set a null If-None-Match header
       headers['If-None-Match'] = resource.etag; // eTag field
     }
 
@@ -197,7 +203,7 @@ exports.syncPersonsImages = function(persons, callback) {
               );
               return callback(null, resource);
             }
-            log.info('fetched uri', response.request.uri.href);
+            //log.info('fetched uri', response.request.uri.href);
             resource.isChanged = true;
             resource.contents = contents;
             resource.etag = response.headers.etag;
@@ -217,7 +223,11 @@ exports.syncPersonsImages = function(persons, callback) {
       [
         function(callback) { getSignatureFromImage(image, images, callback); },
         findSimilarSignatureImage,
-        saveImage,
+        //saveImage,
+        ///createImagePaths,
+        createImageVersions,
+        //saveImageToFs,
+        saveImageToDb,
       ],
       function (err, image) {
         callback(err);
@@ -245,36 +255,175 @@ exports.syncPersonsImages = function(persons, callback) {
     //var personKey = null;
     var imageMostSimilar;
     
-    var personImages = grep([
+log.silly('### image.personKey:', image.personKey);
+log.silly('### images.length:', images.length);
+    var grep = images.filter(function(item) {
+      item = item.toObject();
+log.silly('### item:', item);
+log.debug('grepObj -', item['personKey'], '=?=', image['personKey']);
+    });
+//return callback(true, image, images); // skip to last callback
+
+
+
+//log.silly('### images:', images);
+    var personImages = grepObj([
       { personKey: image.personKey },
     ], images);
 
+log.silly('### personImages:', personImages.length);
+
     personImages.forEach(function(img, i) {
-      //log.info('image:', image.url);
+log.silly('### image:', image.url);
       if (!image.signature) {
         log.warn('findSimilarSignatureImage - image with no signature:', img.url);
         return; // skip this image without signature
       }        
       image.personKey = img.personKey; // set personKey in image
+log.silly('findSimilarSignatureImage - signatures:', image.signature, img.signature);
       var distance = exports.distance(image.signature, img.signature);
       if (distance <= minDistance) {
         minDistance = distance;
         imageMostSimilar = img;
       }
     });
+log.silly('findSimilarSignatureImage - minDistance:', minDistance);
     if (minDistance <= config.images.thresholdDistanceSamePerson) {
       //log.warn('found simimilar signature:', image.url);
       image.hasDuplicate = true;
       log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.url, imageMostSimilar.url);
+      return callback(true, image, images); // skip to last callback
     }
-    //else log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, minDistance);
+else log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, ', distance:', minDistance);
     return callback(null, image, images);
+  };
+
+  /**
+   * create image versions
+   */
+  var createImageVersions = function(image, images, callback) {
+    var versions = [
+      {
+        name: 'full',
+        width: 0, // full width
+        quality: 100, // full quality
+        dir: 'full', // directory for this version
+      },
+      {
+        name: 'showcase',
+        width: config.images.showcaseWidth, // showcase width
+        quality: 75, // 75% quality
+        dir: '' + config.images.showcaseWidth, // directory for this version
+      }
+    ];
+
+/*
+   TODO: using true as first parameter to preceding callback, we don't even get here if 
+   image has duplicate. TEST THIS!
+ */
+    if (image.hasDuplicate) {
+      log.silly('image', image.url, '!!!DUPLICATED, NOT SAVED (SHOULD NOT GET HERE!!!)');
+      return callback(null, null);
+    }
+//////////////////////////////////////////////////////////////////////////////////////
+
+    // use a hash of response url + current timestamp as filename to make it uniq
+    var hash = crypto.createHash('md5').update(image.url + Date.now()).digest('hex');
+    var ext = path.extname(image.url); // use url extension as filename extension
+    ext = local.normalizeExtension(ext);
+    var basename = hash + ext;
+    image.basename = basename;
+
+    // let use jimp to save any version image
+    var buf = new Buffer(image.contents, 'binary');
+    jimp.read(buf, function(err, img) { // THIS IS FAST
+      buf = null; // delete Buffer object (TODO: is this really useful?)
+      if (err) {
+        log.warn(err);
+        return callbackVersion(err);
+      }
+      //log.debug('read', image.url);
+
+      // loop through all versions to resize and save image
+      async.eachSeries(
+        versions,
+        function(version, callbackVersion) {
+          //log.error('VERSION NAME:', version.name);
+          // create directory, if not present
+          var destinationPath = config.images.path + '/' + image.personKey + '/' + version.dir;
+          var destination = destinationPath + '/' + basename;
+          try {
+            mkdirp.sync(destinationPath);
+          } catch(err) {
+            if (err.code !== 'EEXIST') {
+              log.silly('can\'t make path', destinationPath); // TODO: remove me on production
+              return callbackVersion(err);
+            }
+          }
+  
+          // directory created, build image version
+          if (version.name === 'full') { // full version, just save image with no resize
+            //log.silly('full writing to', version.name);
+            img
+              .write(destination, function(err) {
+                if (err) {
+                  log.silly('can\'t write full size image version via jimp to', destination, ':', err);
+                  return callbackVersion(err);
+                }
+                //log.info('written full to', destination);
+                callbackVersion(); // success
+              })
+            ;
+          } else { // not full version, resize image and save
+            // to avoid enlarging showcase images
+            var width = Math.min(version.width, img.bitmap.width);
+            //log.silly('other writing to', version.name, 'width:', width);
+            img
+              .resize(width, jimp.AUTO)
+              .quality(version.quality)
+              .write(destination, function(err) {
+                if (err) {
+                  log.silly('can\'t write other size image version via jimp to', destination, ':', err);
+                  return callbackVersion(err);
+                }
+                //log.info('written other to', destination);
+                callbackVersion(); // success
+              })
+            ;
+          }
+        }, // async each versions iteration function done
+        function(err) { // all directories and image versions created 
+          // TODO: CHECK THIS!!! (remove on production)
+          //log.silly('createImageVersions() - LAST callback - images.length:', images.length, ', err:', err);
+          callback(err, image, images); // finished
+        }
+      ); // async each versions done
+    }); // jimp read / resize / write done
+  };
+
+  /**
+   * save image to DB
+   */
+  var saveImageToDb = function(image, images, callback) {
+    Image.findOneAndUpdate(
+      { basename: image.basename, personKey: image.personKey}, // query
+      image, // object to save
+      { upsert: true }, // options
+      function(err, doc) { // result callback
+        if (err) {
+          log.warn('can\'t save image', imageObj.basename, ':', err);
+        } else {
+          log.info('image', image.personKey + '/' + image.basename, 'added');
+        }
+        callback(err, image); // finish
+      }
+    );
   };
 
   /**
    * save image to DB and FS, if it has not any duplicate
    */
-  var saveImage = function(image, images, callback) {
+  var saveImageMOLOLITHIC = function(image, images, callback) {
 //return callback(null, null);
     var showcaseWidth = 320; // TODO: choose this in config(and pass to client...)
 
@@ -324,7 +473,7 @@ exports.syncPersonsImages = function(persons, callback) {
 //log.debug('buffering');
       var buf = new Buffer(image.contents, 'binary');
 //log.debug('reading');
-      jimp.read(buf, function(err, img) { // THISIS FAST
+      jimp.read(buf, function(err, img) { // THIS IS FAST
         if (err) {
           log.warn(err);
           return callback(err, image);
@@ -352,8 +501,8 @@ log.debug('written', destinationFull);
               return callback(err, image);
             }
           })
-*/
         ;
+*/
       });
       buf = null; // delete Buffer object
 
