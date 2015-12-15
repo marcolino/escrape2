@@ -9,6 +9,94 @@ var request = require('request') // to place http requests
 var log = config.log;
 
 /**
+ * fetch resource contents, retrying and anonymously
+ */
+exports.fetch = function(resource, callback) {
+  var options = {
+    url: resource.url, // url to download
+    maxAttempts: config.networking.maxAttempts, // number of attempts to retry after the first one
+    retryDelay: config.networking.retryDelay, // number of milliseconds to wait for before trying again
+    retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
+    timeout: config.networking.timeout, // number of milliseconds to wait for a server to send response headers before aborting the request
+    encoding: ((resource.custom.type === 'text') ? null : (resource.custom.type === 'image') ? 'binary' : null), // encoding
+    headers: {
+      'User-Agent': randomUseragent.generate(), // user agent: pick a random one
+    },
+    agentClass: config.tor.available ? agent : null, // socks5-http-client/lib/Agent
+    agentOptions: { // TOR socks host/port
+      socksHost: config.tor.available ? config.tor.host : null, // TOR socks host
+      socksPort: config.tor.available ? config.tor.port : null, // TOR socks port
+    },
+    custom: resource.custom, // custom properties to be returned back
+    /*
+    personKey: resource.personKey, // person key
+    isNew: resource.isNew, // is new flag
+    isShowcase: resource.isShowcase, // is showcase flag
+    */
+  };
+  if (resource.custom.etag) { // must check etag is not null, can't set a null If-None-Match header
+    options.headers['If-None-Match'] = resource.custom.etag; // eTag field
+  }
+
+  requestretry(
+    options,
+    function(err, response, contents) {
+
+      if (!err && (response.statusCode === 200 || response.statusCode === 304)) {
+        var resource = {};
+        resource.custom = {};
+        resource.url = response.request.uri.href;
+        resource.custom.etag = response.request.headers['If-None-Match'];
+        if (response.statusCode === 304) { // not changed
+          resource.custom.isChanged = false;
+
+          if (config.env === 'development') {
+            if (resource.custom.etag !== response.headers.etag) { // TODO: just to be safe, should not need this test on production
+              log.warn(
+                'resource', response.url, 'not downloaded, but etag does change, If-None-Match not honoured;',
+                'response status code:', response.statusCode, ';',
+                'eTags - resource:', resource.custom.etag, ', response:', response.headers.etag, ';',
+                'contents length:', (contents ? contents.length : 'zero')
+              );
+              return callback(null, resource);
+            }
+          }
+
+        } else {
+
+          if (config.env === 'development') {
+            if (resource.custom.etag === response.headers.etag) { // TODO: just to be safe, should not need this test on production
+              log.warn(
+                'resource', response.url, 'downloaded, but etag does not change, If-None-Match not honoured;',
+                'response status code:', response.statusCode, ';',
+                'eTags - resource:', resource.custom.etag, ', response:', response.headers.etag, ';',
+                'contents length:', (contents ? contents.length : 'zero')
+              );
+              return callback(null, resource);
+            }
+          }
+          //log.info('fetched uri', response.request.uri.href);
+          resource.contents = contents;
+          resource.custom = response.request.custom; // return request custom properties, too
+          resource.custom.isChanged = true;
+          resource.custom.etag = response.headers.etag;
+/*
+          resource.isChanged = true;
+          resource.etag = response.headers.etag;
+          resource.personKey = response.request.personKey;
+          resource.isNew = response.request.isNew;
+          resource.isShowcase = response.request.isShowcase;
+*/
+        }
+        callback(null, resource); // success
+      } else {
+        callback(err, null); // error
+      }
+    }
+  );
+};
+
+/**
  * requests url contents, retrying and anonymously
  */
 exports.requestRetryAnonymous = function(resource, error, success) {
@@ -82,7 +170,56 @@ log.info('<network downloaded resource with etag NOT set');
 */
   );
 
+};
 
+/**
+ * requests url contents, smartfully
+ */
+exports.requestSmart = function(resource, error, success) {
+  var encoding = // set encoding to null (auto) for text resources, to binary for images
+    (resource.type === 'text') ? null :
+    (resource.type === 'image') ? 'binary' :
+    null
+  ;
+  var options = {
+    uri: resource.url, // uri to download
+    headers: {
+      'User-Agent': randomUseragent.generate()
+    },
+    encoding: encoding,
+    timeout: config.networking.timeout // number of milliseconds to wait for a server to send response headers before aborting the request
+  };
+  if (resource.etag) { // set header's If-None-Match tag if we have an etag
+//log.info('>network downloading resource with etag set');
+    options.headers['If-None-Match'] = resource.etag;
+  }
+//else log.info('>network downloading resource with etag NOT set');
+  if (config.tor.available) { // TOR is available
+    options.agentClass = agent;
+    options.agentOptions = { // TOR socks host/port
+      socksHost: config.tor.host,
+      socksPort: config.tor.port
+    };
+  }
+
+  request(
+    options,
+    function(err, response, contents) {
+      if (err) {
+        return error(err);
+      }
+//if (response.headers.etag) log.info('<network downloaded resource with etag set');
+//else log.info('<network downloaded resource with etag NOT set');
+      resource.statusCode = response.statusCode;    
+      //if (response.statusCode < 300) { // 2xx, success, download effected
+        if (response.headers.etag) {
+          resource.etagNew = response.headers.etag;
+        }
+      //}
+      success(contents, resource);
+    }
+  );
+};
 
   /**
    * request-retry strategies
@@ -140,64 +277,14 @@ log.info('<network downloaded resource with etag NOT set');
       )
     );
     if (forbidden) {
-      log.warn('request was forbidden (' + (response ? response.statusCode : '?') + '); will retry in ', (options.retryDelay / 1000), ' seconds...');
+      log.warn('request was forbidden for uri', response.request.uri.href, '(', (response ? response.statusCode : '?'), ')');
+    } else {
+      if (response && response.statusCode >= 400) {
+        log.warn('retry strategy - unhandled condition for uri', response.request.uri.href, '(status code is:', response.statusCode + '), giving up');
+      }
     }
-
-    // TODO: debug this condition... is this the cause of freezes on full sync's (callbackInner() not called) ?
-    if (response && response.statusCode >= 400) { log.error('retry strategy - not found a forbidden condition (status code is:', response.statusCode + ')'); }
 
     return forbidden;
   }
-
-};
-
-/**
- * requests url contents, smartfully
- */
-exports.requestSmart = function(resource, error, success) {
-  var encoding = // set encoding to null (auto) for text resources, to binary for images
-    (resource.type === 'text') ? null :
-    (resource.type === 'image') ? 'binary' :
-    null
-  ;
-  var options = {
-    uri: resource.url, // uri to download
-    headers: {
-      'User-Agent': randomUseragent.generate()
-    },
-    encoding: encoding,
-    timeout: config.networking.timeout // number of milliseconds to wait for a server to send response headers before aborting the request
-  };
-  if (resource.etag) { // set header's If-None-Match tag if we have an etag
-//log.info('>network downloading resource with etag set');
-    options.headers['If-None-Match'] = resource.etag;
-  }
-//else log.info('>network downloading resource with etag NOT set');
-  if (config.tor.available) { // TOR is available
-    options.agentClass = agent;
-    options.agentOptions = { // TOR socks host/port
-      socksHost: config.tor.host,
-      socksPort: config.tor.port
-    };
-  }
-
-  request(
-    options,
-    function(err, response, contents) {
-      if (err) {
-        return error(err);
-      }
-//if (response.headers.etag) log.info('<network downloaded resource with etag set');
-//else log.info('<network downloaded resource with etag NOT set');
-      resource.statusCode = response.statusCode;    
-      //if (response.statusCode < 300) { // 2xx, success, download effected
-        if (response.headers.etag) {
-          resource.etagNew = response.headers.etag;
-        }
-      //}
-      success(contents, resource);
-    }
-  );
-};
 
 module.exports = exports;

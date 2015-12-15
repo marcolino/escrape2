@@ -27,7 +27,7 @@ var personSchema = new mongoose.Schema({
   //////////////showcaseUrl: String // showcase image (local) url
 },
 {
-  autoIndex: config.debug,
+  autoIndex: config.env === 'development',
   collection: 'persons'
 });
 personSchema.index({ key: 1 }, { unique: true });

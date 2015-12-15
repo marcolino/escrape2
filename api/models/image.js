@@ -15,7 +15,7 @@ var imageSchema = new mongoose.Schema({
   isTruthful: Boolean // this image is to be considered thruthful
 },
 {
-  autoIndex: config.debug
+  autoIndex: config.env === 'development'
 });
 //imageSchema.index({ url: 1 }, { unique: true }); // for some provider issue, more persons could share same image url...
 

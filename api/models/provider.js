@@ -9,7 +9,7 @@ var providerSchema = new mongoose.Schema({
   language: String,
   categories: Object
 }, {
-  autoIndex: config.debug
+  autoIndex: config.env === 'development'
 });
 
 /*

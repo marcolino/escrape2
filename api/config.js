@@ -3,9 +3,10 @@ var os = require("os")
   , providers = require('./config.providers') // configured providers
 ;
 
+var env = 'development'; // default env mode, overridable by environment
+
 var config = {
-  env: 'development',
-  debug: true,
+  env: process.env.NODE_ENV ? process.env.NODE_ENV : env,
   category: 'women', // TODO: will get it from req, this will be a default value (?)
   city: 'torino', // TODO: will get it from req, this will be a default value (?)
   providers: providers, // imported providers

@@ -6,7 +6,7 @@ var placeSchema = new mongoose.Schema({
   name: String
 },
 {
-  autoIndex: config.debug
+  autoIndex: config.env === 'development'
 });
 
 module.exports = mongoose.model('Place', placeSchema);

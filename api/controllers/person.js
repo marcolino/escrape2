@@ -137,7 +137,7 @@ exports.sync = function() { // sync persons
             async.each(
               list, // 1st param is the array of items
               function(element, callbackInner) { // 2nd param is the function that each item is passed to
-                var person = {}; // create person object (TODO new Person() ?)
+                var person = {}; // create person object
                 person.url = local.buildDetailsUrl(provider, element.url, config);
                 if (!person.url) {
                   log.warn(
@@ -241,13 +241,12 @@ exports.sync = function() { // sync persons
 
           // sync persons images
           log.info('persons images sync started');
-          config.timeStart = process.hrtime(); // (TODO: development only)
+          config.timeStart = process.hrtime(); // TODO: development only
           image.syncPersonsImages(persons, function(err, persons) {
-          //local.syncImages(persons, function(err, persons) {
             if (err) {
               return log.warn('can\'t sync persons images:', err);
             }
-            // success (TODO: development only)
+            // success
             log.info(
               'persons images sync finished',
               '- elapsed time:', process.hrtime(config.timeStart)[0], 'seconds'
@@ -255,7 +254,6 @@ exports.sync = function() { // sync persons
 
             // sync persons aliases
             log.info('persons aliases sync started');
-            // TODO: test syncAliasesBatch() to avoid alias groups with just one people...
             //exports.syncAliasesLive(persons, function(err) {
             exports.syncAliasesBatch(function(err) {
               if (err) {
@@ -470,6 +468,8 @@ local.syncAliases = function(persons, callback) {
    *
    *     P9   i1.P9   i2.P9   i3.P9   i4.P9   i5.p9
    */
+
+  // TODO: avoid alias groups with just one people
 
   Image.find({}, 'personKey signature', function(err, images) {
     if (err) {
@@ -921,7 +921,6 @@ local.getDetailsPhone = function($, provider) {
       (val === 'In arrivo dopo le vacanze !!') ||
       (val === 'Telefono momentaneamente non disponibile')
     ) {
-      //person.unavailable = true; // TODO: set person's 'unavailble' field to true...
       val = null;
     }
     if (val) {
@@ -989,7 +988,7 @@ local.getDetailsImageUrls = function($, provider) {
     $('div[class="thumbinner"]').find('a > img').each(function(index, element) {
       if ($(element).attr('src').match(/\.jpg$/i)) { // other images
         href = 'https:' + $(element).attr('src');
-        val.push({ href: href, isShowcase: false });
+        val.push({ href: href, isShowcase: !!!val.length });
       }
     });
   }
