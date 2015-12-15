@@ -25,7 +25,7 @@ router.route('/getAll/search/:search').get(function(req, res) { getAll(req, res)
 var getAll = function(req, res) {
   //log.info('/getAll/search/:search ~ search:', req.params.search);
   //var filter = { isAliasFor: { $size: 0 } };
-  var filter = { };
+  var filter = {};
   var options = { sort: '-' + 'dateOfFirstSync' }; // or dateOfLastSync for changed images first...
   if (req.params.search && req.params.search !== null) {
     filter.name = new RegExp(req.params.search, 'i');

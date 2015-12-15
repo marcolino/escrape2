@@ -41,7 +41,6 @@ var config = {
     host: 'localhost',
     port: 9050
   },
-  timeStart: 0, // to measure elapsed time, development only
 };
 
 config.log = new (winston.Logger)({

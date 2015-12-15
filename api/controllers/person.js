@@ -17,7 +17,7 @@ var log = config.log;
 
 exports.getAll = function(filter, options, result) { // get all persons
 
-  var personsObjects = [];
+  var personsResult = [];
 
   Person.find(filter, null, options).lean().exec(function(err, persons) {
     Image.find({}, 'personKey basename isShowcase dateOfLastSync').lean().exec(function(err, images) {
@@ -26,8 +26,20 @@ exports.getAll = function(filter, options, result) { // get all persons
       }
 
       // add to each person its showcase image
+      var aliases = [];
       for (var i = 0, personsLen = persons.length; i < personsLen; i++) {
         var P = persons[i], I;
+
+        // TODO: move these filters to query filter (?))
+        if (P.alias && aliases.hasOwnProperty(P.alias)) {
+          log.debug('skipping person', P.key, 'because it\'s alias was seen already', P.alias);
+          continue;
+        }
+        if (!P.isPresent) {
+          log.debug('skipping person', P.key, 'because it\'s not present');
+          continue;
+        }
+
         P.showcaseBasename = null;
         for (var j = 0, len = images.length; j < len; j++) {
           I = images[j];
@@ -42,10 +54,11 @@ exports.getAll = function(filter, options, result) { // get all persons
             }
           }
         }
-        personsObjects.push(P);
+        personsResult.push(P); // add this person to result
+        if (P.alias) { aliases[P.alias] = true; } // add this person alias to seen aliases
       }
-
-      result(err, personsObjects);
+      //for (var key in aliases) { log.warn(key); }
+      result(err, personsResult);
     });
   });
 };
@@ -133,7 +146,7 @@ exports.sync = function() { // sync persons
             $ = cheerio.load(contents);
             var list = local.getList(provider, $);
             totalPersonsCount += list.length;
-//list = list.slice(0, 3); log.info('list:', list); // to debug: limit list
+//list = list.slice(0, 1); log.info('list:', list); // to debug: limit list
             async.each(
               list, // 1st param is the array of items
               function(element, callbackInner) { // 2nd param is the function that each item is passed to
@@ -196,6 +209,7 @@ exports.sync = function() { // sync persons
                     var now = new Date();
                     person.dateOfLastSync = now;
                     person.imageUrls = local.getDetailsImageUrls($, provider);
+                    person.isPresent = true; // set person as present, waiting for setActivityStatus()
                     
                     // save this person to database
                     exports.upsert(person, function(err, doc) {

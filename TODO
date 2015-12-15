@@ -4,6 +4,7 @@
 - do sync images only for new/changed persons (?)
 - try using `callback(new Error('err str'))` instead of `callback('err str')`
 - remove 'diff' and 'colors' packages (and all unused packages) at production
+- profile with process.hrtime() *all* image functions
 
 V remove all "err.context = " lines
 V use `test.server.local` (in `/etc/hosts`) @home too

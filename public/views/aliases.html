@@ -4,7 +4,7 @@
     <tr ng-repeat="aliasGroup in aliasGroups" style="border-bottom:2px solid darkgreen">
       <td ng-repeat="person in aliasGroup" style="border:1px solid grey; padding:1.0em; white-space: nowrap; vertical-align:bottom;">
         <!--<pre> {{ person }} </pre>-->
-        <img data-ng-src="/images/{{ person.imagesClosest.basename }}" style="vertical-align:bottom; max-height:200px;" />
+        <img data-ng-src="/images/{{ person.key }}/showcase/{{ person.imagesClosest.basename }}" style="vertical-align:bottom; max-height:200px;" />
 
         <div style="color:lightyellow; font-size:12px;">
           {{ person.key }} <b>{{ person.name }}</b> ({{ person.imagesClosest.distance }})

@@ -39,10 +39,10 @@ exports.syncPersonsImages = function(persons, callback) {
     //log.error(images);
     //return callback(null, persons);
 
-    async.each/*Series*/( // TODO: should we better serialize persons? (YES?)
+    async.eachSeries( // TODO: should we better serialize persons? (YES?)
       persons,
       function(person, callbackPerson) {
-        async.each( // TODO: should we better serialize images? (NO)
+        async.each/*Series*/( // TODO: should we better serialize images? (NO)
           person.imageUrls,
           function(imageUrl, callbackImage) {
             download(imageUrl, person, images, function(err, image) {
@@ -86,10 +86,13 @@ exports.syncPersonsImages = function(persons, callback) {
       , images
     );
     // assert for at most one result (TODO: only while developing)
-    if (personImages.length > 1) { throw new Error('more than one image found for person key ' + person.toObject().key, ' and url ' + imageUrl); }
+    // TODO: commented this test since showcase image can have a cropped duplicate, which do not seem similar to Jimp.signature
+    //if (personImages.length > 1) { throw new Error('more than one image found for person key ' + person.toObject().key, ' and url ' + imageUrl); }
+
     var image = {};
     image.custom = {};
-    if (personImages.length === 1) { // existing image url
+    //if (personImages.length === 1) { // existing image url
+    if (personImages.length >= 1) { // existing image url
       var personImage = personImages[0];
       image.url = personImage.url;
       image.custom.isNew = false;
@@ -157,7 +160,7 @@ exports.syncPersonsImages = function(persons, callback) {
       if (!image.signature) {
         //log.warn('findSimilarSignatureImage - image with no signature:', img.url);
         return; // skip this image without signature
-      }        
+      }
       var distance = exports.distance(image.signature, img.signature);
       if (distance <= minDistance) {
         minDistance = distance;
@@ -176,6 +179,7 @@ exports.syncPersonsImages = function(persons, callback) {
    * create image versions
    */
   var createImageVersions = function(image, images, callback) {
+//config.timeStart0 = process.hrtime(); // TODO: development only
     var versions = [
       {
         name: 'full',
@@ -230,15 +234,18 @@ exports.syncPersonsImages = function(persons, callback) {
             }
           }
   
+
           // directory created, build image version
           if (version.name === 'full') { // full version, just save image with no resize
             //log.silly('full writing to', version.name);
+//config.timeStart1 = process.hrtime(); // TODO: development only
             img
               .write(destination, function(err) {
                 if (err) {
                   log.silly('can\'t write full size image version via jimp to', destination, ':', err);
                   return callbackVersion(err);
                 }
+//log.debug(' *** image full saved in', process.hrtime(config.timeStart1)[0] + '.' + process.hrtime(config.timeStart1)[1], 'seconds');
                 //log.info('written full to', destination);
                 callbackVersion(); // success
               })
@@ -247,6 +254,7 @@ exports.syncPersonsImages = function(persons, callback) {
             // to avoid enlarging showcase images
             var width = Math.min(version.width, img.bitmap.width);
             //log.silly('other writing to', version.name, 'width:', width);
+//config.timeStart2 = process.hrtime(); // TODO: development only
             img
               .resize(width, jimp.AUTO)
               .quality(version.quality)
@@ -255,6 +263,7 @@ exports.syncPersonsImages = function(persons, callback) {
                   log.silly('can\'t write other size image version via jimp to', destination, ':', err);
                   return callbackVersion(err);
                 }
+//log.debug(' *** image showcase resized and saved in', process.hrtime(config.timeStart2)[0] + '.' + process.hrtime(config.timeStart2)[1], 'seconds');
                 //log.info('written other to', destination);
                 callbackVersion(); // success
               })
@@ -262,6 +271,7 @@ exports.syncPersonsImages = function(persons, callback) {
           }
         }, // async each versions iteration function done
         function(err) { // all directories and image versions created 
+//log.debug(' *** createImageVersions finished in', process.hrtime(config.timeStart0)[0] + '.' + process.hrtime(config.timeStart0)[1], 'seconds');
           callback(err, image, images); // finished
         }
       ); // async each versions done
