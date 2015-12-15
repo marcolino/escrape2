@@ -34,8 +34,8 @@ exports.syncPersonsImages = function(persons, callback) {
     if (err) {
       return callback('can\'t find images');
     }
-    // TODO: could we map here images to image.toObject()? If so, we could avoid grepObject and all that stuff...
     log.debug('all images array length:', images.length);
+//log.debug(' @@@ IMAGES[0]:', images[0]);
 
     //log.error(images);
     //return callback(null, persons);
@@ -73,16 +73,7 @@ exports.syncPersonsImages = function(persons, callback) {
 
   });
 
-  function grep(what, where) {
-    return where.filter(function(item) {
-      var match = true;
-      Object.keys(what).map(function(property, index) {
-        match = (match && (item[property] === what[property]));
-      });
-      return match;
-    });  
-  }
-
+/*
   function grepObj(what, where) {
 log.debug('grepObj - what:', what);
     return where.filter(function(item) {
@@ -98,24 +89,30 @@ log.debug('grepObj -', item[property], '=?=', what[property]);
       return match;
     });  
   }
+*/
 
   function download(imageUrl, person, images, callback) {
-    //imageUrl.isShowcase; // TODO: handle imageUrl.isShowcase and imageUrl.dateOfLastSync...
-    var grepped = grep/*Obj*/([
-      { personKey: person.toObject().key },
-      { url: imageUrl.href }
-    ], images);
+    var personImages = local.grep(
+      { personKey: person.key, url: imageUrl.href }
+      , images
+    );
     // assert for at most one result (TODO: only while developing)
-    if (grepped.length > 1) { throw new Error('more than one image found for person key ' + person.toObject().key, ' and url ' + imageUrl); }
+    if (personImages.length > 1) { throw new Error('more than one image found for person key ' + person.toObject().key, ' and url ' + imageUrl); }
     var image = {};
-    if (grepped.length === 1) { // existing image url
+    if (personImages.length === 1) { // existing image url
+      var personImage = personImages[0];
       image.isNew = false;
-      image.url = grepped[0].url;
-      image.etag = grepped[0].etag;
-      image.personKey = grepped[0].personKey;
+      image.url = personImage.url;
+      image.isShowcase = personImage.isShowcase;
+      image.dateOfFirstSync = personImage.dateOfFirstSync;
+      image.etag = personImage.etag;
+      image.personKey = personImage.personKey;
     } else { // new image url
+      var now = new Date();
       image.isNew = true;
       image.url = imageUrl.href;
+      image.isShowcase = imageUrl.isShowcase;
+      image.dateOfFirstSync = now;
       image.etag = null;
       image.personKey = person.key;
     }
@@ -149,6 +146,7 @@ log.debug('grepObj -', item[property], '=?=', what[property]);
         response.etag = response.headers.etag;
         response.personKey = response.request.personKey;
         response.isNew = response.request.isNew;
+        response.dateOfFirstSync = response.request.dateOfFirstSync;
     
         log.info('fetched uri', response.request.uri.href);
         return callback(null, response); // success
@@ -173,10 +171,11 @@ log.debug('grepObj -', item[property], '=?=', what[property]);
         socksPort: config.tor.available ? config.tor.port : null, // TOR socks port
       },
       personKey: resource.personKey, // person key
-      isNew: resource.isNew,
+      isNew: resource.isNew, // is new flag
+      isShowcase: resource.isShowcase, // is showcase flag
     };
     if (resource.etag) { // must check etag is not null, can't set a null If-None-Match header
-      headers['If-None-Match'] = resource.etag; // eTag field
+      options.headers['If-None-Match'] = resource.etag; // eTag field
     }
 
     requestretry(
@@ -217,6 +216,7 @@ log.debug('grepObj -', item[property], '=?=', what[property]);
             resource.etag = response.headers.etag;
             resource.personKey = response.request.personKey;
             resource.isNew = response.request.isNew;
+            resource.isShowcase = response.request.isShowcase;
           }
           callback(null, resource); // success
         } else {
@@ -261,7 +261,7 @@ log.debug('grepObj -', item[property], '=?=', what[property]);
   var findSimilarSignatureImage = function(image, images, callback) {
     var minDistance = 1; // maximum distance possible
     var imageMostSimilar;
-    var personImages = grep(
+    var personImages = local.grep(
       { personKey: image.personKey },
       images
     );
@@ -270,16 +270,15 @@ log.debug('grepObj -', item[property], '=?=', what[property]);
     image.hasDuplicate = false;
     personImages.forEach(function(img, i) {
 
-      // check image url, beforehand (TODO: but, check why the duplication is not found by signature comparison...)
+      // check image url, beforehand
       if (image.url === img.url) {
-        image.hasDuplicateXXX = true;
-        //image.hasDuplicate = true;
+        image.hasDuplicate = true;
         //log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE (SAME URL):', image.url, imageMostSimilar.url);
-        //return false; // same url, break loop here
+        return false; // same url, break loop here
       }
 
       if (!image.signature) {
-        log.warn('findSimilarSignatureImage - image with no signature:', img.url);
+        //log.warn('findSimilarSignatureImage - image with no signature:', img.url);
         return; // skip this image without signature
       }        
       ///image.personKey = img.personKey; // set personKey in image (TODO: WHY??? it should be set already...)
@@ -292,9 +291,10 @@ log.debug('grepObj -', item[property], '=?=', what[property]);
     if (minDistance <= config.images.thresholdDistanceSamePerson) {
       //log.warn('found simimilar signature:', image.url);
       image.hasDuplicate = true;
-      log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.url, imageMostSimilar.url);
+      //log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.url, imageMostSimilar.url);
     }
-else log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, ', distance:', minDistance);
+//else log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, ', distance:', minDistance);
+
     callback(null, image.hasDuplicate ? null : image, images);
   };
 
@@ -313,7 +313,7 @@ else log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, ', dist
         name: 'showcase',
         width: config.images.showcaseWidth, // showcase width
         quality: 75, // 75% quality
-        dir: '' + config.images.showcaseWidth, // directory for this version
+        dir: 'showcase', // directory for this version
       }
     ];
 
@@ -322,7 +322,7 @@ else log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, ', dist
    image has duplicate. THIS DOES NOT SEEM TO WORK, BUT FREEZES WATERFALL!
  */
     if (!image) {
-      log.silly('createImageVersions !!!DUPLICATED, NOT CREATED');
+      log.silly('createImageVersions: image is void (has duplicate): SKIPPING');
       return callback(null, null, null);
     }
 //////////////////////////////////////////////////////////////////////////////////////
@@ -406,7 +406,7 @@ else log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, ', dist
    */
   var saveImageToDb = function(image, images, callback) {
     if (!image) {
-      log.silly('saveImageToDb !!!DUPLICATED, NOT SAVED');
+      log.silly('saveImageToDb: image is void (has duplicate): SKIPPING');
       return callback(null, null);
     }
     Image.findOneAndUpdate(
@@ -432,7 +432,7 @@ else log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, ', dist
     var showcaseWidth = 320; // TODO: choose this in config(and pass to client...)
 
     if (image.hasDuplicate) {
-      log.silly('image', image.url, 'DUPLICATED, NOT SAVED');
+      log.silly('saveImageMOLOLITHIC: image is void (has duplicate): SKIPPING');
       return callback(null, null);
     }
 
@@ -601,14 +601,13 @@ exports.popCount = function(v) {
  Exercise 2.9 (on page 62 of my copy). Not sure whether they (K&R) are the inventors.
 */
 // TODO: test this
-function popCountSLOW(n) {
+exports.popCountSLOW = function(n) {
   n >>>= 0; /* force uint32 */
   for (var popcnt = 0; n; n &= n - 1) {
     popcnt++;
   }
   return popcnt;
-}
-
+};
 
 // normalize extension (i.e.: .Jpg, .jpeg, .JPG => .jpg, .GIF => .gif, .PNG => .png)
 local.normalizeExtension = function(ext) {
@@ -619,6 +618,64 @@ local.normalizeExtension = function(ext) {
   return retval;
 };
 
+exports.isShowcase = function(image, images) {
+  //log.info('***** isShowcase() - image:', image);
+  var personImages = local.grep(
+    { personKey: image.personKey }
+    , images
+  );
+  /*
+  if (personImages.length === 0) { // should not happen
+    log.warn('no image for person', image.personKey, 'in images');
+  }
+  */
+//log.info('***** isShowcase() - personImages.length:', personImages.length);
+//log.info('***** isShowcase() - personImages:', personImages);
+
+  // to say this image is showcase for this person,
+  // it should have 'isShowcase' flag set, *and*
+  // - if more than one image for this person has it set -
+  // be the one with most recent dateOfFirstSync
+  var isShowcase = image.isShowcase;
+  var anyShowcaseFound = false;
+  for (var i = 0, len = personImages.length; i < len; i++) {
+    if (personImages[i].isShowcase) {
+      anyShowcaseFound = true;
+      if (personImages[i].datOfFirstSync > image.datOfFirstSync) {
+        isShowcase = false; // there is a more recent showcase image
+      }
+    }
+  }
+  // if image is not showcase, and no showcase found in this person images,
+  // elect first image as showcase
+  if (!isShowcase) {
+    if (!anyShowcaseFound) {
+      isShowcase = true; // TODO: only the first one !!!!!!!!!!!!!1
+    }
+  }
+
+  //log.debug('isShowcase() - image.basename', image.basename, 'is showcase ?', isShowcase);
+/*
+        if (!P.showcaseBasename) { // no image marked as showcase found: elect the first one
+          if (images.length > 0) {
+            I = images[0];
+            P.showcaseBasename = I.basename;
+            console.log('person', P.key, 'has image', I.basename, 'as ELECTED showcase');
+          }
+        }
+*/
+  return isShowcase;
+};
+
+local.grep = function(what, where) {
+  return where.filter(function(item) {
+    var match = true;
+    Object.keys(what).map(function(property, index) {
+      match = (match && (item[property] === what[property]));
+    });
+    return match;
+  });
+};
 
   /**
    * request-retry strategies

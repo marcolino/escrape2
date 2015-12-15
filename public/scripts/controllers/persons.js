@@ -5,7 +5,6 @@ angular.module('PersonCtrl', []).controller('PersonController', function($rootSc
   //$scope.filter = {}; // TODO: set filter based on user's settins...
 
   $scope.$watch(function() { return Filter.get(); }, function(newValue, oldValue) {
-    //console.log('persons WATCH:', newValue);
     if (newValue !== oldValue) { // filter did change, re-load persons
       $scope.loadPersons();
     }
@@ -18,19 +17,18 @@ angular.module('PersonCtrl', []).controller('PersonController', function($rootSc
   };
 
   $scope.listAliasGroups = function() { // debug only method
-//console.log('calling $scope.listAliasGroups...');
     Person.listAliasGroups(function(response) {
       $scope.aliasGroups = response;
-//console.log('$scope.aliasGroups:', $scope.aliasGroups);
     });
   };
 
   $scope.getShowcaseUrl = function(person) {
     var url;
     if (person.showcaseBasename) {
-      url = '/images' + '/' + person.showcaseBasename;
-//url = 'images/SGI/adv449/320x-00abf569ace95af648d9e0189cc551e7.jpg';
+      //console.log('person.showcaseBasename:', person.showcaseBasename);
+      url = '/images' + '/' + person.key + '/showcase' + '/' + person.showcaseBasename;
     } else { // no showcase url for this person: use default person showcase url
+      //console.log('person.showcaseBasename is EMPTY', person);
       url = '/images' + '/' + 'person-showcase-default.png';
     }
     return encodeURIComponent(url);

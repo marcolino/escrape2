@@ -17,32 +17,35 @@ var log = config.log;
 
 exports.getAll = function(filter, options, result) { // get all persons
 
-  Person.find(filter, null, options, function(err, persons) {
-    Image.find({}, 'personKey basename isShowcase dateOfLastSync', function(err, images) {
+  var personsObjects = [];
+
+  Person.find(filter, null, options).lean().exec(function(err, persons) {
+    Image.find({}, 'personKey basename isShowcase dateOfLastSync').lean().exec(function(err, images) {
       if (err) {
         return callback(err);
       }
 
       // add to each person its showcase image
-// TODO: handle isShowcase dateOfLastSync ...
       for (var i = 0, personsLen = persons.length; i < personsLen; i++) {
-        //var P = persons[i]._doc;
-        var P = persons[i].toObject();
-        //persons[i]._doc.showcaseBasename = null;
+        var P = persons[i], I;
         P.showcaseBasename = null;
         for (var j = 0, len = images.length; j < len; j++) {
-          //var I = images[j]._doc;
-          var I = images[j].toObject();
+          I = images[j];
           if (I.personKey === P.key) {
-            if (P.showcaseBasename === null) { // TODO: add a isShowcase function...
+            if (image.isShowcase(I, images)) {
+              if (P.showcaseBasename !== null) { // TODO: remove on production
+                log.error('assigning a showcase to a person twice!');
+              }
               P.showcaseBasename = I.basename;
+              console.log('person', P.key, 'has image', I.basename, 'as showcase');
               break;
             }
           }
         }
+        personsObjects.push(P);
       }
 
-      result(err, persons);
+      result(err, personsObjects);
     });
   });
 };
@@ -130,7 +133,7 @@ exports.sync = function() { // sync persons
             $ = cheerio.load(contents);
             var list = local.getList(provider, $);
             totalPersonsCount += list.length;
-list = list.slice(0, 1); log.info('list:', list); // to debug: limit list
+//list = list.slice(0, 3); log.info('list:', list); // to debug: limit list
             async.each(
               list, // 1st param is the array of items
               function(element, callbackInner) { // 2nd param is the function that each item is passed to
@@ -534,9 +537,9 @@ exports.listAliasGroups = function(callback) {
         people[i] = persons[i].toObject();
         people[i].images = [];
         for (var j = 0, len = images.length; j < len; j++) {
-          var image = images[j].toObject();
-          if (image.personKey === people[i].key) {
-            people[i].images.push(image);
+          var img = images[j].toObject();
+          if (img.personKey === people[i].key) {
+            people[i].images.push(img);
             continue;
           }
         }
