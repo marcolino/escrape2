@@ -144,6 +144,8 @@ if (config.profile) log.debug('PROFILE getSignatureFromImage', process.hrtime(t)
   };
 
   var findSimilarSignatureImage = function(image, images, callback) {
+
+    // TODO: SIMILAR IMAGE COULD BE NOT ONLINE ANYMORE...
 var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
     var minDistance = 1; // maximum distance possible
     var imageMostSimilar;
@@ -175,6 +177,7 @@ log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE (SAME URL):', image.u
     }
     if (minDistance <= config.images.thresholdDistanceSamePerson) {
       image.hasDuplicate = true;
+      // TODO: we should save image even if it is a duplicate, since old version url could be unavailable, now...
 log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.url, imageMostSimilar.url);
     } //else { log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, ', distance:', minDistance); }
 
