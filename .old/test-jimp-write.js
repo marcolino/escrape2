@@ -2,12 +2,12 @@ var jimp = require('jimp');
 
 var timeStart;
 
+timeStart = process.hrtime();
 jimp.read('image.jpg', function(err, img) {
   if (err) {
     return console.error('can\'t read image contents:', err);
   }
   destination = 'image-copied.jpg';
-  timeStart = process.hrtime();
   img.write(destination, function(err) {
     if (err) {
       return console.error('can\'t write image version via jimp to', destination, ':', err);

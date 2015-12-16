@@ -302,7 +302,7 @@ exports.upsert = function(person, callback) {
         // record if any intrinsic property was modified
         if (!isNew) {
           if (prop in doc && prop !== 'dateOfLastSync' && doc[prop] !== person[prop]) {
-            log.debug('updating', person.key, ': changed property', prop, ':', local.diffColor(doc[prop], person[prop]));
+            log.info('updating', person.key, ': changed property', prop, ':', local.diffColor(doc[prop], person[prop]));
             isModified = true;
           }
         }
@@ -333,7 +333,17 @@ local.diffColor = function(string1, string2) {
   var colors = require('colors');
   var jsdiff = require('diff');
 
-  var differences = jsdiff.diffWordsWithSpace(string1 ? string1 : '', string2 ? string2 : '');
+/*
+  log.error(typeof string1);
+  log.error(typeof string2);
+  if ((typeof string1 !== 'string') || (typeof string2 !== 'string')) {
+    return null;
+  }
+*/
+  string1 = string1.toString();
+  string2 = string2.toString();
+
+  var differences = jsdiff.diffWordsWithSpace(string1, string2);
   var differencesColored = '';
   differences.forEach(function(part) {
     // green for additions, red for deletions, grey for common parts
@@ -1300,11 +1310,9 @@ if (config.env === 'development') {
 
 module.exports = exports;
 
-/*
 // TODO: DEBUG ONLY ///////////////////////////////////////////////////////////
 var db = require('../models/db'); // database wiring
 exports.sync(function(err) {
   log.info('SYNC RESULT:', err);
 });
 ///////////////////////////////////////////////////////////////////////////////
-*/

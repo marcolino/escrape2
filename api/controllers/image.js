@@ -39,7 +39,7 @@ exports.syncPersonsImages = function(persons, callback) {
     //log.error(images);
     //return callback(null, persons);
 
-    async.eachSeries( // TODO: should we better serialize persons? (YES?)
+    async.eachSeries( // TODO: should we better serialize persons? (YES)
       persons,
       function(person, callbackPerson) {
         async.each/*Series*/( // TODO: should we better serialize images? (NO)
@@ -50,6 +50,7 @@ exports.syncPersonsImages = function(persons, callback) {
                 return callbackImage(err);
               }
               if (!image || !image.isChanged) { // 40x or 304
+                //log.debug('40x or 304');
                 return callbackImage();
               }
               async.waterfall(
@@ -113,6 +114,7 @@ exports.syncPersonsImages = function(persons, callback) {
 
     //fetch(image, callback); // fetch image resource
     //fetch(image, function(err, image) { // fetch image resource
+var t = process.hrtime(); // TODO: PROFILE ONLY
     network.fetch(image, function(err, image) { // fetch image resource
       if (image && image.custom) {
         // copy custom fields to image
@@ -120,11 +122,13 @@ exports.syncPersonsImages = function(persons, callback) {
           image[key] = image.custom[key];
         });
       }
+log.debug('PROFILE fetch', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
       callback(err, image);
     });
   }
 
   var getSignatureFromImage = function(image, images, callback) {
+var t = process.hrtime(); // TODO: PROFILE ONLY
     jimp.read(new Buffer(image.contents, "binary"), function(err, img) {
       if (err) {
         return callback('can\'t read image contents:', err);
@@ -134,12 +138,14 @@ exports.syncPersonsImages = function(persons, callback) {
           return callback(err);
         }
         image.signature = signature;
+log.debug('PROFILE getSignatureFromImage', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
         callback(null, image, images);
       });
     });
   };
 
   var findSimilarSignatureImage = function(image, images, callback) {
+//var t = process.hrtime(); // TODO: PROFILE ONLY
     var minDistance = 1; // maximum distance possible
     var imageMostSimilar;
     var personImages = local.grep(
@@ -148,30 +154,32 @@ exports.syncPersonsImages = function(persons, callback) {
     );
 
     image.hasDuplicate = false;
-    personImages.forEach(function(img, i) {
+    for (var i = 0, len = personImages.length; i < len; i++) {
+      var img = personImages[i];
 
       // check image url, beforehand
       if (image.url === img.url) {
         image.hasDuplicate = true;
-        //log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE (SAME URL):', image.url, imageMostSimilar.url);
-        return false; // same url, break loop here
+log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE (SAME URL):', image.url, img.url);
+        break; // same url, break loop here
       }
 
       if (!image.signature) {
         //log.warn('findSimilarSignatureImage - image with no signature:', img.url);
-        return; // skip this image without signature
+        break; // skip this image without signature
       }
       var distance = exports.distance(image.signature, img.signature);
       if (distance <= minDistance) {
         minDistance = distance;
         imageMostSimilar = img;
       }
-    });
+    }
     if (minDistance <= config.images.thresholdDistanceSamePerson) {
       image.hasDuplicate = true;
-      //log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.url, imageMostSimilar.url);
+log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.url, imageMostSimilar.url);
     } //else { log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, ', distance:', minDistance); }
 
+//log.debug('PROFILE findSimilarSignatureImage', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
     callback(null, image.hasDuplicate ? null : image, images);
   };
 
@@ -179,7 +187,7 @@ exports.syncPersonsImages = function(persons, callback) {
    * create image versions
    */
   var createImageVersions = function(image, images, callback) {
-//config.timeStart0 = process.hrtime(); // TODO: development only
+var t = process.hrtime(); // TODO: PROFILE ONLY
     var versions = [
       {
         name: 'full',
@@ -196,7 +204,7 @@ exports.syncPersonsImages = function(persons, callback) {
     ];
 
     if (!image) { // this should not happen: TODO: remove on production
-      log.error('createImageVersions: image is void (has duplicate): SKIPPING');
+      //log.silly('createImageVersions: image is void: SKIPPING');
       return callback(null, null, null);
     }
 
@@ -213,7 +221,7 @@ exports.syncPersonsImages = function(persons, callback) {
       buf = null; // delete Buffer object (TODO: is this really useful?)
       if (err) {
         log.warn(err);
-        return callbackVersion(err);
+        return callback(err);
       }
       //log.debug('read', image.url);
 
@@ -238,14 +246,12 @@ exports.syncPersonsImages = function(persons, callback) {
           // directory created, build image version
           if (version.name === 'full') { // full version, just save image with no resize
             //log.silly('full writing to', version.name);
-//config.timeStart1 = process.hrtime(); // TODO: development only
             img
               .write(destination, function(err) {
                 if (err) {
                   log.silly('can\'t write full size image version via jimp to', destination, ':', err);
                   return callbackVersion(err);
                 }
-//log.debug(' *** image full saved in', process.hrtime(config.timeStart1)[0] + '.' + process.hrtime(config.timeStart1)[1], 'seconds');
                 //log.info('written full to', destination);
                 callbackVersion(); // success
               })
@@ -254,7 +260,6 @@ exports.syncPersonsImages = function(persons, callback) {
             // to avoid enlarging showcase images
             var width = Math.min(version.width, img.bitmap.width);
             //log.silly('other writing to', version.name, 'width:', width);
-//config.timeStart2 = process.hrtime(); // TODO: development only
             img
               .resize(width, jimp.AUTO)
               .quality(version.quality)
@@ -263,7 +268,6 @@ exports.syncPersonsImages = function(persons, callback) {
                   log.silly('can\'t write other size image version via jimp to', destination, ':', err);
                   return callbackVersion(err);
                 }
-//log.debug(' *** image showcase resized and saved in', process.hrtime(config.timeStart2)[0] + '.' + process.hrtime(config.timeStart2)[1], 'seconds');
                 //log.info('written other to', destination);
                 callbackVersion(); // success
               })
@@ -271,7 +275,7 @@ exports.syncPersonsImages = function(persons, callback) {
           }
         }, // async each versions iteration function done
         function(err) { // all directories and image versions created 
-//log.debug(' *** createImageVersions finished in', process.hrtime(config.timeStart0)[0] + '.' + process.hrtime(config.timeStart0)[1], 'seconds');
+log.debug('PROFILE createImageVersions', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
           callback(err, image, images); // finished
         }
       ); // async each versions done
@@ -283,9 +287,10 @@ exports.syncPersonsImages = function(persons, callback) {
    */
   var saveImageToDb = function(image, images, callback) {
     if (!image) {
-      log.silly('saveImageToDb: image is void (has duplicate): SKIPPING');
+      //log.silly('saveImageToDb: image is void (has duplicate): SKIPPING');
       return callback(null, null);
     }
+var t = process.hrtime(); // TODO: PROFILE ONLY
     Image.findOneAndUpdate(
       { basename: image.basename, personKey: image.personKey}, // query
       image, // object to save
@@ -296,6 +301,7 @@ exports.syncPersonsImages = function(persons, callback) {
         } else {
           log.info('image', image.personKey + '/' + image.basename, 'added');
         }
+log.debug('PROFILE saveImageToDb', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
         callback(err, image); // finish
       }
     );
@@ -304,15 +310,18 @@ exports.syncPersonsImages = function(persons, callback) {
 };
 
 exports.signature = function(contents, callback) {
+//var t = process.hrtime(); // TODO: PROFILE ONLY
   var signature = contents.hash(2);
   if (signature.length !== 64) { // ( 11 = ceil(64 / log₂(64)) )
     return callback('wrong signature length:', signature.length, signature);
   }
   //log.info('signature:', signature);
+//log.debug('PROFILE signature', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
   callback(null, signature); // success
 };
 
 exports.distance = function(signature1, signature2) {
+//var t = process.hrtime(); // TODO: PROFILE ONLY
   if (!signature1 || !signature2) {
     return 1; // maximum possible distance
   }
@@ -322,6 +331,7 @@ exports.distance = function(signature1, signature2) {
       counter++;
     }
   }
+//log.debug('PROFILE distance', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
   return (counter / signature1.length);
 };
 

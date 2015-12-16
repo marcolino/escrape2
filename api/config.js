@@ -14,7 +14,7 @@ var config = {
     path: __dirname + '/..' + '/data/images',
     showcaseWidth: 320,
     thresholdDistance: (os.hostname() === 'malibox') ? 0.04 : 0.125, // TODO: debug only, fix on 0.04 on production
-    thresholdDistanceSamePerson: (os.hostname() === 'malibox') ? 0.04 : 0.125, // TODO: debug only, fix on 0.02 on production (or 0.04, some images are a bit cropped...)
+    thresholdDistanceSamePerson: (os.hostname() === 'malibox') ? 0.02: 0.125, // TODO: debug only, fix on 0.02 on production
   },
   logger: {
     levelConsole: 'silly', // 'error' to production
