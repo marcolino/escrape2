@@ -18,6 +18,79 @@ exports.fetch = function(resource, callback) {
     retryDelay: config.networking.retryDelay, // number of milliseconds to wait for before trying again
     retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
     timeout: config.networking.timeout, // number of milliseconds to wait for a server to send response headers before aborting the request
+    encoding: ((resource.type === 'text') ? null : (resource.type === 'image') ? 'binary' : null), // encoding
+    headers: {
+      'User-Agent': randomUseragent.generate(), // user agent: pick a random one
+    },
+    agentClass: config.tor.available ? agent : null, // socks5-http-client/lib/Agent
+    agentOptions: { // TOR socks host/port
+      socksHost: config.tor.available ? config.tor.host : null, // TOR socks host
+      socksPort: config.tor.available ? config.tor.port : null, // TOR socks port
+    },
+  };
+  if (resource.etag) { // must check etag is not null, can't set a null If-None-Match header
+    options.headers['If-None-Match'] = resource.etag; // eTag field
+  }
+
+  requestretry(
+    options,
+    function(err, response, contents) {
+
+      if (!err && (response.statusCode === 200 || response.statusCode === 304)) {
+        var result = {};
+        requestEtag = response.request.headers['If-None-Match'];
+        result.etag = response.headers.etag;
+//console.info(response.request);
+result.url = response.request.uri.href;
+        if (response.statusCode === 304) { // not changed
+          result.isChanged = false;
+
+          if (config.env === 'development') {
+            if (result.etag !== requestEtag) { // TODO: just to be safe, should not need this test on production
+              log.warn(
+                'result', response.url, 'not downloaded, but etag does change, If-None-Match not honoured;',
+                'response status code:', response.statusCode, ';',
+                'eTags - response:', result.etag, ', request:', requestEtag, ';',
+                'contents length:', (contents ? contents.length : 'zero')
+              );
+              return callback(null, result);
+            }
+          }
+
+        } else {
+          result.isChanged = true;
+          result.contents = contents;
+
+          if (config.env === 'development') {
+            if (result.etag === requestEtag) { // TODO: just to be safe, should not need this test on production
+              log.warn(
+                'result', response.url, 'downloaded, but etag does not change, If-None-Match not honoured;',
+                'response status code:', response.statusCode, ';',
+                'eTags - response:', result.etag, ', request:', requestEtag, ';',
+                'contents length:', (contents ? contents.length : 'zero')
+              );
+              return callback(null, result);
+            }
+          }
+        }
+        callback(null, result); // success
+      } else {
+        callback(err, null); // error
+      }
+    }
+  );
+};
+
+/**
+ * fetch resource contents, retrying and anonymously
+ */
+exports.fetchCUSTOM = function(resource, callback) {
+  var options = {
+    url: resource.url, // url to download
+    maxAttempts: config.networking.maxAttempts, // number of attempts to retry after the first one
+    retryDelay: config.networking.retryDelay, // number of milliseconds to wait for before trying again
+    retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
+    timeout: config.networking.timeout, // number of milliseconds to wait for a server to send response headers before aborting the request
     encoding: ((resource.custom.type === 'text') ? null : (resource.custom.type === 'image') ? 'binary' : null), // encoding
     headers: {
       'User-Agent': randomUseragent.generate(), // user agent: pick a random one

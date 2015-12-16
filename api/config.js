@@ -4,9 +4,11 @@ var os = require("os")
 ;
 
 var env = 'development'; // default env mode, overridable by environment
+var profile = false; // profile timings flag
 
 var config = {
   env: process.env.NODE_ENV ? process.env.NODE_ENV : env,
+  profile: profile,
   category: 'women', // TODO: will get it from req, this will be a default value (?)
   city: 'torino', // TODO: will get it from req, this will be a default value (?)
   providers: providers, // imported providers

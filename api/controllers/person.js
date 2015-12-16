@@ -146,7 +146,7 @@ exports.sync = function() { // sync persons
             $ = cheerio.load(contents);
             var list = local.getList(provider, $);
             totalPersonsCount += list.length;
-//list = list.slice(0, 1); log.info('list:', list); // to debug: limit list
+//list = list.slice(0, 3); log.info('list:', list); // to debug: limit list
             async.each(
               list, // 1st param is the array of items
               function(element, callbackInner) { // 2nd param is the function that each item is passed to
@@ -1310,9 +1310,11 @@ if (config.env === 'development') {
 
 module.exports = exports;
 
+/*
 // TODO: DEBUG ONLY ///////////////////////////////////////////////////////////
 var db = require('../models/db'); // database wiring
 exports.sync(function(err) {
   log.info('SYNC RESULT:', err);
 });
 ///////////////////////////////////////////////////////////////////////////////
+*/

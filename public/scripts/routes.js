@@ -3,7 +3,7 @@
 angular.module('routes', []).config( function($routeProvider, $locationProvider) {
   $routeProvider
     .when('/', { // home page
-      templateUrl: 'views/home.html',
+      templateUrl: 'views/persons.html',
       controller: 'PersonController'
     })
     .when('/aliases', { // aliases list page

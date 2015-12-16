@@ -1,16 +1,10 @@
-var fs = require('fs'); // file-system handling
+//var fs = require('fs'); // file-system handling
 var mkdirp = require('mkdirp') // to make directories with parents
   , path = require('path') // path handling
   , async = require('async') // to call many async functions in a loop
   , crypto = require('crypto') // to create hashes
   , jimp = require('jimp') // image manipulation
   , network = require('../controllers/network') // network handling
-/*
-, request = require('request')
-, requestretry = require('requestretry')
-, randomUseragent = require('random-ua') // to use a random user-agent
-, agent = require('socks5-http-client/lib/Agent')
-*/
   , Image = require('../models/image') // images handling
   , config = require('../config') // global configuration
 ;
@@ -31,13 +25,9 @@ exports.syncPersonsImages = function(persons, callback) {
   // get all images in db
   Image.find().lean().exec(function(err, images) { // lean gets plain objects
     if (err) {
-      return callback('can\'t find images');
+      return callback(err);
     }
     log.debug('all images array length:', images.length);
-//log.debug(' @@@ IMAGES[0]:', images[0]);
-
-    //log.error(images);
-    //return callback(null, persons);
 
     async.eachSeries( // TODO: should we better serialize persons? (YES)
       persons,
@@ -50,7 +40,6 @@ exports.syncPersonsImages = function(persons, callback) {
                 return callbackImage(err);
               }
               if (!image || !image.isChanged) { // 40x or 304
-                //log.debug('40x or 304');
                 return callbackImage();
               }
               async.waterfall(
@@ -96,39 +85,49 @@ exports.syncPersonsImages = function(persons, callback) {
     if (personImages.length >= 1) { // existing image url
       var personImage = personImages[0];
       image.url = personImage.url;
-      image.custom.isNew = false;
-      image.custom.isShowcase = personImage.isShowcase;
-      image.custom.dateOfFirstSync = personImage.dateOfFirstSync;
-      image.custom.etag = personImage.etag;
-      image.custom.personKey = personImage.personKey;
+      image.isNew = false;
+      image.isShowcase = personImage.isShowcase;
+      image.dateOfFirstSync = personImage.dateOfFirstSync;
+      image.etag = personImage.etag;
+      image.personKey = personImage.personKey;
     } else { // new image url
       var now = new Date();
       image.url = imageUrl.href;
-      image.custom.isNew = true;
-      image.custom.isShowcase = imageUrl.isShowcase;
-      image.custom.dateOfFirstSync = now;
-      image.custom.etag = null;
-      image.custom.personKey = person.key;
+      image.isNew = true;
+      image.isShowcase = imageUrl.isShowcase;
+      image.dateOfFirstSync = now;
+      image.etag = null;
+      image.personKey = person.key;
     }
-    image.custom.type = 'image';
+    image.type = 'image';
 
     //fetch(image, callback); // fetch image resource
     //fetch(image, function(err, image) { // fetch image resource
-var t = process.hrtime(); // TODO: PROFILE ONLY
-    network.fetch(image, function(err, image) { // fetch image resource
-      if (image && image.custom) {
+var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
+    network.fetch(image, function(err, img) { // fetch image resource
+
+if (image.url !== img.url) log.error('!!!!!!!!!!!!!!!! SOURCE IMAGE URL AFTER FETCH CHANGES !!!!!!!!!!!');
+
+      /*
+      if (img && img.custom) {
         // copy custom fields to image
-        Object.keys(image.custom).forEach(function(key) {
-          image[key] = image.custom[key];
+        Object.keys(img.custom).forEach(function(key) {
+          img[key] = img.custom[key];
         });
       }
-log.debug('PROFILE fetch', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
+      */
+      // copy fetched properties to image
+      image.contents = img.contents;
+      image.etag = img.etag;
+      image.isChanged = img.isChanged;
+
+if (config.profile) log.debug('PROFILE fetch', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
       callback(err, image);
     });
   }
 
   var getSignatureFromImage = function(image, images, callback) {
-var t = process.hrtime(); // TODO: PROFILE ONLY
+var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
     jimp.read(new Buffer(image.contents, "binary"), function(err, img) {
       if (err) {
         return callback('can\'t read image contents:', err);
@@ -138,14 +137,14 @@ var t = process.hrtime(); // TODO: PROFILE ONLY
           return callback(err);
         }
         image.signature = signature;
-log.debug('PROFILE getSignatureFromImage', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
+if (config.profile) log.debug('PROFILE getSignatureFromImage', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
         callback(null, image, images);
       });
     });
   };
 
   var findSimilarSignatureImage = function(image, images, callback) {
-//var t = process.hrtime(); // TODO: PROFILE ONLY
+var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
     var minDistance = 1; // maximum distance possible
     var imageMostSimilar;
     var personImages = local.grep(
@@ -179,7 +178,7 @@ log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE (SAME URL):', image.u
 log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.url, imageMostSimilar.url);
     } //else { log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, ', distance:', minDistance); }
 
-//log.debug('PROFILE findSimilarSignatureImage', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
+if (config.profile) log.debug('PROFILE findSimilarSignatureImage', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
     callback(null, image.hasDuplicate ? null : image, images);
   };
 
@@ -187,7 +186,7 @@ log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.url, imageMo
    * create image versions
    */
   var createImageVersions = function(image, images, callback) {
-var t = process.hrtime(); // TODO: PROFILE ONLY
+var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
     var versions = [
       {
         name: 'full',
@@ -247,6 +246,7 @@ var t = process.hrtime(); // TODO: PROFILE ONLY
           if (version.name === 'full') { // full version, just save image with no resize
             //log.silly('full writing to', version.name);
             img
+              .autocrop()
               .write(destination, function(err) {
                 if (err) {
                   log.silly('can\'t write full size image version via jimp to', destination, ':', err);
@@ -261,6 +261,7 @@ var t = process.hrtime(); // TODO: PROFILE ONLY
             var width = Math.min(version.width, img.bitmap.width);
             //log.silly('other writing to', version.name, 'width:', width);
             img
+              .autocrop()
               .resize(width, jimp.AUTO)
               .quality(version.quality)
               .write(destination, function(err) {
@@ -275,7 +276,7 @@ var t = process.hrtime(); // TODO: PROFILE ONLY
           }
         }, // async each versions iteration function done
         function(err) { // all directories and image versions created 
-log.debug('PROFILE createImageVersions', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
+if (config.profile) log.debug('PROFILE createImageVersions', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
           callback(err, image, images); // finished
         }
       ); // async each versions done
@@ -290,7 +291,7 @@ log.debug('PROFILE createImageVersions', process.hrtime(t)[0] + '.' + process.hr
       //log.silly('saveImageToDb: image is void (has duplicate): SKIPPING');
       return callback(null, null);
     }
-var t = process.hrtime(); // TODO: PROFILE ONLY
+var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
     Image.findOneAndUpdate(
       { basename: image.basename, personKey: image.personKey}, // query
       image, // object to save
@@ -301,7 +302,7 @@ var t = process.hrtime(); // TODO: PROFILE ONLY
         } else {
           log.info('image', image.personKey + '/' + image.basename, 'added');
         }
-log.debug('PROFILE saveImageToDb', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
+if (config.profile) log.debug('PROFILE saveImageToDb', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
         callback(err, image); // finish
       }
     );
@@ -310,18 +311,18 @@ log.debug('PROFILE saveImageToDb', process.hrtime(t)[0] + '.' + process.hrtime(t
 };
 
 exports.signature = function(contents, callback) {
-//var t = process.hrtime(); // TODO: PROFILE ONLY
+//var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
   var signature = contents.hash(2);
   if (signature.length !== 64) { // ( 11 = ceil(64 / log₂(64)) )
     return callback('wrong signature length:', signature.length, signature);
   }
   //log.info('signature:', signature);
-//log.debug('PROFILE signature', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
+//if (config.profile) log.debug('PROFILE signature', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
   callback(null, signature); // success
 };
 
 exports.distance = function(signature1, signature2) {
-//var t = process.hrtime(); // TODO: PROFILE ONLY
+//var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
   if (!signature1 || !signature2) {
     return 1; // maximum possible distance
   }
@@ -331,7 +332,7 @@ exports.distance = function(signature1, signature2) {
       counter++;
     }
   }
-//log.debug('PROFILE distance', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
+//if (config.profile) log.debug('PROFILE distance', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
   return (counter / signature1.length);
 };
 
