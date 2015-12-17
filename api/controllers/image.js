@@ -101,12 +101,11 @@ exports.syncPersonsImages = function(persons, callback) {
     }
     image.type = 'image';
 
-    //fetch(image, callback); // fetch image resource
-    //fetch(image, function(err, image) { // fetch image resource
 var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
+if (!image.url) log.error('!!!!!!!!!!!!!!!! SOURCE IMAGE URL IS NULL BEFORE FECT !');
     network.fetch(image, function(err, img) { // fetch image resource
 
-if (image.url !== img.url) log.error('!!!!!!!!!!!!!!!! SOURCE IMAGE URL AFTER FETCH CHANGES !!!!!!!!!!!');
+if (image.url !== img.url) log.error('!!!!!!!!!!!!!!!! SOURCE IMAGE URL AFTER FETCH CHANGES !');
 
       /*
       if (img && img.custom) {
@@ -146,7 +145,7 @@ if (config.profile) log.debug('PROFILE getSignatureFromImage', process.hrtime(t)
   var findSimilarSignatureImage = function(image, images, callback) {
 
     // TODO: SIMILAR IMAGE COULD BE NOT ONLINE ANYMORE...
-var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
+//var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
     var minDistance = 1; // maximum distance possible
     var imageMostSimilar;
     var personImages = local.grep(
@@ -177,12 +176,12 @@ log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE (SAME URL):', image.u
     }
     if (minDistance <= config.images.thresholdDistanceSamePerson) {
       image.hasDuplicate = true;
-      // TODO: we should save image even if it is a duplicate, since old version url could be unavailable, now...
 log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.url, imageMostSimilar.url);
     } //else { log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, ', distance:', minDistance); }
 
-if (config.profile) log.debug('PROFILE findSimilarSignatureImage', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
-    callback(null, image.hasDuplicate ? null : image, images);
+//if (config.profile) log.debug('PROFILE findSimilarSignatureImage', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
+    // TODO: we should save image even if it is a duplicate, since old version url could be unavailable, now (DONE, TEST...)
+    callback(null, image, images);
   };
 
   /**
@@ -190,24 +189,8 @@ if (config.profile) log.debug('PROFILE findSimilarSignatureImage', process.hrtim
    */
   var createImageVersions = function(image, images, callback) {
 var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
-    var versions = [
-      {
-        name: 'full',
-        width: 0, // full width
-        quality: 100, // full quality
-        dir: 'full', // directory for this version
-      },
-      {
-        name: 'showcase',
-        width: config.images.showcaseWidth, // showcase width
-        quality: 75, // 75% quality
-        dir: 'showcase', // directory for this version
-      }
-    ];
-
-    if (!image) { // this should not happen: TODO: remove on production
-      //log.silly('createImageVersions: image is void: SKIPPING');
-      return callback(null, null, null);
+    if (image.hasDuplicate) {
+      return callback(null, image, images);
     }
 
     // use a hash of response url + current timestamp as filename to make it unique
@@ -228,10 +211,11 @@ var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
       //log.debug('read', image.url);
 
       // loop through all versions to resize and save image
-      async.eachSeries(
-        versions,
-        function(version, callbackVersion) {
-          //log.error('VERSION NAME:', version.name);
+      async.forEach(
+        Object.keys(config.images.versions),
+        function(key, callbackVersion) {
+          var version = config.images.versions[key];
+
           // create directory, if not present
           var destinationPath = config.images.path + '/' + image.personKey + '/' + version.dir;
           var destination = destinationPath + '/' + basename;
@@ -244,35 +228,35 @@ var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
             }
           }
   
-
           // directory created, build image version
-          if (version.name === 'full') { // full version, just save image with no resize
-            //log.silly('full writing to', version.name);
+          if (key === 'full') { // full version, just save image with no resize
+            //log.silly('full writing to', key);
             img
               .autocrop()
+              .quality(version.quality)
               .write(destination, function(err) {
                 if (err) {
-                  log.silly('can\'t write full size image version via jimp to', destination, ':', err);
+                  //log.silly('can\'t write full size image version via jimp to', destination, ':', err);
                   return callbackVersion(err);
                 }
-                //log.info('written full to', destination);
+                log.info('written full to', destination);
                 callbackVersion(); // success
               })
             ;
           } else { // not full version, resize image and save
             // to avoid enlarging showcase images
             var width = Math.min(version.width, img.bitmap.width);
-            //log.silly('other writing to', version.name, 'width:', width);
+            //log.silly('other writing to', key, 'width:', width);
             img
               .autocrop()
               .resize(width, jimp.AUTO)
               .quality(version.quality)
               .write(destination, function(err) {
                 if (err) {
-                  log.silly('can\'t write other size image version via jimp to', destination, ':', err);
+                  //log.silly('can\'t write other size image version via jimp to', destination, ':', err);
                   return callbackVersion(err);
                 }
-                //log.info('written other to', destination);
+                log.info('written other to', destination);
                 callbackVersion(); // success
               })
             ;
@@ -294,7 +278,7 @@ if (config.profile) log.debug('PROFILE createImageVersions', process.hrtime(t)[0
       //log.silly('saveImageToDb: image is void (has duplicate): SKIPPING');
       return callback(null, null);
     }
-var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
+//var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
     Image.findOneAndUpdate(
       { basename: image.basename, personKey: image.personKey}, // query
       image, // object to save
@@ -305,7 +289,7 @@ var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
         } else {
           log.info('image', image.personKey + '/' + image.basename, 'added');
         }
-if (config.profile) log.debug('PROFILE saveImageToDb', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
+//if (config.profile) log.debug('PROFILE saveImageToDb', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
         callback(err, image); // finish
       }
     );

@@ -17,6 +17,18 @@ var config = {
     showcaseWidth: 320,
     thresholdDistance: (os.hostname() === 'malibox') ? 0.04 : 0.125, // TODO: debug only, fix on 0.04 on production
     thresholdDistanceSamePerson: (os.hostname() === 'malibox') ? 0.02: 0.125, // TODO: debug only, fix on 0.02 on production
+    versions: {
+      full: {
+        width: 0, // full width (set in init())
+        quality: 100, // full quality
+        dir: 'full', // directory for this version
+      },
+      showcase: {
+        width: 0, // showcase width (set in init())
+        quality: 75, // 75% quality
+        dir: 'showcase', // directory for this version
+      }
+    }
   },
   logger: {
     levelConsole: 'silly', // 'error' to production
@@ -43,7 +55,12 @@ var config = {
     host: 'localhost',
     port: 9050
   },
-};
+  init: function() { // to set self-referenced property values
+    this.images.versions.full.width = 0;
+    this.images.versions.showcase.width = this.images.showcaseWidth;
+    return this;
+  }
+}.init();
 
 config.log = new (winston.Logger)({
   transports: [

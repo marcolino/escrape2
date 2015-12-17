@@ -302,7 +302,9 @@ exports.upsert = function(person, callback) {
         // record if any intrinsic property was modified
         if (!isNew) {
           if (prop in doc && prop !== 'dateOfLastSync' && doc[prop] !== person[prop]) {
-            log.info('updating', person.key, ': changed property', prop, ':', local.diffColor(doc[prop], person[prop]));
+            if (config.env === 'development') {
+              log.info('updating', person.key + ': changed "' + prop + '" property:', local.diffColor(doc[prop], person[prop]));
+            }
             isModified = true;
           }
         }
@@ -310,16 +312,9 @@ exports.upsert = function(person, callback) {
       }
 
       doc.save(function(err) {
-      //log.warn('doc.dateOfFirstSync when saving:', doc.dateOfFirstSync);
-
         if (err) {
           return callback('could not save person ' + doc.key + ': ' + err.toString());
         }
-/*
-        log.info('person', person.key, (isNew ? 'inserted' : isModified ? 'modified' : 'not changed'));
-        person.isChanged = isNew || isModified;
-        callback(null, person); // success
-*/
         log.info('person', doc.key, (isNew ? 'inserted' : isModified ? 'modified' : 'not changed'));
         doc.isChanged = isNew || isModified;
         callback(null, doc); // success
@@ -328,22 +323,16 @@ exports.upsert = function(person, callback) {
   );
 };
 
-// TODO: can suppress on production (and remember to remove dependencies from packages.json...)
+if (config.env === 'development') {
+// TODO: remember to remove dependencies from packages.json on production (should be done automatically)
 local.diffColor = function(string1, string2) {
   var colors = require('colors');
   var jsdiff = require('diff');
 
-/*
-  log.error(typeof string1);
-  log.error(typeof string2);
-  if ((typeof string1 !== 'string') || (typeof string2 !== 'string')) {
-    return null;
-  }
-*/
   string1 = string1.toString();
   string2 = string2.toString();
 
-  var differences = jsdiff.diffWordsWithSpace(string1, string2);
+  var differences = jsdiff.diffSentences(string1, string2);
   var differencesColored = '';
   differences.forEach(function(part) {
     // green for additions, red for deletions, grey for common parts
@@ -354,9 +343,9 @@ local.diffColor = function(string1, string2) {
     ;
     differencesColored += part.value[color];
   });
-  differencesColored += '\n';
   return differencesColored;
 };
+}
 
 local.setActivityStatus = function(providers, syncStartDate, callback) {
   var syncdProvidersRegExp = null;

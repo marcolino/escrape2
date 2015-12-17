@@ -41,14 +41,14 @@ exports.fetch = function(resource, callback) {
         requestEtag = response.request.headers['If-None-Match'];
         result.etag = response.headers.etag;
 //console.info(response.request);
-result.url = response.request.uri.href;
+        result.url = response.request.uri.href;
         if (response.statusCode === 304) { // not changed
           result.isChanged = false;
 
           if (config.env === 'development') {
-            if (result.etag !== requestEtag) { // TODO: just to be safe, should not need this test on production
+            if (requestEtag && (result.etag !== requestEtag)) { // TODO: just to be safe, should not need this test on production
               log.warn(
-                'result', response.url, 'not downloaded, but etag does change, If-None-Match not honoured;',
+                'result', result.url, 'not downloaded, but etag does change, If-None-Match not honoured;',
                 'response status code:', response.statusCode, ';',
                 'eTags - response:', result.etag, ', request:', requestEtag, ';',
                 'contents length:', (contents ? contents.length : 'zero')
@@ -62,9 +62,9 @@ result.url = response.request.uri.href;
           result.contents = contents;
 
           if (config.env === 'development') {
-            if (result.etag === requestEtag) { // TODO: just to be safe, should not need this test on production
+            if (requestEtag && (result.etag === requestEtag)) { // TODO: just to be safe, should not need this test on production
               log.warn(
-                'result', response.url, 'downloaded, but etag does not change, If-None-Match not honoured;',
+                'result', result.url, 'downloaded, but etag does not change, If-None-Match not honoured;',
                 'response status code:', response.statusCode, ';',
                 'eTags - response:', result.etag, ', request:', requestEtag, ';',
                 'contents length:', (contents ? contents.length : 'zero')

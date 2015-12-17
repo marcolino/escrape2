@@ -9,7 +9,7 @@ jimp.read('image-framed.jpg', function(err, img) {
   }
   destination = 'image-framed-autocropped.jpg';
   img
-  .autocrop()
+  .autocrop(false)
   .write(destination, function(err) {
     if (err) {
       return console.error('can\'t write auto-cropped image version via jimp to', destination, ':', err);
