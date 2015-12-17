@@ -5,6 +5,7 @@
 - try using `callback(new Error('err str'))` instead of `callback('err str')`
 - remove 'diff' and 'colors' packages (and all unused packages) at production
 - profile with process.hrtime() *all* image functions
+- put "persons sync finished" at the real end
 
 V remove all "err.context = " lines
 V use `test.server.local` (in `/etc/hosts`) @home too

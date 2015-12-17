@@ -301,7 +301,8 @@ exports.upsert = function(person, callback) {
       for (var prop in person) {
         // record if any intrinsic property was modified
         if (!isNew) {
-          if (prop in doc && prop !== 'dateOfLastSync' && doc[prop] !== person[prop]) {
+          // dateOfLastSync is always modified; isPresent is modified later
+          if (prop in doc && prop !== 'dateOfLastSync' && prop !== 'isPresent' && doc[prop] !== person[prop]) {
             if (config.env === 'development') {
               log.info('updating', person.key + ': changed "' + prop + '" property:', local.diffColor(doc[prop], person[prop]));
             }
@@ -324,27 +325,27 @@ exports.upsert = function(person, callback) {
 };
 
 if (config.env === 'development') {
-// TODO: remember to remove dependencies from packages.json on production (should be done automatically)
-local.diffColor = function(string1, string2) {
-  var colors = require('colors');
-  var jsdiff = require('diff');
-
-  string1 = string1.toString();
-  string2 = string2.toString();
-
-  var differences = jsdiff.diffSentences(string1, string2);
-  var differencesColored = '';
-  differences.forEach(function(part) {
-    // green for additions, red for deletions, grey for common parts
-    var color =
-      (part.added) ? 'green' : // added
-      (part.removed) ? 'red' : // removed
-      'grey' // unchanged
-    ;
-    differencesColored += part.value[color];
-  });
-  return differencesColored;
-};
+  // TODO: remember to remove dependencies from packages.json on production (should be done automatically)
+  local.diffColor = function(string1, string2) {
+    var colors = require('colors');
+    var jsdiff = require('diff');
+  
+    string1 = string1 ? string1.toString().replace(/\n+/, ' ') : '';
+    string2 = string2 ? string2.toString().replace(/\n+/, ' ') : '';
+  
+    var differences = jsdiff.diffSentences(string1, string2);
+    var differencesColored = '';
+    differences.forEach(function(part) {
+      // green for additions, red for deletions, grey for common parts
+      var color =
+        (part.added) ? 'green' : // added
+        (part.removed) ? 'red' : // removed
+        'grey' // unchanged
+      ;
+      differencesColored += (differencesColored ? ' ' : '') + part.value[color];
+    });
+    return differencesColored;
+  };
 }
 
 local.setActivityStatus = function(providers, syncStartDate, callback) {

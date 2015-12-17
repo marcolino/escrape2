@@ -287,6 +287,7 @@ if (config.profile) log.debug('PROFILE createImageVersions', process.hrtime(t)[0
         if (err) {
           log.warn('can\'t save image', image.basename, ':', err);
         } else {
+          // TODO: image.basename is sometimes undefined (and when saving is null!)
           log.info('image', image.personKey + '/' + image.basename, 'added');
         }
 //if (config.profile) log.debug('PROFILE saveImageToDb', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
