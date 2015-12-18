@@ -4,8 +4,6 @@
 - do sync images only for new/changed persons (?)
 - try using `callback(new Error('err str'))` instead of `callback('err str')`
 - remove 'diff' and 'colors' packages (and all unused packages) at production
-- profile with process.hrtime() *all* image functions
-- put "persons sync finished" at the real end
 
 V remove all "err.context = " lines
 V use `test.server.local` (in `/etc/hosts`) @home too
@@ -21,3 +19,5 @@ V add public.dist to .githignore
 V use private names for images, to avoid overwriting changed images...
 V check why there are persons images with no correspondence in db...
 V where to put common code (i.e.: `function inArray(arr, obj) { return (arr.indexOf(obj) != -1); }` ) ? (in a module, if not in lodash)
+V put "persons sync finished" at the real end
+V profile with process.hrtime() *all* image functions

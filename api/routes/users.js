@@ -1,10 +1,24 @@
 var express = require('express')
-  , router = express.Router()
+  , user = require('../controllers/user')
 ;
+var router = express.Router();
 
-/* GET users listing */
-router.get('/', function(req, res) {
-  res.json('respond with a resource');
-});
+router.get('/signup', signup);
+router.post('/signup/check/:username', signupCheckUsername);
+
+function signup(req, res) {
+  // res.render('signup'); // TODO: ...
+}
+
+function signupCheckUsername(req, res) {
+  var username = req.username;
+  user.checkUsername(username, function(err, result) {
+    if (err) {
+      res.json(err);
+    } else {
+      res.json(result);
+    }
+  });
+}
 
 module.exports = router;

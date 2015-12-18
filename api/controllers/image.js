@@ -102,7 +102,7 @@ exports.syncPersonsImages = function(persons, callback) {
     image.type = 'image';
 
 var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
-if (!image.url) log.error('!!!!!!!!!!!!!!!! SOURCE IMAGE URL IS NULL BEFORE FECT !');
+if (!image.url) log.error('!!!!!!!!!!!!!!!! SOURCE IMAGE URL IS NULL BEFORE FETCH !');
     network.fetch(image, function(err, img) { // fetch image resource
 
 if (image.url !== img.url) log.error('!!!!!!!!!!!!!!!! SOURCE IMAGE URL AFTER FETCH CHANGES !');
@@ -144,7 +144,7 @@ if (config.profile) log.debug('PROFILE getSignatureFromImage', process.hrtime(t)
 
   var findSimilarSignatureImage = function(image, images, callback) {
 
-    // TODO: SIMILAR IMAGE COULD BE NOT ONLINE ANYMORE...
+    // TODO: SIMILAR IMAGE COULD BE NOT ONLINE ANYMORE, SO SHOULD SAVE NEW VERSION (WITH NEW URL) NONETHELESS...
 //var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
     var minDistance = 1; // maximum distance possible
     var imageMostSimilar;
@@ -160,7 +160,9 @@ if (config.profile) log.debug('PROFILE getSignatureFromImage', process.hrtime(t)
       // check image url, beforehand
       if (image.url === img.url) {
         image.hasDuplicate = true;
+        image.basename = img.basename; // copy old properties since image will be saved without createImageVersions
 log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE (SAME URL):', image.url, img.url);
+log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE (SAME URL):', image.basename, img.basename);
         break; // same url, break loop here
       }
 
@@ -282,16 +284,20 @@ if (config.profile) log.debug('PROFILE createImageVersions', process.hrtime(t)[0
     Image.findOneAndUpdate(
       { basename: image.basename, personKey: image.personKey}, // query
       image, // object to save
-      { upsert: true }, // options
+      { // options
+        new: true, // return the modified document rather than the original
+        upsert: true // creates the object if it doesn't exist. defaults to false
+      },
       function(err, doc) { // result callback
         if (err) {
-          log.warn('can\'t save image', image.basename, ':', err);
+          log.warn('can\'t save image', doc.basename, ':', err);
         } else {
-          // TODO: image.basename is sometimes undefined (and when saving is null!)
+          // TODO: image.basename is sometimes undefined (and when saving is null!) (=> used doc.basename, TEST IT)
           log.info('image', image.personKey + '/' + image.basename, 'added');
+          //log.info('DOC image', doc.personKey + '/' + doc.basename, 'added');
         }
 //if (config.profile) log.debug('PROFILE saveImageToDb', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
-        callback(err, image); // finish
+        callback(err, doc); // finish
       }
     );
   };

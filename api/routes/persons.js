@@ -13,7 +13,6 @@ var router = express.Router(); // express router
 router.route('/sync').
   get(function(req, res) { // sync all persons
     // return immedately ('sync()' is asynchronous...), log progress
-    log.info('router: persons/sync get');
     res.json('persons sync started');
     person.sync();
   })

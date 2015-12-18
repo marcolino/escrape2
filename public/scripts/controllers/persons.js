@@ -34,7 +34,27 @@ angular.module('PersonCtrl', []).controller('PersonController', function($rootSc
     return encodeURIComponent(url);
   };
 
+  // hide person (remove from scope)
+  $scope.hide = function(person) {
+    //console.log('hiding person', person.key);
+    //console.log($scope.persons);
+    for (var i = 0, len = $scope.persons.length; i < len; ++i) {
+      if ($scope.persons[i].key === person.key) {
+        $scope.persons.splice(i, 1);
+        break;
+      }
+    }
 
-  //$scope.load();  
+  };
+
+/*
+  function toObject(arr, key) {
+    var o = {};
+    for (var i = 0, len = arr.length; i < len; ++i) {
+      o[arr[i][key]] = arr[i];
+    }
+    return o;
+  }
+*/
 
 });

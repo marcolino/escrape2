@@ -91,6 +91,7 @@ exports.getByPhone = function(phone, result) { // get person by phone
  * sync persons from providers
  */
 exports.sync = function() { // sync persons
+  log.info('persons sync started');
   var totalProvidersCount = 0, retrievedProvidersCount = 0;
   var totalPersonsCount = 0, retrievedPersonsCount = 0;
   var syncStartDate = new Date(); // start of this sync date
@@ -197,6 +198,11 @@ exports.sync = function() { // sync persons
                     }
                     person.zone = local.getDetailsZone($, provider);
                     person.description = local.getDetailsDescription($, provider);
+// DEBUG ONLY: FORCE ONE PERSON DESCRIPTION CHANGE! ///////////
+if (person.key === 'FORBES/Shakira') {
+  person.description += '\nA small forced change, here...: ' + crypto.randomBytes(3).toString('hex');
+}
+///////////////////////////////////////////////////////////////
                     var phone = local.getDetailsPhone($, provider);
                     if (phone) { // phone is found
                       person.phone = phone;
@@ -241,7 +247,8 @@ exports.sync = function() { // sync persons
         if (err) {
           return log.error('some error in the final outer async callback:', err, 'skipping outer iterations');
         }
-        log.info('persons sync finished');
+        log.info('' + retrievedProvidersCount, '/', totalProvidersCount, 'providers retrieved');
+        log.info('' + retrievedPersonsCount, '/', totalPersonsCount, 'persons retrieved');
 
         // set activity status
         log.info('persons activity status setting started');
@@ -250,8 +257,6 @@ exports.sync = function() { // sync persons
             return log.error('error setting activity status:', err);
           }
           log.info('persons activity status setting finished');
-          log.info('' + retrievedProvidersCount, '/', totalProvidersCount, 'providers retrieved');
-          log.info('' + retrievedPersonsCount, '/', totalPersonsCount, 'persons retrieved');
 
           // sync persons images
           log.info('persons images sync started');
@@ -274,6 +279,7 @@ exports.sync = function() { // sync persons
                 return log.warn('can\'t sync person aliases:', err);
               }
               log.info('persons aliases sync finished');
+              log.info('persons sync finished');
             });
 
           });
@@ -302,7 +308,7 @@ exports.upsert = function(person, callback) {
         // record if any intrinsic property was modified
         if (!isNew) {
           // dateOfLastSync is always modified; isPresent is modified later
-          if (prop in doc && prop !== 'dateOfLastSync' && prop !== 'isPresent' && doc[prop] !== person[prop]) {
+          if (prop in doc && prop !== 'dateOfLastSync' && prop !== 'isPresent' && doc._doc[prop] !== person[prop]) {
             if (config.env === 'development') {
               log.info('updating', person.key + ': changed "' + prop + '" property:', local.diffColor(doc[prop], person[prop]));
             }
