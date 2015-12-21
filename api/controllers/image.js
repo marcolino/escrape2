@@ -30,7 +30,7 @@ exports.syncPersonsImages = function(persons, callback) {
     }
     log.debug('all images array length:', images.length);
 
-    async.eachSeries( // TODO: should we better serialize persons? (YES)
+    async.each/*Series*/( // TODO: should we better serialize persons? (YES)
       persons,
       function(person, callbackPerson) {
         async.each/*Series*/( // TODO: should we better serialize images? (NO)
@@ -229,7 +229,7 @@ log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.personKey, i
           if (key === 'full') { // full version, just save image with no resize
             //log.silly('full writing to', key);
             img
-              .autocrop()
+              .autocrop(0.002) // TODO: TEST THIS TOLERNCE VALUE!!!
               .quality(version.quality)
               .write(destination, function(err) {
                 if (err) {
@@ -245,7 +245,7 @@ log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.personKey, i
             var width = Math.min(version.width, img.bitmap.width);
             //log.silly('other writing to', key, 'width:', width);
             img
-              .autocrop()
+              .autocrop(0.002) // TODO: TEST THIS TOLERNCE VALUE!!!
               .resize(width, jimp.AUTO)
               .quality(version.quality)
               .write(destination, function(err) {
