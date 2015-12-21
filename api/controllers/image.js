@@ -6,6 +6,7 @@ var mkdirp = require('mkdirp') // to make directories with parents
   , jimp = require('jimp') // image manipulation
   , network = require('../controllers/network') // network handling
   , Image = require('../models/image') // images handling
+  , Person = require('../models/person') // persons handling
   , config = require('../config') // global configuration
 ;
 var local = {};
@@ -105,16 +106,10 @@ var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
 if (!image.url) log.error('!!!!!!!!!!!!!!!! SOURCE IMAGE URL IS NULL BEFORE FETCH !');
     network.fetch(image, function(err, img) { // fetch image resource
 
+if (err) { return callback(err, image); }
+
 if (image.url !== img.url) log.error('!!!!!!!!!!!!!!!! SOURCE IMAGE URL AFTER FETCH CHANGES !');
 
-      /*
-      if (img && img.custom) {
-        // copy custom fields to image
-        Object.keys(img.custom).forEach(function(key) {
-          img[key] = img.custom[key];
-        });
-      }
-      */
       // copy fetched properties to image
       image.contents = img.contents;
       image.etag = img.etag;
@@ -162,7 +157,7 @@ if (config.profile) log.debug('PROFILE getSignatureFromImage', process.hrtime(t)
         image.hasDuplicate = true;
         image.basename = img.basename; // copy old properties since image will be saved without createImageVersions
 log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE (SAME URL):', image.url, img.url);
-log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE (SAME URL):', image.basename, img.basename);
+//log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE (SAME URL):', image.basename, img.basename);
         break; // same url, break loop here
       }
 
@@ -190,7 +185,7 @@ log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.url, imageMo
    * create image versions
    */
   var createImageVersions = function(image, images, callback) {
-var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
+//var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
     if (image.hasDuplicate) {
       return callback(null, image, images);
     }
@@ -241,7 +236,7 @@ var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
                   //log.silly('can\'t write full size image version via jimp to', destination, ':', err);
                   return callbackVersion(err);
                 }
-                log.info('written full to', destination);
+                //log.info('written full to', destination);
                 callbackVersion(); // success
               })
             ;
@@ -258,14 +253,14 @@ var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
                   //log.silly('can\'t write other size image version via jimp to', destination, ':', err);
                   return callbackVersion(err);
                 }
-                log.info('written other to', destination);
+                //log.info('written other to', destination);
                 callbackVersion(); // success
               })
             ;
           }
         }, // async each versions iteration function done
         function(err) { // all directories and image versions created 
-if (config.profile) log.debug('PROFILE createImageVersions', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
+//if (config.profile) log.debug('PROFILE createImageVersions', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
           callback(err, image, images); // finished
         }
       ); // async each versions done
@@ -276,28 +271,73 @@ if (config.profile) log.debug('PROFILE createImageVersions', process.hrtime(t)[0
    * save image to DB
    */
   var saveImageToDb = function(image, images, callback) {
-    if (!image) {
+    if (image.hasDuplicate) {
       //log.silly('saveImageToDb: image is void (has duplicate): SKIPPING');
       return callback(null, null);
     }
-//var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
-    Image.findOneAndUpdate(
-      { basename: image.basename, personKey: image.personKey}, // query
-      image, // object to save
-      { // options
-        new: true, // return the modified document rather than the original
-        upsert: true // creates the object if it doesn't exist. defaults to false
-      },
-      function(err, doc) { // result callback
-        if (err) {
-          log.warn('can\'t save image', doc.basename, ':', err);
-        } else {
-          // TODO: image.basename is sometimes undefined (and when saving is null!) (=> used doc.basename, TEST IT)
-          log.info('image', image.personKey + '/' + image.basename, 'added');
-          //log.info('DOC image', doc.personKey + '/' + doc.basename, 'added');
+
+    // save image and person in series
+    async.series(
+      {
+        image: function(callbackInternal) {
+          Image.findOneAndUpdate(
+            { basename: image.basename, personKey: image.personKey}, // query
+            image, // object to save
+            { // options
+              new: true, // return the modified document rather than the original
+              upsert: true // creates the object if it doesn't exist
+            },
+            function(err, doc) { // result callback
+              if (err) {
+                log.warn('can\'t save image', doc.basename, ':', err);
+              } else {
+                log.info('image', doc.personKey + '/' + doc.basename, 'added');
+
+                //log.info('IMAGE BEING PUSHED BACK TO IMAGES:', doc.basename);
+                images.push(doc); // push added image
+
+              }
+              callbackInternal(err, doc); // finish image save
+            }
+          );
+        },
+        person: function(callbackInternal) {
+//log.debug('saveImageToDb - image:', image);
+//log.error('saveImageToDb - 2 - images.length:', images.length, 'image.personKey;', image.personKey, 'image.isShowcase:', image.isShowcase);
+log.debug('saveImageToDb - 2 - before getShowcase - image.url:', image.url);
+          var showcase = exports.getShowcase(image.personKey, images);
+          if (!showcase) {
+log.warn('no showcase found for image for person', image.personKey, ', images.length:', images.length);
+            return callbackInternal(null, null);
+          }
+          if (!showcase.basename) {
+log.warn('no showcase.basename found for image for person', image.personKey, ', images.length:', images.length);
+            return callbackInternal(null, null);
+          }
+log.info(' !!! showcase.basename found for image for person', image.personKey);
+          //log.silly('showcase found for image for person', image.personKey + ':', showcase.basename);
+
+          // save person showcase basename
+          Person.findOneAndUpdate(
+            { key: image.personKey }, // query
+            { showcaseBasename: showcase.basename }, // object to save
+            { // options
+              new: true, // return the modified document rather than the original
+              upsert: true // creates the object if it doesn't exist
+            },
+            function(err, doc) { // result callback
+              if (err) {
+                log.warn('can\'t save showcase for person', doc.key, ':', err);
+              } else {
+                //log.info('person', doc.key, 'set showcase basename for image of person', doc.key + ':', doc.showcaseBasename);
+              }
+              callbackInternal(err, doc); // finish image save
+            }
+          );
         }
-//if (config.profile) log.debug('PROFILE saveImageToDb', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
-        callback(err, doc); // finish
+      },
+      function(err, results) { // final callback
+        callback(err, results);
       }
     );
   };
@@ -411,12 +451,39 @@ exports.isShowcase = function(image, images) {
   for (var i = 0, len = personImages.length; i < len; i++) {
     if (personImages[i].isShowcase) {
       anyShowcaseFound = true;
-      if (personImages[i].datOfFirstSync > image.datOfFirstSync) {
+      if (personImages[i].dateOfFirstSync > image.dateOfFirstSync) {
         isShowcase = false; // there is a more recent showcase image
       }
     }
   }
   return isShowcase;
+};
+
+exports.getShowcase = function(personKey, images) {
+//log.debug('images.length:', images.length);
+  var personImages = local.grep(
+    { personKey: personKey }
+    , images
+  );
+log.debug('getShowcase() - personKey:', personKey);
+log.debug('getShowcase() - personImages.length:', personImages.length);
+  var isShowcase = false;
+  var showcase;
+  for (var i = 0, len = personImages.length; i < len; i++) {
+log.debug('getShowcase() - i:', i);
+    if (personImages[i].isShowcase) {
+log.debug('getShowcase() - i:', i, 'isShowcase');
+log.debug('getShowcase() - i:', i, 'showcase:', showcase);
+log.debug('getShowcase() - i:', i, 'personImages[i].dateOfFirstSync:', personImages[i].dateOfFirstSync);
+if (showcase)
+log.debug('getShowcase() - i:', i, 'showcase.dateOfFirstSync:', showcase.dateOfFirstSync);
+      if (!showcase || (personImages[i].dateOfFirstSync > showcase.dateOfFirstSync)) {
+        showcase = personImages[i]; // no showcase yet, or this person image date of first sync
+                                    // is more recent than previous showcase's: this person image is showcase
+      }
+    }
+  }
+  return showcase; // no showcase (should not happen)
 };
 
 local.grep = function(what, where) {

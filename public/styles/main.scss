@@ -1,6 +1,6 @@
 @import 'opacity';
 
-$textColor: yellow;
+/*$textColor: yellow;*/
 $textFontFamily: 'Open Sans';
 $bodyPadding: 1.0em;
 $showcaseCaptionColor: #ffefa3;
@@ -11,7 +11,6 @@ html * {
 
 body {
   padding: $bodyPadding;
-  color: $textColor;
 }
 
 a:hover, a:visited, a:link, a:active {
@@ -25,6 +24,14 @@ a:hover, a:visited, a:link, a:active {
   padding-left: 3px;
 }
 */
+
+.loading {
+  text-align: center;
+  font-size: 7.0em;
+  color: yellow;
+  margin-top: 200px;
+  content: "Loading ...";
+}
 
 .showcase-table {
   display: table;

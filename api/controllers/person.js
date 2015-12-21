@@ -15,16 +15,54 @@ var mongoose = require('mongoose') // mongo abstraction
 var local = {};
 var log = config.log;
 
-exports.getAll = function(filter, options, result) { // get all persons
-
-  var personsResult = [];
-
-  Person.find(filter, null, options).lean().exec(function(err, persons) {
-    Image.find({}, 'personKey basename isShowcase dateOfLastSync').lean().exec(function(err, images) {
+exports.getAll_TEST_AGGREGATE = function(filter, options, callback) { // get all persons
+  Person.aggregate(
+    [ 
+      {
+        '$project': { 
+          'name': 1, 
+          'alias': {
+            '$ifNull': [ '$alias', null ]
+          }
+        }
+      }, 
+      {
+        '$group': { 
+          '_id': '$alias',
+          'name': { '$first': '$name'}, 
+          'id':   { '$first': '$_id' } ,
+        }
+      }
+    ], function(err, persons) {
       if (err) {
         return callback(err);
       }
+      log.info('AGGREGATED persons:', persons);
+log.debug('api/controllers/persons getAll - Person.aggregate - found', persons.count, 'persons');
+      return callback(null, persons);
+    }
+  );
+};
 
+exports.getAll = function(filter, options, callback) { // get all persons
+config.time = process.hrtime(); // TODO: development only
+  var personsResult = [];
+
+  Person.find({ isPresent: true, }, null, options).lean().exec(function(err, persons) {
+log.debug('api/controllers/persons getAll - Person.find - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1], 'seconds');
+config.time = process.hrtime(); // TODO: development only
+
+// SKIP SHOWCASE ISPRESENT AND ALIASES
+log.debug('api/controllers/persons ALL - getAll - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1], 'seconds');
+return callback(err, persons);
+
+    Image.find({}, 'personKey basename isShowcase dateOfLastSync').lean().exec(function(err, images) {
+log.debug('api/controllers/persons Image.find - getAll - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1], 'seconds');
+config.time = process.hrtime(); // TODO: development only
+
+      if (err) {
+        return callback(err);
+      }
       // add to each person its showcase image
       var aliases = [];
       for (var i = 0, personsLen = persons.length; i < personsLen; i++) {
@@ -32,11 +70,12 @@ exports.getAll = function(filter, options, result) { // get all persons
 
         // TODO: move these filters to query filter (?))
         if (P.alias && aliases.hasOwnProperty(P.alias)) {
-          log.debug('skipping person', P.key, 'because it\'s alias was seen already', P.alias);
+          //log.debug('skipping person', P.key, 'because it\'s alias was seen already', P.alias);
           continue;
         }
+
         if (!P.isPresent) {
-          log.debug('skipping person', P.key, 'because it\'s not present');
+          //log.debug('skipping person', P.key, 'because it\'s not present');
           continue;
         }
 
@@ -49,7 +88,7 @@ exports.getAll = function(filter, options, result) { // get all persons
                 log.error('assigning a showcase to a person twice!');
               }
               P.showcaseBasename = I.basename;
-              console.log('person', P.key, 'has image', I.basename, 'as showcase');
+              //console.log('person', P.key, 'has image', I.basename, 'as showcase');
               break;
             }
           }
@@ -58,32 +97,78 @@ exports.getAll = function(filter, options, result) { // get all persons
         if (P.alias) { aliases[P.alias] = true; } // add this person alias to seen aliases
       }
       //for (var key in aliases) { log.warn(key); }
-      result(err, personsResult);
+      callback(err, personsResult);
+log.debug('api/controllers/persons ALL - getAll - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1], 'seconds');
     });
   });
 };
 
-/*
-exports.get = function(req, res) { // get persons
-  var filter = {};
-  var options = {};
-  Person.find(filter, null, options, function(err, persons) {
-    result(err, persons);
+exports.getAll_GETTING_IMAGES_TOO_FOR_SHOWCASE = function(filter, options, callback) { // get all persons
+config.time = process.hrtime(); // TODO: development only
+  var personsResult = [];
+
+  Person.find({ isPresent: true, }, null, options).lean().exec(function(err, persons) {
+log.debug('api/controllers/persons getAll - Person.find - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1], 'seconds');
+config.time = process.hrtime(); // TODO: development only
+
+    Image.find({}, 'personKey basename isShowcase dateOfLastSync').lean().exec(function(err, images) {
+log.debug('api/controllers/persons Image.find - getAll - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1], 'seconds');
+config.time = process.hrtime(); // TODO: development only
+
+      if (err) {
+        return callback(err);
+      }
+      // add to each person its showcase image
+      var aliases = [];
+      for (var i = 0, personsLen = persons.length; i < personsLen; i++) {
+        var P = persons[i], I;
+
+        // TODO: move these filters to query filter (?))
+        if (P.alias && aliases.hasOwnProperty(P.alias)) {
+          //log.debug('skipping person', P.key, 'because it\'s alias was seen already', P.alias);
+          continue;
+        }
+
+        if (!P.isPresent) {
+          //log.debug('skipping person', P.key, 'because it\'s not present');
+          continue;
+        }
+
+        P.showcaseBasename = null;
+        for (var j = 0, len = images.length; j < len; j++) {
+          I = images[j];
+          if (I.personKey === P.key) {
+            if (image.isShowcase(I, images)) {
+              if (P.showcaseBasename !== null) { // TODO: remove on production
+                log.error('assigning a showcase to a person twice!');
+              }
+              P.showcaseBasename = I.basename;
+              //console.log('person', P.key, 'has image', I.basename, 'as showcase');
+              break;
+            }
+          }
+        }
+        personsResult.push(P); // add this person to result
+        if (P.alias) { aliases[P.alias] = true; } // add this person alias to seen aliases
+      }
+      //for (var key in aliases) { log.warn(key); }
+      callback(err, personsResult);
+log.debug('api/controllers/persons ALL - getAll - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1], 'seconds');
+    });
   });
 };
-*/
 
-exports.getById = function(id, result) { // get person by id
+exports.getById = function(id, callback) { // get person by id
   var filter = { _id: id };
   Person.find(filter, function(err, persons) {
-    result(err, persons);
+    callback(err, persons);
   });
 };
 
-exports.getByPhone = function(phone, result) { // get person by phone
+exports.getByPhone = function(phone, callback) { // get person by phone
   var filter = { phone: req.phone };
   Person.find(filter, function(err, persons) {
-    result(err, persons);
+    callback(err, persons);
   });
 };
 
@@ -147,7 +232,7 @@ exports.sync = function() { // sync persons
             $ = cheerio.load(contents);
             var list = local.getList(provider, $);
             totalPersonsCount += list.length;
-//list = list.slice(0, 3); log.info('list:', list); // to debug: limit list
+//list = list.slice(0, 30); log.info('list:', list); // to debug: limit list
             async.each(
               list, // 1st param is the array of items
               function(element, callbackInner) { // 2nd param is the function that each item is passed to
@@ -198,11 +283,13 @@ exports.sync = function() { // sync persons
                     }
                     person.zone = local.getDetailsZone($, provider);
                     person.description = local.getDetailsDescription($, provider);
+/*
 // DEBUG ONLY: FORCE ONE PERSON DESCRIPTION CHANGE! ///////////
 if (person.key === 'FORBES/Shakira') {
   person.description += '\nA small forced change, here...: ' + crypto.randomBytes(3).toString('hex');
 }
 ///////////////////////////////////////////////////////////////
+*/
                     var phone = local.getDetailsPhone($, provider);
                     if (phone) { // phone is found
                       person.phone = phone;
@@ -216,7 +303,8 @@ if (person.key === 'FORBES/Shakira') {
                     person.dateOfLastSync = now;
                     person.imageUrls = local.getDetailsImageUrls($, provider);
                     person.isPresent = true; // set person as present, waiting for setActivityStatus()
-                    
+                    person.alias = null; // alias will be set in batch mode at the end of the loop
+
                     // save this person to database
                     exports.upsert(person, function(err, doc) {
                       if (err) {
@@ -308,7 +396,7 @@ exports.upsert = function(person, callback) {
         // record if any intrinsic property was modified
         if (!isNew) {
           // dateOfLastSync is always modified; isPresent is modified later
-          if (prop in doc && prop !== 'dateOfLastSync' && prop !== 'isPresent' && doc._doc[prop] !== person[prop]) {
+          if (prop in doc && prop !== 'dateOfLastSync' && prop !== 'isPresent' && prop !== 'alias' && doc._doc[prop] !== person[prop]) {
             if (config.env === 'development') {
               log.info('updating', person.key + ': changed "' + prop + '" property:', local.diffColor(doc[prop], person[prop]));
             }
@@ -976,6 +1064,7 @@ local.getDetailsImageUrls = function($, provider) {
       .replace(/\.\.?\//g, '')
       .replace(/\?t=.*/, '')
     ;
+if (!href) { log.error('no showcase found for SGI person !'); }
     val.push({ href: href, isShowcase: true });
     $('a[rel="group"][class="fancybox"]').each(function(index, element) { //other images
       var href = provider.url + '/' + $(element).attr('href');

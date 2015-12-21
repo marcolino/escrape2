@@ -11,7 +11,10 @@ angular.module('PersonCtrl', []).controller('PersonController', function($rootSc
   }, true); // last parameter is for object deep watch
 
   $scope.loadPersons = function() {
+var t = console.time('a'); // TODO: development only
+console.log('controller/persons loadPersons - Person.getAll started [a]');
     Person.getAll(Filter.get()/*$scope.filter*/, function(response) {
+console.log('controller/persons loadPersons - Person.getAll elapsed time:'); console.timeEnd('a');
       $scope.persons = response;
     });
   };

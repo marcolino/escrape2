@@ -22,7 +22,8 @@ var personSchema = new mongoose.Schema({
   dateOfLastSync: { type: Date, default: Date.now },
   phoneIsAvailable: Boolean,
   isPresent: Boolean,
-  alias: String
+  alias: String,
+  showcaseBasename: String,
 },
 {
   autoIndex: config.env === 'development',
