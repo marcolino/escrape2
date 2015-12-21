@@ -3,7 +3,6 @@ var mongoose = require('mongoose') // mongo abstraction
   , async = require('async') // to call many async functions in a loop
   , fs = require('fs') // file-system handling
   , path = require('path') // paths handling
-  //, _ = require('lodash') // lo-dash utilities
   , crypto = require('crypto') // random bytes
   , network = require('../controllers/network') // network handling
   , image = require('../controllers/image') // network handling
@@ -15,49 +14,84 @@ var mongoose = require('mongoose') // mongo abstraction
 var local = {};
 var log = config.log;
 
-exports.getAll_TEST_AGGREGATE = function(filter, options, callback) { // get all persons
+exports.getAll = function(filter, options, callback) { // get all persons
+config.time = process.hrtime(); // TODO: development only
   Person.aggregate(
-    [ 
+    [
       {
-        '$project': { 
-          'name': 1, 
+        '$match': {
+          'isPresent': true,
+         }
+      },
+      {
+        '$project': {
+          'key': 1,
+          'name': 1,
+          'url': 1,
+          'isPresent': 1,
+          'showcaseBasename': 1,
           'alias': {
-            '$ifNull': [ '$alias', null ]
+            '$cond': [
+               { '$eq': [ '$alias', null ] },
+               '$_id',
+               '$alias'
+            ]
           }
         }
-      }, 
+      },
       {
-        '$group': { 
+        '$group': {
           '_id': '$alias',
-          'name': { '$first': '$name'}, 
-          'id':   { '$first': '$_id' } ,
+          'key': { '$first': '$key' },
+          'name': { '$first': '$name' },
+          'url': { '$first': '$url' },
+          'isPresent': { '$first': '$isPresent' },
+          'showcaseBasename': { '$first': '$showcaseBasename' },
+          'id': { '$first': '$_id' }
+        }
+      },
+      {
+        '$project': {
+          'alias': {
+            '$cond': [
+              { '$eq': [ '$id', '$_id' ] },
+              null,
+              '$_id'
+            ]
+          },
+          'key': 1,
+          'name': 1,
+          'url': 1,
+          'isPresent': 1,
+          'showcaseBasename': 1,
+          '_id': '$id'
         }
       }
     ], function(err, persons) {
       if (err) {
         return callback(err);
       }
-      log.info('AGGREGATED persons:', persons);
-log.debug('api/controllers/persons getAll - Person.aggregate - found', persons.count, 'persons');
-      return callback(null, persons);
+log.debug('api/controllers/persons getAll - Person.aggregate - elapsed time:', process.hrtime(config.time)[0] + (process.hrtime(config.time)[1] / 1000000000), 'seconds');
+       return callback(null, persons);
     }
   );
 };
 
-exports.getAll = function(filter, options, callback) { // get all persons
+/*
+exports.getAll_MANUAL = function(filter, options, callback) { // get all persons
 config.time = process.hrtime(); // TODO: development only
   var personsResult = [];
 
   Person.find({ isPresent: true, }, null, options).lean().exec(function(err, persons) {
-log.debug('api/controllers/persons getAll - Person.find - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1], 'seconds');
+log.debug('api/controllers/persons getAll - Person.find - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1]/1000000, 'seconds');
 config.time = process.hrtime(); // TODO: development only
 
 // SKIP SHOWCASE ISPRESENT AND ALIASES
-log.debug('api/controllers/persons ALL - getAll - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1], 'seconds');
+log.debug('api/controllers/persons ALL - getAll - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1]/1000000, 'seconds');
 return callback(err, persons);
 
     Image.find({}, 'personKey basename isShowcase dateOfLastSync').lean().exec(function(err, images) {
-log.debug('api/controllers/persons Image.find - getAll - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1], 'seconds');
+log.debug('api/controllers/persons Image.find - getAll - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1]/1000000, 'seconds');
 config.time = process.hrtime(); // TODO: development only
 
       if (err) {
@@ -98,21 +132,23 @@ config.time = process.hrtime(); // TODO: development only
       }
       //for (var key in aliases) { log.warn(key); }
       callback(err, personsResult);
-log.debug('api/controllers/persons ALL - getAll - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1], 'seconds');
+log.debug('api/controllers/persons ALL - getAll - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1]/1000000, 'seconds');
     });
   });
 };
+*/
 
+/*
 exports.getAll_GETTING_IMAGES_TOO_FOR_SHOWCASE = function(filter, options, callback) { // get all persons
 config.time = process.hrtime(); // TODO: development only
   var personsResult = [];
 
   Person.find({ isPresent: true, }, null, options).lean().exec(function(err, persons) {
-log.debug('api/controllers/persons getAll - Person.find - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1], 'seconds');
+log.debug('api/controllers/persons getAll - Person.find - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1]/1000000, 'seconds');
 config.time = process.hrtime(); // TODO: development only
 
     Image.find({}, 'personKey basename isShowcase dateOfLastSync').lean().exec(function(err, images) {
-log.debug('api/controllers/persons Image.find - getAll - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1], 'seconds');
+log.debug('api/controllers/persons Image.find - getAll - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1]/1000000, 'seconds');
 config.time = process.hrtime(); // TODO: development only
 
       if (err) {
@@ -153,10 +189,11 @@ config.time = process.hrtime(); // TODO: development only
       }
       //for (var key in aliases) { log.warn(key); }
       callback(err, personsResult);
-log.debug('api/controllers/persons ALL - getAll - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1], 'seconds');
+log.debug('api/controllers/persons ALL - getAll - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1]/1000000, 'seconds');
     });
   });
 };
+*/
 
 exports.getById = function(id, callback) { // get person by id
   var filter = { _id: id };
@@ -1398,8 +1435,11 @@ module.exports = exports;
 /*
 // TODO: DEBUG ONLY ///////////////////////////////////////////////////////////
 var db = require('../models/db'); // database wiring
-exports.sync(function(err) {
-  log.info('SYNC RESULT:', err);
+exports.getAll_TEST_AGGREGATE({}, {}, function(err, result) {
+  if (err) {
+    return log.error('getAll_TEST_AGGREGATE:', err);
+  }
+  log.info('getAll_TEST_AGGREGATE:', result);
 });
 ///////////////////////////////////////////////////////////////////////////////
 */

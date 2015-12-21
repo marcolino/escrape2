@@ -1,10 +1,11 @@
-var requestretry = require('requestretry'); // to place http requests and retry if needed
-var request = require('request') // to place http requests
+var requestretry = require('requestretry') // to place http requests and retry if needed
   , randomUseragent = require('random-ua') // to use a random user-agent
   , agent = require('socks5-http-client/lib/Agent') // to be able to proxy requests
   , fs = require('fs') // to be able to use filesystem
   , config = require('../config') // global configuration
 ;
+
+var request = require('request'); // to place http requests
 
 var log = config.log;
 
@@ -14,9 +15,9 @@ var log = config.log;
 exports.fetch = function(resource, callback) {
   var options = {
     url: resource.url, // url to download
-    maxAttempts: config.networking.maxAttempts, // number of attempts to retry after the first one
-    retryDelay: config.networking.retryDelay, // number of milliseconds to wait for before trying again
-    retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
+    //maxAttempts: config.networking.maxAttempts, // number of attempts to retry after the first one
+    //retryDelay: config.networking.retryDelay, // number of milliseconds to wait for before trying again
+    //retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
     timeout: config.networking.timeout, // number of milliseconds to wait for a server to send response headers before aborting the request
     encoding: ((resource.type === 'text') ? null : (resource.type === 'image') ? 'binary' : null), // encoding
     headers: {
@@ -32,13 +33,13 @@ exports.fetch = function(resource, callback) {
     options.headers['If-None-Match'] = resource.etag; // eTag field
   }
 
-  requestretry(
+  //requestretry(
+  request(
     options,
     function(err, response, contents) {
 
       if (!err && (response.statusCode === 200 || response.statusCode === 304)) {
         var result = {};
-        requestEtag = response.request.headers['If-None-Match'];
         result.etag = response.headers.etag;
 //console.info(response.request);
         result.url = response.request.uri.href;
@@ -46,6 +47,7 @@ exports.fetch = function(resource, callback) {
           result.isChanged = false;
 
           if (config.env === 'development') {
+            requestEtag = response.request.headers['If-None-Match'];
             if (requestEtag && (result.etag !== requestEtag)) { // TODO: just to be safe, should not need this test on production
               log.warn(
                 'result', result.url, 'not downloaded, but etag does change, If-None-Match not honoured;',
@@ -62,6 +64,7 @@ exports.fetch = function(resource, callback) {
           result.contents = contents;
 
           if (config.env === 'development') {
+            requestEtag = response.request.headers['If-None-Match'];
             if (requestEtag && (result.etag === requestEtag)) { // TODO: just to be safe, should not need this test on production
               log.warn(
                 'result', result.url, 'downloaded, but etag does not change, If-None-Match not honoured;',

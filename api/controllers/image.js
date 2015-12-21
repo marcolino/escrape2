@@ -156,7 +156,7 @@ if (config.profile) log.debug('PROFILE getSignatureFromImage', process.hrtime(t)
       if (image.url === img.url) {
         image.hasDuplicate = true;
         image.basename = img.basename; // copy old properties since image will be saved without createImageVersions
-log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE (SAME URL):', image.url, img.url);
+log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE (SAME URL):', image.personKey, image.url, img.url);
 //log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE (SAME URL):', image.basename, img.basename);
         break; // same url, break loop here
       }
@@ -173,7 +173,7 @@ log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE (SAME URL):', image.u
     }
     if (minDistance <= config.images.thresholdDistanceSamePerson) {
       image.hasDuplicate = true;
-log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.url, imageMostSimilar.url);
+log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.personKey, image.url, imageMostSimilar.url);
     } //else { log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, ', distance:', minDistance); }
 
 //if (config.profile) log.debug('PROFILE findSimilarSignatureImage', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
@@ -302,19 +302,17 @@ log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.url, imageMo
           );
         },
         person: function(callbackInternal) {
-//log.debug('saveImageToDb - image:', image);
-//log.error('saveImageToDb - 2 - images.length:', images.length, 'image.personKey;', image.personKey, 'image.isShowcase:', image.isShowcase);
-log.debug('saveImageToDb - 2 - before getShowcase - image.url:', image.url);
+//log.debug('saveImageToDb - 2 - before getShowcase - image.url:', image.url);
           var showcase = exports.getShowcase(image.personKey, images);
           if (!showcase) {
-log.warn('no showcase found for image for person', image.personKey, ', images.length:', images.length);
+//log.debug('no showcase found yet for image for person', image.personKey, ', images.length:', images.length);
             return callbackInternal(null, null);
           }
           if (!showcase.basename) {
-log.warn('no showcase.basename found for image for person', image.personKey, ', images.length:', images.length);
+//log.warn('no showcase.basename found for image for person', image.personKey, ', images.length:', images.length);
             return callbackInternal(null, null);
           }
-log.info(' !!! showcase.basename found for image for person', image.personKey);
+//log.info('showcase.basename found for image for person', image.personKey);
           //log.silly('showcase found for image for person', image.personKey + ':', showcase.basename);
 
           // save person showcase basename
@@ -465,18 +463,18 @@ exports.getShowcase = function(personKey, images) {
     { personKey: personKey }
     , images
   );
-log.debug('getShowcase() - personKey:', personKey);
-log.debug('getShowcase() - personImages.length:', personImages.length);
+//log.debug('getShowcase() - personKey:', personKey);
+//log.debug('getShowcase() - personImages.length:', personImages.length);
   var isShowcase = false;
   var showcase;
   for (var i = 0, len = personImages.length; i < len; i++) {
-log.debug('getShowcase() - i:', i);
+//log.debug('getShowcase() - i:', i);
     if (personImages[i].isShowcase) {
-log.debug('getShowcase() - i:', i, 'isShowcase');
-log.debug('getShowcase() - i:', i, 'showcase:', showcase);
-log.debug('getShowcase() - i:', i, 'personImages[i].dateOfFirstSync:', personImages[i].dateOfFirstSync);
-if (showcase)
-log.debug('getShowcase() - i:', i, 'showcase.dateOfFirstSync:', showcase.dateOfFirstSync);
+//log.debug('getShowcase() - i:', i, 'isShowcase');
+//log.debug('getShowcase() - i:', i, 'showcase:', showcase);
+//log.debug('getShowcase() - i:', i, 'personImages[i].dateOfFirstSync:', personImages[i].dateOfFirstSync);
+//if (showcase)
+//log.debug('getShowcase() - i:', i, 'showcase.dateOfFirstSync:', showcase.dateOfFirstSync);
       if (!showcase || (personImages[i].dateOfFirstSync > showcase.dateOfFirstSync)) {
         showcase = personImages[i]; // no showcase yet, or this person image date of first sync
                                     // is more recent than previous showcase's: this person image is showcase
