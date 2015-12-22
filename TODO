@@ -21,3 +21,14 @@ V check why there are persons images with no correspondence in db...
 V where to put common code (i.e.: `function inArray(arr, obj) { return (arr.indexOf(obj) != -1); }` ) ? (in a module, if not in lodash)
 V put "persons sync finished" at the real end
 V profile with process.hrtime() *all* image functions
+
+
+
+Statistics @office:
+Full,     both-versions                  saveToDb persons images sync with eachSeries(persons), each(imageUrls): 79 seconds
+Full,     both-versions                  saveToDb persons images sync with each      (persons), each(imageUrls): 66 seconds
+Full,     both-versions               no saveToDb persons images sync with each      (persons), each(imageUrls): 65 seconds
+Full,     full-version-only saveToFs, no saveToDb persons images sync with each      (persons), each(imageUrls): 41 seconds
+Full, showcase-version-only saveToFs, no saveToDb persons images sync with each      (persons), each(imageUrls): 38 seconds
+Full,     both-versions no-write      no saveToDb persons images sync with each      (persons), each(imageUrls): 23 seconds
+Full,                    no saveToFs, no saveToDb persons images sync with each      (persons), each(imageUrls): 21 seconds
