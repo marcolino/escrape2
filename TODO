@@ -32,3 +32,4 @@ Full,     full-version-only saveToFs, no saveToDb persons images sync with each 
 Full, showcase-version-only saveToFs, no saveToDb persons images sync with each      (persons), each(imageUrls): 38 seconds
 Full,     both-versions no-write      no saveToDb persons images sync with each      (persons), each(imageUrls): 23 seconds
 Full,                    no saveToFs, no saveToDb persons images sync with each      (persons), each(imageUrls): 21 seconds
+
