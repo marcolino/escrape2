@@ -31,7 +31,6 @@ var getAll = function(req, res) {
   }
   // retrieve all persons from database
   person.getAll(filter, options, function(err, persons) {
-//log.error('getAll in routes - persons:', persons);
     if (err) {
       log.error('error retrieving persons:', err);
       res.json({ error: err });

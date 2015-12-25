@@ -15,8 +15,8 @@ var config = {
   images: {
     path: __dirname + '/..' + '/data/images',
     showcaseWidth: 320,
-    thresholdDistance: (os.hostname() === 'malibox') ? 0.04 : 0.125, // TODO: debug only, fix on 0.04 on production
-    thresholdDistanceSamePerson: (os.hostname() === 'malibox') ? 0.02: 0.125, // TODO: debug only, fix on 0.02 on production
+    thresholdDistance: (os.hostname() === 'malibox') ? 0.0625 : 0.125, // TODO: debug only, fix on 0.0625 on production
+    thresholdDistanceSamePerson: (os.hostname() === 'malibox') ? 0.078125: 0.125, // TODO: debug only, fix on 0.078125 on production
     versions: {
       full: {
         width: 0, // full width (set in init())

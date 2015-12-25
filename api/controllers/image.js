@@ -30,7 +30,7 @@ exports.syncPersonsImages = function(persons, callback) {
     }
     log.debug('all images array length:', images.length);
 
-    async.each/*Series*/( // TODO: should we better serialize persons? (YES)
+    async.eachSeries( // TODO: should we better serialize persons? (YES, otherwise too many ECONNRESET in request()...)
       persons,
       function(person, callbackPerson) {
         async.each/*Series*/( // TODO: should we better serialize images? (NO)
@@ -38,9 +38,11 @@ exports.syncPersonsImages = function(persons, callback) {
           function(imageUrl, callbackImage) {
             download(imageUrl, person, images, function(err, image) {
               if (err) { // 50x or other issues
+//log.error('syncPersonsImages - download error:', err);
                 return callbackImage(err);
               }
               if (!image || !image.isChanged) { // 40x or 304
+//log.error('syncPersonsImages - image', image.url, 'not changed');
                 return callbackImage();
               }
               async.waterfall(
@@ -51,18 +53,21 @@ exports.syncPersonsImages = function(persons, callback) {
                   saveImageToDb,
                 ],
                 function (err, image) {
+//if (err) { log.error('syncPersonsImages - waterfall error:', err); }
                   callbackImage(err);
                 }
               );
             });
           },
           function(err) {
+//if (err) { log.error('syncPersonsImages - final image urls error:', err); }
             callbackPerson(err);
           }
         );
       },
       function(err) {
         if (err) {
+//if (err) { log.error('syncPersonsImages - final persons error:', err); }
           return callback(err);
         }
         callback(null, persons);
@@ -100,13 +105,18 @@ exports.syncPersonsImages = function(persons, callback) {
       image.etag = null;
       image.personKey = person.key;
     }
+if (image.url === 'http://www.torinoerotica.com/photo-escort/93951-5400/1-1007725994-3659884899.jpg') {
+  console.log('download() - image url:', 'http://www.torinoerotica.com/photo-escort/93951-5400/1-1007725994-3659884899.jpg', 'isNew:', image.isNew, 'etag:', image.etag );
+}
     image.type = 'image';
 
 var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
 if (!image.url) log.error('!!!!!!!!!!!!!!!! SOURCE IMAGE URL IS NULL BEFORE FETCH !');
     network.fetch(image, function(err, img) { // fetch image resource
-
-if (err) { return callback(err, image); }
+    if (err) {
+      log.error('download error:', err);
+      return callback(err, image);
+    }
 
 if (image.url !== img.url) log.error('!!!!!!!!!!!!!!!! SOURCE IMAGE URL AFTER FETCH CHANGES !');
 
@@ -115,12 +125,31 @@ if (image.url !== img.url) log.error('!!!!!!!!!!!!!!!! SOURCE IMAGE URL AFTER FE
       image.etag = img.etag;
       image.isChanged = img.isChanged;
 
+// TODO: DEBUG ONLY!
+if (img.contents && img.contents.length > 0) log.debug('img.contents.length:', img.contents.length);
+
+/*
+// TODO: DEBUG ONLY !!!
+image.isChanged = true;
+log.error('download - img.basename:', personImage.basename);
+image.basename = personImage.basename;
+image.url += crypto.randomBytes(3).toString('ascii');
+*/
+
 if (config.profile) log.debug('PROFILE fetch', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
+
       callback(err, image);
     });
   }
 
   var getSignatureFromImage = function(image, images, callback) {
+
+/*
+// TODO: DEBUG ONLY
+image.signature = 'signature';
+return callback(null, image, images);
+*/
+
 var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
     jimp.read(new Buffer(image.contents, "binary"), function(err, img) {
       if (err) {
@@ -128,6 +157,7 @@ var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
       }
       exports.signature(img, function(err, signature) {
         if (err) {
+//log.error('getSignatureFromImage error:', err);
           return callback(err);
         }
         image.signature = signature;
@@ -138,6 +168,12 @@ if (config.profile) log.debug('PROFILE getSignatureFromImage', process.hrtime(t)
   };
 
   var findSimilarSignatureImage = function(image, images, callback) {
+
+/*
+// TODO: DEBUG ONLY
+image.hasDuplicate = true;
+return callback(null, image, images);
+*/
 
     // TODO: SIMILAR IMAGE COULD BE NOT ONLINE ANYMORE, SO SHOULD SAVE NEW VERSION (WITH NEW URL) NONETHELESS...
 //var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
@@ -150,34 +186,42 @@ if (config.profile) log.debug('PROFILE getSignatureFromImage', process.hrtime(t)
 
     image.hasDuplicate = false;
     for (var i = 0, len = personImages.length; i < len; i++) {
-      var img = personImages[i];
+      var personImage = personImages[i];
+if (personImage.personKey !== image.personKey) {
+  log.error('findSimilarSignatureImage - personImage.personKey !== image.personKey:', personImage.personKey, '!==', image.personKey);
+}
 
       // check image url, beforehand
-      if (image.url === img.url) {
+      if (image.url === personImage.url) {
         image.hasDuplicate = true;
-        image.basename = img.basename; // copy old properties since image will be saved without createImageVersions
-log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE (SAME URL):', image.personKey, image.url, img.url);
-//log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE (SAME URL):', image.basename, img.basename);
+        image.basename = personImage.basename; // copy old properties since image will be saved without createImageVersions
+//log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE (SAME URL):', image.personKey, image.url, personImage.url);
         break; // same url, break loop here
       }
 
       if (!image.signature) {
-        //log.warn('findSimilarSignatureImage - image with no signature:', img.url);
+        //log.warn('findSimilarSignatureImage - image with no signature:', personImage.url);
         break; // skip this image without signature
       }
-      var distance = exports.distance(image.signature, img.signature);
+      var distance = exports.distance(image.signature, personImage.signature);
+
       if (distance <= minDistance) {
         minDistance = distance;
-        imageMostSimilar = img;
+        imageMostSimilar = personImage;
       }
     }
     if (minDistance <= config.images.thresholdDistanceSamePerson) {
       image.hasDuplicate = true;
-log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.personKey, image.url, imageMostSimilar.url);
+//log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.personKey, image.url, imageMostSimilar.url);
     } //else { log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, ', distance:', minDistance); }
 
 //if (config.profile) log.debug('PROFILE findSimilarSignatureImage', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
-    // TODO: we should save image even if it is a duplicate, since old version url could be unavailable, now (DONE, TEST...)
+    // TODO: we should save image to DB even if it is a duplicate, since old version url could be unavailable, now (NOT WORKING!!!)
+
+    if (image.hasDuplicate) { // copy properties (which should be set afterwards) from imageMostSimilar to image
+      image.basename = imageMostSimilar.basename;
+    }
+
     callback(null, image, images);
   };
 
@@ -229,10 +273,11 @@ log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.personKey, i
           if (key === 'full') { // full version, just save image with no resize
             //log.silly('full writing to', key);
             img
-              .autocrop(0.002) // TODO: TEST THIS TOLERNCE VALUE!!!
+              .autocrop() // TODO: TEST THIS TOLERNCE VALUE!!!
               .quality(version.quality)
               .write(destination, function(err) {
                 if (err) {
+//log.error('createImageVersions full error:', err);
                   //log.silly('can\'t write full size image version via jimp to', destination, ':', err);
                   return callbackVersion(err);
                 }
@@ -245,11 +290,12 @@ log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.personKey, i
             var width = Math.min(version.width, img.bitmap.width);
             //log.silly('other writing to', key, 'width:', width);
             img
-              .autocrop(0.002) // TODO: TEST THIS TOLERNCE VALUE!!!
+              .autocrop() // TODO: TEST THIS TOLERNCE VALUE!!!
               .resize(width, jimp.AUTO)
               .quality(version.quality)
               .write(destination, function(err) {
                 if (err) {
+//log.error('createImageVersions showcase error:', err);
                   //log.silly('can\'t write other size image version via jimp to', destination, ':', err);
                   return callbackVersion(err);
                 }
@@ -260,6 +306,7 @@ log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.personKey, i
           }
         }, // async each versions iteration function done
         function(err) { // all directories and image versions created 
+//if (err) { log.error('createImageVersions final error:', err); }
 //if (config.profile) log.debug('PROFILE createImageVersions', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
           callback(err, image, images); // finished
         }
@@ -272,27 +319,38 @@ log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.personKey, i
    */
   var saveImageToDb = function(image, images, callback) {
 //image.hasDuplicate = true; // TODO: DEBUG ONLY, PROFILING THIS FUNCTION PERFORMANCE
+/*
     if (image.hasDuplicate) {
+
+      // TODO: save at least image.url, it could be changed, and old could be wrong, now!!!
+
       //log.silly('saveImageToDb: image is void (has duplicate): SKIPPING');
       return callback(null, null);
     }
+*/
 
     // save image and person in series
     async.series(
       {
         image: function(callbackInternal) {
+
+          // TODO: we should check there is no other image with the same url, for this person... (probably not here...)
+
           Image.findOneAndUpdate(
             { basename: image.basename, personKey: image.personKey}, // query
             image, // object to save
             { // options
               new: true, // return the modified document rather than the original
-              upsert: true // creates the object if it doesn't exist
+              upsert: true, // creates the object if it doesn't exist
+              passRawResult: true // pass back mongo row result
             },
-            function(err, doc) { // result callback
+            function(err, doc, raw) { // result callback
               if (err) {
                 log.warn('can\'t save image', doc.basename, ':', err);
               } else {
-                log.info('image', doc.personKey + '/' + doc.basename, 'added');
+                log.info('image', doc.personKey + '/' + doc.basename, raw.lastErrorObject.updatedExisting ? 'updated' : 'added');
+//log.debug('raw:', raw);
+//log.debug('doc:', doc);
 
                 //log.info('IMAGE BEING PUSHED BACK TO IMAGES:', doc.basename);
                 images.push(doc); // push added image
@@ -322,13 +380,14 @@ log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.personKey, i
             { showcaseBasename: showcase.basename }, // object to save
             { // options
               new: true, // return the modified document rather than the original
-              upsert: true // creates the object if it doesn't exist
+              upsert: true, // creates the object if it doesn't exist
+              passRawResult: true // pass back mongo row result
             },
-            function(err, doc) { // result callback
+            function(err, doc, raw) { // result callback
               if (err) {
                 log.warn('can\'t save showcase for person', doc.key, ':', err);
               } else {
-                //log.info('person', doc.key, 'set showcase basename for image of person', doc.key + ':', doc.showcaseBasename);
+                //log.info('person', doc.key, raw.updatedExisting ? 'updated' : 'added', 'showcase basename for image of person', doc.key + ':', doc.showcaseBasename);
               }
               callbackInternal(err, doc); // finish image save
             }
@@ -336,6 +395,7 @@ log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.personKey, i
         }
       },
       function(err, results) { // final callback
+//if (err) { log.error('saveImageToDb final error:', err); }
         callback(err, results);
       }
     );

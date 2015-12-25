@@ -15,13 +15,17 @@ var local = {};
 var log = config.log;
 
 exports.getAll = function(filter, options, callback) { // get all persons
+  //log.debug('filter:', filter.name);
 config.time = process.hrtime(); // TODO: development only
+  var match = {};
+  match.isPresent = true;
+  // TODO: generalize for all filter properties...
+  if (filter.name) { match.name = filter.name; }
+
   Person.aggregate(
     [
       {
-        '$match': {
-          'isPresent': true,
-         }
+        '$match': match
       },
       {
         '$project': {
@@ -230,7 +234,8 @@ exports.sync = function() { // sync persons
     if (err) {
       return log.error('error getting providers:', err);
     }
-//providers = providers.slice(1, 2); // to debug: limit list
+//providers = providers.slice(0, 1); // to debug: limit list to first element (SGI)
+//providers = providers.slice(1, 2); // to debug: limit list to second element (TOE)
     totalProvidersCount = providers.length;
 
     // loop to get list page from all providers
@@ -241,21 +246,17 @@ exports.sync = function() { // sync persons
           url: local.buildListUrl(provider, config),
           type: 'text',
           etag: null,
-          //lastModified: null
         };
         log.info('provider', provider.key, 'list resource getting from', resource.url);
-        network.requestRetryAnonymous(
-        //network.requestSmart(
+        network.fetch(
           resource,
-          function(err) { // error
-            log.warn(
-              'error syncing provider', provider.key + ':',  err, ',', 'skipping'
-            );
-            return callbackOuter(); // skip this outer loop
-          },
-          function(contents) { // success
+          function(err, result) {
+            if (err) {
+              log.warn('can\'t sync provider', provider.key + ':',  err, ',', 'skipping');
+              return callbackOuter(); // skip this outer loop
+            }
             log.info('provider', provider.key, 'list resource got');
-            if (!contents) {
+            if (!result.contents) {
               log.warn(
                 'error syncing provider', provider.key + ':',
                 'empty contents', ',', 'skipping'
@@ -266,10 +267,10 @@ exports.sync = function() { // sync persons
             var now = new Date();
             provider.dateOfFirstSync = provider.dateOfFirstSync ? provider.dateOfFirstSync : now;
             provider.dateOfLastSync = now;
-            $ = cheerio.load(contents);
+            $ = cheerio.load(result.contents);
             var list = local.getList(provider, $);
             totalPersonsCount += list.length;
-//list = list.slice(0, 30); log.info('list:', list); // to debug: limit list
+//list = list.slice(0, 100); log.info('list:', list); // to debug: limit list
             async.each(
               list, // 1st param is the array of items
               function(element, callbackInner) { // 2nd param is the function that each item is passed to
@@ -292,30 +293,36 @@ exports.sync = function() { // sync persons
                 person.key = provider.key + '/' + element.key; // person key is the sum of provider key and element key
                 resource = {
                   url: person.url,
-                  type: 'text'
+                  type: 'text',
+                  etag: null, // TODO: should we handle etag for persons too? Perhaps we should...
                 };
-                network.requestRetryAnonymous(
-                //network.requestSmart(
+                //network.requestRetryAnonymous(
+                network.fetch(
                   resource,
-                  function(err) {
-                    log.warn(
-                      'syncing person', person.key + ':',
-                      err, ',', 'skipping'
-                    );
-                    return callbackInner(); // skip this inner loop
-                  },
-                  function(contents) {
-                    if (!contents) {
+                  function(err, result) {
+                    if (err) {
+                      log.warn('can\'t sync person', person.key + ':', err, ',', 'skipping');
+                      return callbackInner(); // skip this inner loop
+                    }
+                    if (!result) {
+                      log.warn(
+                        'syncing person', person.key + ':',
+                        'empty result', ',', 'skipping'
+                      );
+                      return callbackInner(); // skip this inner loop
+                    }
+                    if (!result.contents) {
                       log.warn(
                         'syncing person', person.key + ':',
                         'empty contents', ',', 'skipping'
                       );
                       return callbackInner(); // skip this inner loop
                     }
-                    $ = cheerio.load(contents);
+                    $ = cheerio.load(result.contents);
                     person.name = local.getDetailsName($, provider);
                     if (!person.name) { // should not happen, network.requestRetryAnonymous should catch it
-                      log.warn('person', person.key, 'name not found,', 'skipping');
+                      log.warn('person', person.key, 'name not found,', 'contents length:', result.contents.length, 'skipping');
+                      log.error('@contents@:', contents);
                       return callbackInner(); // skip this inner loop
                     }
                     person.zone = local.getDetailsZone($, provider);
@@ -650,7 +657,9 @@ local.syncAliases = function(persons, callback) {
           }
           if (Q.alias !== P.alias) { // Q (similar to P) has an alias different from alias group, should not happen
             if (Q.alias) { // Q had already an alias
-              log.warn('syncAliases - Q', Q.key, '(similar to P', P.key, ') had an alias (', Q.alias, ') different from alias group!');
+              //log.warn('syncAliases - Q', Q.key, '(similar to P', P.key, ') had an alias (', Q.alias, ') different from alias group!');
+              // this should not be a big problem, the different alias group could come
+              // from a person who changed his key (completely new page but some photos kept)
             }
             Q.alias = P.alias;
             local.savePerson(Q); // save group alias to Q

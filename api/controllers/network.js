@@ -15,11 +15,10 @@ var log = config.log;
 exports.fetch = function(resource, callback) {
   var options = {
     url: resource.url, // url to download
-    //maxAttempts: config.networking.maxAttempts, // number of attempts to retry after the first one
-    //retryDelay: config.networking.retryDelay, // number of milliseconds to wait for before trying again
-    //retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
+    maxAttempts: config.networking.maxAttempts, // number of attempts to retry after the first one
+    retryDelay: config.networking.retryDelay, // number of milliseconds to wait for before trying again
+    retryStrategy: retryStrategyForbidden, // retry strategy: retry if forbidden status code returned
     timeout: config.networking.timeout, // number of milliseconds to wait for a server to send response headers before aborting the request
-    encoding: ((resource.type === 'text') ? null : (resource.type === 'image') ? 'binary' : null), // encoding
     headers: {
       'User-Agent': randomUseragent.generate(), // user agent: pick a random one
     },
@@ -29,19 +28,25 @@ exports.fetch = function(resource, callback) {
       socksPort: config.tor.available ? config.tor.port : null, // TOR socks port
     },
   };
+  if (resource.type === 'image') { // set encoding to binary if type is image
+    options.encoding = 'binary';
+  }
   if (resource.etag) { // must check etag is not null, can't set a null If-None-Match header
+/*
+if (resource.url === 'http://www.torinoerotica.com/photo-escort/93951-5400/1-1007725994-3659884899.jpg') {
+  log.debug('*** network.fetch - url:', resource.url, 'etag:', resource.etag);
+}
+*/
     options.headers['If-None-Match'] = resource.etag; // eTag field
   }
 
-  //requestretry(
-  request(
+  //requestretry( // sometimes gives SOCKS error (really is requestretry() ? RE-TEST REQUESTRETRY!!!)...
+  requestretry(
     options,
     function(err, response, contents) {
-
       if (!err && (response.statusCode === 200 || response.statusCode === 304)) {
         var result = {};
         result.etag = response.headers.etag;
-//console.info(response.request);
         result.url = response.request.uri.href;
         if (response.statusCode === 304) { // not changed
           result.isChanged = false;
@@ -55,11 +60,20 @@ exports.fetch = function(resource, callback) {
                 'eTags - response:', result.etag, ', request:', requestEtag, ';',
                 'contents length:', (contents ? contents.length : 'zero')
               );
-              return callback(null, result);
+              //return callback(null, result);
             }
           }
 
         } else {
+
+/*
+// with some images, etag keeks changing even if image does not change... no problem, downloading it again...
+if (resource.type === 'image') {
+  log.debug('*** network.fetch - url:', response.request.uri.href, '- response.statusCode:', response.statusCode,
+            'request etag:', resource.etag, '- response etag:', result.etag);
+}
+*/
+
           result.isChanged = true;
           result.contents = contents;
 
@@ -72,13 +86,14 @@ exports.fetch = function(resource, callback) {
                 'eTags - response:', result.etag, ', request:', requestEtag, ';',
                 'contents length:', (contents ? contents.length : 'zero')
               );
-              return callback(null, result);
+              //return callback(null, result);
             }
           }
         }
         callback(null, result); // success
       } else {
-        callback(err, null); // error
+//log.warn('fetch - error - response:', response, err);
+        callback(err, response); // error
       }
     }
   );
