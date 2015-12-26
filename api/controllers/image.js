@@ -105,9 +105,11 @@ exports.syncPersonsImages = function(persons, callback) {
       image.etag = null;
       image.personKey = person.key;
     }
+/*
 if (image.url === 'http://www.torinoerotica.com/photo-escort/93951-5400/1-1007725994-3659884899.jpg') {
   console.log('download() - image url:', 'http://www.torinoerotica.com/photo-escort/93951-5400/1-1007725994-3659884899.jpg', 'isNew:', image.isNew, 'etag:', image.etag );
 }
+*/
     image.type = 'image';
 
 var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
@@ -125,8 +127,10 @@ if (image.url !== img.url) log.error('!!!!!!!!!!!!!!!! SOURCE IMAGE URL AFTER FE
       image.etag = img.etag;
       image.isChanged = img.isChanged;
 
+/*
 // TODO: DEBUG ONLY!
 if (img.contents && img.contents.length > 0) log.debug('img.contents.length:', img.contents.length);
+*/
 
 /*
 // TODO: DEBUG ONLY !!!
@@ -348,7 +352,7 @@ if (personImage.personKey !== image.personKey) {
               if (err) {
                 log.warn('can\'t save image', doc.basename, ':', err);
               } else {
-                log.info('image', doc.personKey + '/' + doc.basename, raw.lastErrorObject.updatedExisting ? 'updated' : 'added');
+                log.info('image', doc.personKey, doc.basename, raw.lastErrorObject.updatedExisting ? 'updated' : 'added');
 //log.debug('raw:', raw);
 //log.debug('doc:', doc);
 
