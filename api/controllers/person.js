@@ -18,7 +18,8 @@ exports.getAll = function(filter, options, callback) { // get all persons
   //log.debug('filter:', filter.name);
 config.time = process.hrtime(); // TODO: development only
   var match = {};
-  match.isPresent = true;
+  match.isPresent = true; // do not show persons who are not present
+  match.showcaseBasename = { '$exists': true }; // do not show persons with no showcase basename (yet)
   // TODO: generalize for all filter properties...
   if (filter.name) { match.name = filter.name; }
 
@@ -620,6 +621,11 @@ local.syncAliases = function(persons, callback) {
    *
    *     P9   i1.P9   i2.P9   i3.P9   i4.P9   i5.p9
    */
+
+/*
+// TODO: remove reset (use only when changing config.images.thresholdDistance)
+local.resetAliases(persons);
+*/
 
   // TODO: avoid alias groups with just one people
 

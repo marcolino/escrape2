@@ -16,8 +16,12 @@ angular.module('routes', []).config( function($routeProvider, $locationProvider)
     })
     .when('/users/signup', { // home page
       templateUrl: 'views/users/signup.html',
-      controller: 'UserController'
-    });
-
-    $locationProvider.html5Mode(true);
+      controller: 'AuthController'
+    })
+    .when('/users/signin', { // home page
+      templateUrl: 'views/users/signin.html',
+      controller: 'AuthController'
+    })
+  ;
+  $locationProvider.html5Mode(true);
 });

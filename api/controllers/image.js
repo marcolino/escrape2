@@ -222,7 +222,7 @@ if (personImage.personKey !== image.personKey) {
 //if (config.profile) log.debug('PROFILE findSimilarSignatureImage', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
     // TODO: we should save image to DB even if it is a duplicate, since old version url could be unavailable, now (NOT WORKING!!!)
 
-    if (image.hasDuplicate) { // copy properties (which should be set afterwards) from imageMostSimilar to image
+    if (image.hasDuplicate && imageMostSimilar) { // copy properties (which should be set afterwards) from imageMostSimilar to image
       image.basename = imageMostSimilar.basename;
     }
 

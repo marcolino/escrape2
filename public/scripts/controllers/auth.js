@@ -1,7 +1,8 @@
 'use strict';
 
-angular.module('AuthCtrl', []).controller('AuthController', function($scope, Filter, Person) {
+angular.module('AuthCtrl', []).controller('AuthController', function($scope, $location, Filter, Person) {
 
+  //$scope.signedIn = false;
   $scope.filters = {};
 
 /*
@@ -26,5 +27,24 @@ console.info('Fiter.set({ search: { term:', $scope.filters.search.term, ' } })')
 */
   };
 
+  $scope.signup = function() {
+    console.info('signup');
+    $location.path('/users/signup');
+  };
+
+  $scope.signin = function() {
+    console.info('signin');
+    $scope.signedIn = true;
+    $scope.username = 'pippo';
+    $location.path('/users/signin');
+  };
+  
+  $scope.signout = function() {
+    console.info('signout');
+    $scope.username = null;
+    $scope.signedIn = false;
+    $location.path('/');
+  };
+  
   $scope.startup();
 });
