@@ -24,17 +24,18 @@ config.time = process.hrtime(); // TODO: development only
   if (filter.name) { match.name = filter.name; }
 
   Person.aggregate(
+/* 
     [
       {
         '$match': match
-      },
-      {
+      }, {
         '$project': {
           'key': 1,
           'name': 1,
           'url': 1,
           'isPresent': 1,
           'showcaseBasename': 1,
+          'dateOfFirstSync': 1,
           'alias': {
             '$cond': [
                { '$eq': [ '$alias', null ] },
@@ -43,8 +44,7 @@ config.time = process.hrtime(); // TODO: development only
             ]
           }
         }
-      },
-      {
+      }, {
         '$group': {
           '_id': '$alias',
           'key': { '$first': '$key' },
@@ -52,10 +52,10 @@ config.time = process.hrtime(); // TODO: development only
           'url': { '$first': '$url' },
           'isPresent': { '$first': '$isPresent' },
           'showcaseBasename': { '$first': '$showcaseBasename' },
+          'dateOfFirstSync': { '$first': '$dateOfFirstSync', },
           'id': { '$first': '$_id' }
         }
-      },
-      {
+      }, {
         '$project': {
           'alias': {
             '$cond': [
@@ -69,10 +69,57 @@ config.time = process.hrtime(); // TODO: development only
           'url': 1,
           'isPresent': 1,
           'showcaseBasename': 1,
+          'dateOfFirstSync': 1,
           '_id': '$id'
+        },
+      }, {
+        '$sort': {
+          'dateOfFirstSync': -1,
         }
       }
-    ], function(err, persons) {
+    ],
+*/
+    [
+      {
+        '$match': match
+      }, {
+        '$group': {
+          '_id': {
+            '$ifNull': [ '$alias', '$_id' ]
+          },
+          'key': { '$first': '$key' },
+          'name': { '$first': '$name' },
+          'url': { '$first': '$url' },
+          'isPresent': { '$first': '$isPresent' },
+          'showcaseBasename': { '$first': '$showcaseBasename' },
+          'dateOfFirstSync': { '$first': '$dateOfFirstSync', },
+          'id': { '$first': '$_id' }
+        }
+      }, {
+        '$project': {
+          '_id': '$id',
+          'key': 1,
+          'name': 1,
+          'url': 1,
+          'isPresent': 1,
+          'showcaseBasename': 1,
+          'dateOfFirstSync': 1,
+          'alias': {
+            '$cond': [
+              { '$eq': [ '$_id', '$id' ] },
+              null,
+              '$_id'
+            ]
+          },
+        },
+      }, {
+        '$sort': {
+          'dateOfFirstSync': -1,
+        }
+      }
+
+    ],
+     function(err, persons) {
       if (err) {
         return callback(err);
       }
