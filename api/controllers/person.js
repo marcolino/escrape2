@@ -30,11 +30,11 @@ config.time = process.hrtime(); // TODO: development only
       },
       {
         '$project': {
-          'key': true,
-          'name': true,
-          'url': true,
-          'isPresent': true,
-          'showcaseBasename': true,
+          'key': 1,
+          'name': 1,
+          'url': 1,
+          'isPresent': 1,
+          'showcaseBasename': 1,
           'alias': {
             '$cond': [
                { '$eq': [ '$alias', null ] },
@@ -64,11 +64,11 @@ config.time = process.hrtime(); // TODO: development only
               '$_id'
             ]
           },
-          'key': true,
-          'name': true,
-          'url': true,
-          'isPresent': true,
-          'showcaseBasename': true,
+          'key': 1,
+          'name': 1,
+          'url': 1,
+          'isPresent': 1,
+          'showcaseBasename': 1,
           '_id': '$id'
         }
       }
