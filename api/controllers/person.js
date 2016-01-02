@@ -4,6 +4,7 @@ var mongoose = require('mongoose') // mongo abstraction
   , fs = require('fs') // file-system handling
   , path = require('path') // paths handling
   , crypto = require('crypto') // random bytes
+  , colors = require('colors') // colors
   , network = require('../controllers/network') // network handling
   , image = require('../controllers/image') // network handling
   , provider = require('./provider') // provider's controller
@@ -24,61 +25,6 @@ config.time = process.hrtime(); // TODO: development only
   if (filter.name) { match.name = filter.name; }
 
   Person.aggregate(
-/* 
-    [
-      {
-        '$match': match
-      }, {
-        '$project': {
-          'key': 1,
-          'name': 1,
-          'url': 1,
-          'isPresent': 1,
-          'showcaseBasename': 1,
-          'dateOfFirstSync': 1,
-          'alias': {
-            '$cond': [
-               { '$eq': [ '$alias', null ] },
-               '$_id',
-               '$alias'
-            ]
-          }
-        }
-      }, {
-        '$group': {
-          '_id': '$alias',
-          'key': { '$first': '$key' },
-          'name': { '$first': '$name' },
-          'url': { '$first': '$url' },
-          'isPresent': { '$first': '$isPresent' },
-          'showcaseBasename': { '$first': '$showcaseBasename' },
-          'dateOfFirstSync': { '$first': '$dateOfFirstSync', },
-          'id': { '$first': '$_id' }
-        }
-      }, {
-        '$project': {
-          'alias': {
-            '$cond': [
-              { '$eq': [ '$id', '$_id' ] },
-              null,
-              '$_id'
-            ]
-          },
-          'key': 1,
-          'name': 1,
-          'url': 1,
-          'isPresent': 1,
-          'showcaseBasename': 1,
-          'dateOfFirstSync': 1,
-          '_id': '$id'
-        },
-      }, {
-        '$sort': {
-          'dateOfFirstSync': -1,
-        }
-      }
-    ],
-*/
     [
       {
         '$match': match
@@ -90,6 +36,7 @@ config.time = process.hrtime(); // TODO: development only
           'key': { '$first': '$key' },
           'name': { '$first': '$name' },
           'url': { '$first': '$url' },
+          'phone': { '$first': '$phone' },
           'isPresent': { '$first': '$isPresent' },
           'showcaseBasename': { '$first': '$showcaseBasename' },
           'dateOfFirstSync': { '$first': '$dateOfFirstSync', },
@@ -98,12 +45,13 @@ config.time = process.hrtime(); // TODO: development only
       }, {
         '$project': {
           '_id': '$id',
-          'key': 1,
-          'name': 1,
-          'url': 1,
-          'isPresent': 1,
-          'showcaseBasename': 1,
-          'dateOfFirstSync': 1,
+          'key': true,
+          'name': true,
+          'url': true,
+          'phone': true,
+          'isPresent': true,
+          'showcaseBasename': true,
+          'dateOfFirstSync': true,
           'alias': {
             '$cond': [
               { '$eq': [ '$_id', '$id' ] },
@@ -128,124 +76,6 @@ log.debug('api/controllers/persons getAll - Person.aggregate - elapsed time:', p
     }
   );
 };
-
-/*
-exports.getAll_MANUAL = function(filter, options, callback) { // get all persons
-config.time = process.hrtime(); // TODO: development only
-  var personsResult = [];
-
-  Person.find({ isPresent: true, }, null, options).lean().exec(function(err, persons) {
-log.debug('api/controllers/persons getAll - Person.find - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1]/1000000, 'seconds');
-config.time = process.hrtime(); // TODO: development only
-
-// SKIP SHOWCASE ISPRESENT AND ALIASES
-log.debug('api/controllers/persons ALL - getAll - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1]/1000000, 'seconds');
-return callback(err, persons);
-
-    Image.find({}, 'personKey basename isShowcase dateOfLastSync').lean().exec(function(err, images) {
-log.debug('api/controllers/persons Image.find - getAll - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1]/1000000, 'seconds');
-config.time = process.hrtime(); // TODO: development only
-
-      if (err) {
-        return callback(err);
-      }
-      // add to each person its showcase image
-      var aliases = [];
-      for (var i = 0, personsLen = persons.length; i < personsLen; i++) {
-        var P = persons[i], I;
-
-        // TODO: move these filters to query filter (?))
-        if (P.alias && aliases.hasOwnProperty(P.alias)) {
-          //log.debug('skipping person', P.key, 'because it\'s alias was seen already', P.alias);
-          continue;
-        }
-
-        if (!P.isPresent) {
-          //log.debug('skipping person', P.key, 'because it\'s not present');
-          continue;
-        }
-
-        P.showcaseBasename = null;
-        for (var j = 0, len = images.length; j < len; j++) {
-          I = images[j];
-          if (I.personKey === P.key) {
-            if (image.isShowcase(I, images)) {
-              if (P.showcaseBasename !== null) { // TODO: remove on production
-                log.error('assigning a showcase to a person twice!');
-              }
-              P.showcaseBasename = I.basename;
-              //console.log('person', P.key, 'has image', I.basename, 'as showcase');
-              break;
-            }
-          }
-        }
-        personsResult.push(P); // add this person to result
-        if (P.alias) { aliases[P.alias] = true; } // add this person alias to seen aliases
-      }
-      //for (var key in aliases) { log.warn(key); }
-      callback(err, personsResult);
-log.debug('api/controllers/persons ALL - getAll - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1]/1000000, 'seconds');
-    });
-  });
-};
-*/
-
-/*
-exports.getAll_GETTING_IMAGES_TOO_FOR_SHOWCASE = function(filter, options, callback) { // get all persons
-config.time = process.hrtime(); // TODO: development only
-  var personsResult = [];
-
-  Person.find({ isPresent: true, }, null, options).lean().exec(function(err, persons) {
-log.debug('api/controllers/persons getAll - Person.find - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1]/1000000, 'seconds');
-config.time = process.hrtime(); // TODO: development only
-
-    Image.find({}, 'personKey basename isShowcase dateOfLastSync').lean().exec(function(err, images) {
-log.debug('api/controllers/persons Image.find - getAll - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1]/1000000, 'seconds');
-config.time = process.hrtime(); // TODO: development only
-
-      if (err) {
-        return callback(err);
-      }
-      // add to each person its showcase image
-      var aliases = [];
-      for (var i = 0, personsLen = persons.length; i < personsLen; i++) {
-        var P = persons[i], I;
-
-        // TODO: move these filters to query filter (?))
-        if (P.alias && aliases.hasOwnProperty(P.alias)) {
-          //log.debug('skipping person', P.key, 'because it\'s alias was seen already', P.alias);
-          continue;
-        }
-
-        if (!P.isPresent) {
-          //log.debug('skipping person', P.key, 'because it\'s not present');
-          continue;
-        }
-
-        P.showcaseBasename = null;
-        for (var j = 0, len = images.length; j < len; j++) {
-          I = images[j];
-          if (I.personKey === P.key) {
-            if (image.isShowcase(I, images)) {
-              if (P.showcaseBasename !== null) { // TODO: remove on production
-                log.error('assigning a showcase to a person twice!');
-              }
-              P.showcaseBasename = I.basename;
-              //console.log('person', P.key, 'has image', I.basename, 'as showcase');
-              break;
-            }
-          }
-        }
-        personsResult.push(P); // add this person to result
-        if (P.alias) { aliases[P.alias] = true; } // add this person alias to seen aliases
-      }
-      //for (var key in aliases) { log.warn(key); }
-      callback(err, personsResult);
-log.debug('api/controllers/persons ALL - getAll - elapsed time:', process.hrtime(config.time)[0] + '.' + process.hrtime(config.time)[1]/1000000, 'seconds');
-    });
-  });
-};
-*/
 
 exports.getById = function(id, callback) { // get person by id
   var filter = { _id: id };
@@ -339,6 +169,7 @@ exports.sync = function() { // sync persons
                   return callbackInner(); // skip this inner loop
                 }
                 person.key = provider.key + '/' + element.key; // person key is the sum of provider key and element key
+//if (person.key !== 'SGI/adv5646') return callbackInner(); // TODO: DEBUG ONLY - sync only one person
                 resource = {
                   url: person.url,
                   type: 'text',
@@ -490,7 +321,7 @@ exports.upsert = function(person, callback) {
           // dateOfLastSync is always modified; isPresent is modified later
           if (prop in doc && prop !== 'dateOfLastSync' && prop !== 'isPresent' && prop !== 'alias' && doc._doc[prop] !== person[prop]) {
             if (config.env === 'development') {
-              log.info('updating', person.key + ': changed "' + prop + '" property:', local.diffColor(doc[prop], person[prop]));
+              log.info('person' + person.key, person.name + ':', 'changed'.red + ' "' + prop + '" property:', local.diffColor(doc[prop], person[prop]));
             }
             isModified = true;
           }
@@ -502,7 +333,7 @@ exports.upsert = function(person, callback) {
         if (err) {
           return callback('could not save person ' + doc.key + ': ' + err.toString());
         }
-        log.info('person', doc.key, (isNew ? 'inserted' : isModified ? 'modified' : 'not changed'));
+        log.info('person', doc.key, doc.name, (isNew ? 'inserted'.cyan : isModified ? 'modified'.red : 'not changed'.grey));
         doc.isChanged = isNew || isModified;
         callback(null, doc); // success
       });
@@ -513,7 +344,6 @@ exports.upsert = function(person, callback) {
 if (config.env === 'development') {
   // TODO: remember to remove dependencies from packages.json on production (should be done automatically)
   local.diffColor = function(string1, string2) {
-    var colors = require('colors');
     var jsdiff = require('diff');
   
     string1 = string1 ? string1.toString().replace(/\n+/, ' ') : '';
