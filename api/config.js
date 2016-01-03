@@ -12,6 +12,11 @@ var config = {
   category: 'women', // TODO: will get it from req, this will be a default value (?)
   city: 'torino', // TODO: will get it from req, this will be a default value (?)
   providers: providers, // imported providers
+  auth: {
+    // enabling allowUnauthorizedRequests we allow everybody to use our APIs;
+    // of course only *read* requests will succeed, other requests will fail because no user is found
+    allowUnauthorizedRequests: true, // allow unauthorized requests
+  },
   images: {
     path: __dirname + '/..' + '/data/images',
     showcaseWidth: 320,

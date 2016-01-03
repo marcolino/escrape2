@@ -36,6 +36,10 @@ var auth = {
  
   },
  
+  register: function(req, res) {
+    // TODO: ...
+  },
+
   validate: function(username, password) {
     // spoofing the DB response for simplicity
     var dbUserObj = { // spoofing a userobject from the DB. 
@@ -49,7 +53,7 @@ var auth = {
  
   validateUser: function(username) {
     // spoofing the DB response for simplicity
-    var dbUserObj = { // spoofing a userobject from the DB. 
+    var dbUserObj = { // spoofing a userobject from the DB
       name: 'arvind',
       role: 'admin',
       username: 'arvind@myapp.com'

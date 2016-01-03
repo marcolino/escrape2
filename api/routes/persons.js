@@ -67,9 +67,9 @@ router.route('/getById/:id').
   })
 ;
 
-router.route('/getByKey/:providerKey/:personKey').
+router.route('/getByKey/:key([^/]+/[^/]+)').
   get(function(req, res) { // get person by key
-    var key = req.params.providerKey + '/' + req.params.personKey;
+    var key = req.params.key;
     person.getByKey(key, function(err, person) {
       if (err) {
         log.error('error retrieving person with key' + key + ':', err);
