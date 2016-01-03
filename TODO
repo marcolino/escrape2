@@ -9,6 +9,9 @@
 - change property 'error' to 'message' in Error objects
 - add status: 404, 30x, ... to route json errors (NO!)
 - remove status from all route json errors! (and set status only in response)
+- add a notification service to client app to show messages (error/warnings/success) to user
+- use etag also for html
+- avoid re-downloading duplicate images (some way... booh)
 
 V remove all "err.context = " lines
 V use `test.server.local` (in `/etc/hosts`) @home too

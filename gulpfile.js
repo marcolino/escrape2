@@ -112,11 +112,13 @@ gulp.task('frontend-scripts-custom-build', function() {
     .pipe(sourcemaps.init())
     .pipe(concat({ path: 'custom.js', cwd: '' }))
     .pipe(ngAnnotate())
+/* developing...
     .pipe(uglify({
       compress: {
         negate_iife: false
       }
     }))
+*/
     .pipe(rev())
     .pipe(sourcemaps.write('.'))
     .pipe(gulp.dest(dist + '/scripts'))

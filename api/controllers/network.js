@@ -32,11 +32,6 @@ exports.fetch = function(resource, callback) {
     options.encoding = 'binary';
   }
   if (resource.etag) { // must check etag is not null, can't set a null If-None-Match header
-/*
-if (resource.url === 'http://www.torinoerotica.com/photo-escort/93951-5400/1-1007725994-3659884899.jpg') {
-  log.debug('*** network.fetch - url:', resource.url, 'etag:', resource.etag);
-}
-*/
     options.headers['If-None-Match'] = resource.etag; // eTag field
   }
 
@@ -66,13 +61,13 @@ if (resource.url === 'http://www.torinoerotica.com/photo-escort/93951-5400/1-100
 
         } else {
 
-/**/
+/*
 // with some images, etag keeps changing even if image does not change... no problem, downloading it again...
 if (resource.type === 'image') {
   log.debug('*** network.fetch - url:', response.request.uri.href, '- response.statusCode:', response.statusCode,
-            'request etag:', resource.etag, '- response etag:', result.etag);
+            'request etag:', response.request.headers['If-None-Match'], '- response etag:', result.etag);
 }
-/**/
+*/
 
           result.isChanged = true;
           result.contents = contents;
@@ -90,6 +85,7 @@ if (resource.type === 'image') {
             }
           }
         }
+
         callback(null, result); // success
       } else {
 //log.warn('fetch - error - response:', response, err);

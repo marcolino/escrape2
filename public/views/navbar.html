@@ -1,4 +1,4 @@
-<div class="navbar navbar-inverse navbar-static-top-DISABLED" role="navigation" ng-controller="AuthController">
+<div class="navbar navbar-inverse navbar-static-top-DISABLED" role="navigation" ng-controller="LoginController">
   <div class="navbar-header">
     <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
       <span class="sr-only">Toggle navigation</span>
@@ -18,11 +18,11 @@
     </ul>
 
     <div class="col-sm-2 col-md-2 pull-right" ng-show="!signedIn" title="sign in or register, to be able to use and set your preferences">
-      <form class="navbar-form" role="signin" ng-submit="signin()">
+      <form class="navbar-form" role="login" ng-submit="loginPage()">
         <div class="input-group">
           <div class="input-group-btn">
             <button type="submit" class="btn btn-warning signin">
-              <span>sign in</span><!-- &nbsp; <i class="glyphicon glyphicon-log-in"></i> -->
+              <span>login</span><!-- &nbsp; <i class="glyphicon glyphicon-log-in"></i> -->
             </button>
           </div>
         </div>

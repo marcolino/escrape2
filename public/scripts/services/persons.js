@@ -1,5 +1,11 @@
 'use strict';
 
+/*
+angular.module('AuthenticationService', []).factory('Authentication', [ '$rootScope', '$http', function($rootScope, $http) {
+  return {};
+}]);
+*/
+
 angular.module('PersonService', []).factory('Person', [ '$rootScope', '$http', function($rootScope, $http) {
   return {
     getAll: function(filter, callback) { // call to get all persons

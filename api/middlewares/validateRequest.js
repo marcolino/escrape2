@@ -8,7 +8,7 @@ var log = config.log;
 module.exports = function(req, res, next) {
  
   // when performing a cross domain request, we will recieve a preflighted request first, to check if our the app is safe;
-  // TODO: do we really nea this? Test over cross domain...
+  // TODO: do we really neED this? Test over cross domain...
   if (req.method === 'OPTIONS') { // skip the token auth for [OPTIONS] requests
     log.debug('*** OPTIONS REQUEST ***:', req);
     next();

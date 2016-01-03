@@ -29,7 +29,6 @@ exports.syncPersonsImages = function(persons, callback) {
       return callback(err);
     }
     log.debug('all images array length:', images.length);
-
     async.eachSeries( // TODO: should we better serialize persons? (YES, otherwise too many ECONNRESET in request()...)
       persons,
       function(person, callbackPerson) {
@@ -81,6 +80,7 @@ exports.syncPersonsImages = function(persons, callback) {
       { personKey: person.key, url: imageUrl.href }
       , images
     );
+
     // assert for at most one result (TODO: only while developing)
     // TODO: commented this test since showcase image can have a cropped duplicate, which do not seem similar to Jimp.signature
     //if (personImages.length > 1) { throw new Error('more than one image found for person key ' + person.toObject().key, ' and url ' + imageUrl); }
@@ -105,11 +105,6 @@ exports.syncPersonsImages = function(persons, callback) {
       image.etag = null;
       image.personKey = person.key;
     }
-/*
-if (image.url === 'http://www.torinoerotica.com/photo-escort/93951-5400/1-1007725994-3659884899.jpg') {
-  console.log('download() - image url:', 'http://www.torinoerotica.com/photo-escort/93951-5400/1-1007725994-3659884899.jpg', 'isNew:', image.isNew, 'etag:', image.etag );
-}
-*/
     image.type = 'image';
 
 var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
@@ -122,10 +117,10 @@ if (!image.url) log.error('!!!!!!!!!!!!!!!! SOURCE IMAGE URL IS NULL BEFORE FETC
 
 if (image.url !== img.url) log.error('!!!!!!!!!!!!!!!! SOURCE IMAGE URL AFTER FETCH CHANGES !');
 
-      // copy fetched properties to image
-      image.contents = img.contents;
-      image.etag = img.etag;
-      image.isChanged = img.isChanged;
+    // copy fetched properties to image
+    image.contents = img.contents;
+    image.etag = img.etag;
+    image.isChanged = img.isChanged;
 
 /*
 // TODO: DEBUG ONLY!
@@ -258,7 +253,9 @@ local.saveImageToDb = function(image, images, callback) {
       image: function(callbackInternal) {
 
         // TODO: we should check there is no other image with the same url, for this person... (probably not here...)
-
+if (!image.etag || image.etag === null) {
+  console.error('saveImageToDb, image.etag is undefined or null!', image.etag);
+}
         Image.findOneAndUpdate(
           { basename: image.basename, personKey: image.personKey}, // query
           image, // object to save

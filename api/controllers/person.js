@@ -329,7 +329,7 @@ exports.upsert = function(person, callback) {
           // dateOfLastSync is always modified; isPresent is modified later
           if (prop in doc && prop !== 'dateOfLastSync' && prop !== 'isPresent' && prop !== 'alias' && doc._doc[prop] !== person[prop]) {
             if (config.env === 'development') {
-              log.info('person' + person.key, person.name + ':', 'changed'.red + ' "' + prop + '" property:', local.diffColor(doc[prop], person[prop]));
+              log.info('person', person.key, person.name + ':', 'changed'.red + ' "' + prop + '" property:', local.diffColor(doc[prop], person[prop]));
             }
             isModified = true;
           }
