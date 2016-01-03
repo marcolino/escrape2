@@ -4,6 +4,9 @@
 - do sync images only for new/changed persons (?)
 - try using `callback(new Error('err str'))` instead of `callback('err str')`
 - remove 'diff' and 'colors' packages (and all unused packages) at production
+- remove line in api/controllters/person.js: "//person.alias = null;"  (to avoid having persons with no alias, at some point in time)
+- change property 'error' to 'message' when returning err json fom api
+- add status: 404, 30x, ... to route json errors
 
 V remove all "err.context = " lines
 V use `test.server.local` (in `/etc/hosts`) @home too

@@ -1,8 +1,10 @@
 var express = require('express') // express
   , mongoose = require('mongoose') // mongo abstraction
+/*
   , bodyParser = require('body-parser') // to parse information from POST
   , methodOverride = require('method-override') // to manipulate POST
   , path = require('path') // to manipulate paths
+*/
   , person = require('../controllers/person') // person's controller
   , image = require('../controllers/image') // image's controller
   , config = require('../config') // global configuration
@@ -22,7 +24,6 @@ router.route('/getAll').get(function(req, res) { getAll(req, res); }); // get al
 router.route('/getAll/search/:search').get(function(req, res) { getAll(req, res); }); // get all persons, with search filter
 
 var getAll = function(req, res) {
-  //log.info('/getAll/search/:search ~ search:', req.params.search);
   //var filter = { isAliasFor: { $size: 0 } };
   var filter = {};
   var options = { sort: '-' + 'dateOfFirstSync' }; // or dateOfLastSync for changed images first...
@@ -33,11 +34,9 @@ var getAll = function(req, res) {
   person.getAll(filter, options, function(err, persons) {
     if (err) {
       log.error('error retrieving persons:', err);
-      res.json({ error: err });
-    } else {
-      log.info('person.getAll success');
-      res.json(persons);
+      return res.json({ status: err.status ? err.status : 500, error: err });
     }
+    res.json(persons);
   });
 };
 
@@ -49,15 +48,87 @@ router.route('/get').
     person.getAll(filter, options, function(err, persons) {
       if (err) {
         log.error('error retrieving persons:', err);
-        res.json({ error: err });
-      } else {
-        log.info('person.getAll success');
-        res.json(persons);
+        return res.json({ status: err.status ? err.status : 500, error: err });
       }
+      res.json(persons);
     });
   })
 ;
 
+router.route('/getById/:id').
+  get(function(req, res) { // get person by id
+    person.getById(req.params.id, function(err, person) {
+      if (err) {
+        log.error('error retrieving person with id ' + req.params.id + ':', err);
+        return res.json({ status: err.status ? err.status : 500, error: err });
+      }
+      res.json(person);
+    });
+  })
+;
+
+router.route('/getByKey/:providerKey/:personKey').
+  get(function(req, res) { // get person by key
+    var key = req.params.providerKey + '/' + req.params.personKey;
+    person.getByKey(key, function(err, person) {
+      if (err) {
+        log.error('error retrieving person with key' + key + ':', err);
+        return res.json({ status: err.status ? err.status : 500, error: err });
+      }
+      res.json(person);
+    });
+  })
+;
+
+router.route('/getImages/:id').
+  get(function(req, res) { // get images by idPerson
+    image.getByIdPerson(req.params.id, function(err, images) {
+      if (err) {
+        log.error('error retrieving images for person with id ' + req.params.id + ':', err);
+        return res.json({ status: err.status ? err.status : 500, error: err });
+      }
+      res.json(images);
+    });
+  })
+;
+
+router.route('/syncAliasesBatch').
+  get(function(req, res) { // build aliases
+    person.syncAliasesBatch(function(err, result) {
+      if (err) {
+        log.error('error batch sync\'ing aliases:', err);
+        return res.json({ status: err.status ? err.status : 500, error: err });
+      }
+      res.json(result);
+    });
+  })
+;
+
+router.route('/checkImages').
+  get(function(req, res) { // check images db/fs sync
+    person.checkImages(function(err) {
+      if (err) {
+        log.error('error checking images:', err);
+        return res.json({ status: err.status ? err.status : 500, error: err });
+      }
+      res.json();
+    });
+  })
+;
+
+router.route('/listAliasGroups').
+  get(function(req, res) { // list images duplicates
+    person.listAliasGroups(function(err, list) {
+      if (err) {
+        log.error('error listing images aliases:', err);
+        return res.json({ status: err.status ? err.status : 500, error: err });
+      }
+      res.json(list);
+    });
+  })
+;
+
+/*
 // route middleware to validate :id
 router.param('id', function(req, res, next, id) {
   // find the id in the database
@@ -71,93 +142,7 @@ router.param('id', function(req, res, next, id) {
     }
   });
 });
-
-router.route('/:id/get').
-  get(function(req, res) { // get person by id
-    person.getById(req.id, function(err, person) {
-      if (err) {
-        log.error('error retrieving person with id ' + req.id + ':', err);
-        res.json({ error: err });
-      } else {
-        if (person) {
-          log.info('persons/:id get success');
-        } else {
-          log.info('persons/:id no person found');
-        }
-        res.json(person);
-      }
-    });
-  })
-;
-
-router.route('/:idPerson/getImages').
-  get(function(req, res) { // get images by idPerson
-    image.getByIdPerson(idPerson, function(err, images) {
-      if (err) {
-        log.error('error retrieving images for person with id ' + req.id + ':', err);
-        res.json({ error: err });
-      } else {
-        if (images) {
-          log.info('persons/:idPerson/getImages get success');
-        } else {
-          log.info('persons/:idPerson/getImages no images found');
-        }
-        res.json(images);
-      }
-    });
-  })
-;
-
-router.route('/syncAliasesBatch').
-  get(function(req, res) { // build aliases
-    person.syncAliasesBatch(function(err, result) {
-      if (err) {
-        log.error('error batch sync\'ing aliases:', err);
-        return res.json({ error: err });
-      }
-      res.json(result);
-    });
-  })
-;
-
-router.route('/checkImages').
-  get(function(req, res) { // check images db/fs sync
-    person.checkImages(function(err) {
-      if (err) {
-        log.error('error checking images:', err);
-        return res.json({ error: err });
-      }
-      res.json();
-    });
-  })
-;
-
-router.route('/listAliasGroups').
-  get(function(req, res) { // list images duplicates
-    person.listAliasGroups(function(err, list) {
-      if (err) {
-        log.error('error listing images aliases:', err);
-        return res.json({ error: err });
-      }
-      res.json(list);
-    });
-  })
-;
-
-router.route('/*'). // requested path is in req._parsedUrl.path
-  get(function(req, res) { // unforeseen get request
-    res.json({ error: 'persons path not found' + ' (' + req._parsedUrl.path + ')' });
-  }).
-  post(function(req, res) { // unforeseen post request
-    res.json({ error: 'persons path not found' + ' (' + req._parsedUrl.path + ')' });
-  }).
-  put(function(req, res) { // unforeseen post request
-    res.json({ error: 'persons path not found' + ' (' + req._parsedUrl.path + ')' });
-  }).
-  delete(function(req, res) { // unforeseen post request
-    res.json({ error: 'persons path not found' + ' (' + req._parsedUrl.path + ')' });
-  })
-;
+*/
 
 // export all router methods
 module.exports = router;

@@ -24,6 +24,7 @@ config.time = process.hrtime(); // TODO: development only
   // TODO: generalize for all filter properties...
   if (filter.name) { match.name = filter.name; }
 
+  // aggregate on alias field to get just the first document with the same alias
   Person.aggregate(
     [
       {
@@ -67,7 +68,7 @@ config.time = process.hrtime(); // TODO: development only
       }
 
     ],
-     function(err, persons) {
+    function(err, persons) {
       if (err) {
         return callback(err);
       }
@@ -79,6 +80,13 @@ log.debug('api/controllers/persons getAll - Person.aggregate - elapsed time:', p
 
 exports.getById = function(id, callback) { // get person by id
   var filter = { _id: id };
+  Person.find(filter, function(err, persons) {
+    callback(err, persons);
+  });
+};
+
+exports.getByKey = function(key, callback) { // get person by key
+  var filter = { key: key };
   Person.find(filter, function(err, persons) {
     callback(err, persons);
   });
@@ -226,7 +234,7 @@ if (person.key === 'FORBES/Shakira') {
                     person.dateOfLastSync = now;
                     person.imageUrls = local.getDetailsImageUrls($, provider);
                     person.isPresent = true; // set person as present, waiting for setActivityStatus()
-                    person.alias = null; // alias will be set in batch mode at the end of the loop
+                    //person.alias = null; // person.alias will be set in batch mode at the end of the loop
 
                     // save this person to database
                     exports.upsert(person, function(err, doc) {

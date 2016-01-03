@@ -4,6 +4,7 @@
   "node": true,
   "laxcomma": true,
   "globals": {
+    "$": true,
     "angular": true
   }
 }

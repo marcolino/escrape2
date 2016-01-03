@@ -14,14 +14,6 @@ var staticPathPublic = __dirname + '/..' + '/public.dist'; // path to static pub
 var staticPathData = __dirname + '/..' + '/data'; // path to static data directory
 var engineTemplate = 'html'; // template engine name ('jade'...)
 
-// required routes
-//var main = require('./api/routes/main');
-var providers = require('./routes/providers');
-var users = require('./routes/users');
-var persons = require('./routes/persons');
-var places = require('./routes/places');
-var comments = require('./routes/comments');
-
 // create express application
 var app = module.exports = express();
 
@@ -30,65 +22,62 @@ app.use(bodyParser.urlencoded({ extended: true })); // only parse urlencoded bod
 app.use(bodyParser.json()); // only parse JSON
 app.use(methodOverride()); // override with the X-HTTP-Method-Override header in the request
 
-// server routes (API calls, authentication, ...)
-// TODO: /... -> /api/...
-app.use('/api/users', users);
-app.use('/api/persons', persons);
-app.use('/api/providers', providers);
-app.use('/api/places', places);
-app.use('/api/comments', comments);
+// enable cross origin resource sharing
+// TODO: do we really need this? (only if deploying client apps on different domain from server, perhaps...)
+app.all('/*', function(req, res, next) {
+  // CORS headers
+  res.header("Access-Control-Allow-Origin", "*"); // restrict it to the required domain
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+  // set custom headers for CORS
+  res.header('Access-Control-Allow-Headers', 'Content-type,Accept,X-Access-Token,X-Key');
+  if (req.method == 'OPTIONS') {
+    res.status(200).end();
+  } else {
+    next();
+  }
+});
+ 
+// auth middleware: this will check if the token is valid;
+// only the requests that start with /api/* will be checked for the token;
+// any URLs that do not follow the below pattern will be accessible without authentication
+app.all('/api/*', [ require('./middlewares/validateRequest') ]);
+
+// versions handling
+app.use(function(req, res, next) { // explicit version requested
+  if (req.url.match(/\/api\/v0\//)) { // explicit unsupported version requested: moved permanently
+    res.status(301);
+    res.json({ error: 'moved permanently' });
+  } else
+  if (req.url.match(/\/api\/v1\//)) { // explicit supported version requested: alias to no version url
+    req.url = req.url.replace(/(\/api\/)v1\//g, '\$1');
+  }
+  next();
+});
+
+// authentication routes
+app.use('/auth', require('./routes/auth'));
+
+// server routes
+app.use('/api/users', require('./routes/users'));
+app.use('/api/persons', require('./routes/persons'));
+app.use('/api/providers', require('./routes/providers'));
+app.use('/api/places', require('./routes/places'));
+app.use('/api/comments', require('./routes/comments'));
+
+// public routes
 app.use(express.static(staticPathPublic));
 app.use(express.static(staticPathData));
 //app.set('views', pathViews);
 //app.set('view engine', engineTemplate); 
 
-// error-handling
+// error handling
 app.use('/api/*', function(req, res, next) { // unforeseen request
-  //var path = req._parsedOriginalUrl.path;
-  res.status(404);
-  res.json({ error: 'path not found' });
-});
-
-/*
-// frontend routes (angular requests)
-//app.get('*', function(req, res) {
-app.route('*').get(function(req, res) { // * -> !/api
-  // load the single view file (angular will handle the page changes on the front-end)
-  res.sendFile('index.html', { root: path.join(__dirname, './public') });
-});
-
-// error-handling middleware
-app.use(function(req, res, next) { // not found
   var status = 404;
   res.status(status);
-  var err = new Error();
-  err.message = 'not found';
-  err.status = status;
-  if (config.env === 'development') {
-    err.stacktrace = err.stack;
-  }
-  //log.error('404');
-  //log.error(err);
-  res.send({ error: 'not found' });
+  res.json({ status: status, error: 'path ' + req.originalUrl + ' not found' });
 });
 
-app.use(function(err, req, res, next) { // not allowed
-  var err = new Error('not allowed');
-  res.status(err.status || 500);
-  //log.error('500');
-  //log.error(err);
-  res.send({ error: 'internal server error'});
-});
-*/
-
-// all other (angular) requests go to frontend routes
-//app.use(function(err, req, res, next) {
+// all other (client) requests go to frontend routes
 app.use(function(req, res, next) {
-/*
-  if (err) {
-    return res.send({ error: err });
-  };
-*/
-  //res.sendFile('index.html', { root: path.join(__dirname, './public') });
   res.sendFile('index.html', { root: staticPathPublic });
 });

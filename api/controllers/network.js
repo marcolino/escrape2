@@ -66,13 +66,13 @@ if (resource.url === 'http://www.torinoerotica.com/photo-escort/93951-5400/1-100
 
         } else {
 
-/*
-// with some images, etag keeks changing even if image does not change... no problem, downloading it again...
+/**/
+// with some images, etag keeps changing even if image does not change... no problem, downloading it again...
 if (resource.type === 'image') {
   log.debug('*** network.fetch - url:', response.request.uri.href, '- response.statusCode:', response.statusCode,
             'request etag:', resource.etag, '- response etag:', result.etag);
 }
-*/
+/**/
 
           result.isChanged = true;
           result.contents = contents;

@@ -31,6 +31,7 @@ var config = {
     }
   },
   logger: {
+    //levelDetail: (env === 'development') ? 'dev' : 'default',
     levelConsole: 'silly', // 'error' to production
     levelFile: 'debug', // 'info' to production
     logFilePath: 'logs/escrape.log',

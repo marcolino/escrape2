@@ -5,48 +5,78 @@
  */
 var app = require('../api/app');
 var http = require('http');
+var https = require('https');
+var fs = require('fs');
+
+// https keys and certificates
+var privateKey = fs.readFileSync('api/secure/server.key', 'utf8');
+var certificate = fs.readFileSync('api/secure/server.crt', 'utf8');
+var credentials = { key: privateKey, cert: certificate };
 
 /**
- * Get port from environment and store in Express
+ * Get port(s) from environment and store in Express
  */
-var port = normalizePort(process.env.PORT || '3000');
-app.set('port', port);
+//var port = normalizePort(process.env.PORT || '3000');
+//app.set('port', port);
+var httpPort = normalizePort(process.env.HTTPPORT || '3000');
+app.set('httpPort', httpPort);
+var httpsPort = normalizePort(process.env.HTTPSPORT || '8443');
+app.set('httpsPort', httpsPort);
 
 /**
- * Create HTTP server
+ * Create HTTP server(s)
  */
-var server = http.createServer(app);
+var httpServer = http.createServer(app);
+var httpsServer = https.createServer(credentials, app);
 
 /**
- * Listen on provided port, on all network interfaces
+ * Listen on provided port(s), on all network interfaces
  */
-server.listen(port);
-server.on('error', onError);
-server.on('listening', onListening);
+// http
+httpServer.listen(httpPort);
+httpServer.on('error', onHttpError);
+httpServer.on('listening', onHttpListening);
+
+// https
+httpsServer.listen(httpsPort);
+httpsServer.on('error', onHttpsError);
+httpsServer.on('listening', onHttpsListening);
+
 
 /**
  * Normalize a port into a number, string, or false
  */
 function normalizePort(val) {
   var port = parseInt(val, 10);
-
-  if (isNaN(port)) {
-    // named pipe
+  if (isNaN(port)) { // named pipe
     return val;
   }
-
-  if (port >= 0) {
-    // port number
+  if (port >= 0) { // port number
     return port;
   }
-
   return false;
 }
 
+function onHttpError(error) {
+  onError(error, httpPort);
+}
+
+function onHttpsError(error) {
+  onError(error, httpsPort);
+}
+
+function onHttpListening() {
+  onListening(httpServer);
+}
+
+function onHttpsListening() {
+  onListening(httpsServer);
+}
+
 /**
- * Event listener for HTTP server "error" event
+ * Event listener for servers error event
  */
-function onError(error) {
+function onError(error, port) {
   if (error.syscall !== 'listen') {
     throw error;
   }
@@ -58,11 +88,11 @@ function onError(error) {
   // handle specific listen errors with friendly messages
   switch (error.code) {
     case 'EACCES':
-      console.error(bind + ' requires elevated privileges');
+      console.error(bind, 'requires elevated privileges');
       process.exit(1);
       break;
     case 'EADDRINUSE':
-      console.error(bind + ' is already in use');
+      console.error(bind, 'is already in use');
       process.exit(1);
       break;
     default:
@@ -73,10 +103,10 @@ function onError(error) {
 /**
  * Event listener for HTTP server "listening" event
  */
-function onListening() {
+function onListening(server) {
   var addr = server.address();
   var bind = typeof addr === 'string'
     ? 'pipe ' + addr
     : 'port ' + addr.port;
-  console.info('Listening on ' + bind);
+  console.info('Listening on', bind);
 }
