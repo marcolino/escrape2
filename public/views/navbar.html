@@ -17,12 +17,12 @@
       <li><a href="/about">about</a></li>
     </ul>
 
-    <div class="col-sm-2 col-md-2 pull-right" ng-show="!signedIn" title="sign in or register, to be able to use and set your preferences">
-      <form class="navbar-form" role="login" ng-submit="loginPage()">
+    <div class="col-sm-2 col-md-2 pull-right" ng-show="!isLogged" title="log in or register, to be able to use and set your preferences">
+      <form class="navbar-form" role="login" ng-submit="viewLogin()">
         <div class="input-group">
           <div class="input-group-btn">
             <button type="submit" class="btn btn-warning signin">
-              <span>login</span><!-- &nbsp; <i class="glyphicon glyphicon-log-in"></i> -->
+              <span>login</span>
             </button>
           </div>
         </div>
@@ -30,47 +30,32 @@
     </div>
 
 <!--
-    <div class="col-sm-2 col-md-2 pull-right" ng-show="signedIn" title="sign out">
-      <form class="navbar-form" role="signin" ng-submit="signout()">
+    <div class="col-sm-2 col-md-2 pull-right" ng-show="isLogged" title="log out">
+      <form class="navbar-form" role="logout" ng-submit="logout()">
         <div class="input-group">
           <div class="input-group-btn">
-            <button type="submit" class="btn btn-default signout">
-              <span>log out</span><! - - &nbsp; <i class="glyphicon glyphicon-log-out"></i> - - >
+            <button type="submit" class="btn btn-success signin">
+              <span>logout</span>
             </button>
           </div>
         </div>
       </form>
     </div>
 -->
-
-    <div class="col-sm-2 col-md-2 pull-right" ng-show="signedIn" ng-data-title="signed in user is {{ username }}">
+    <div class="col-sm-2 col-md-2 pull-right" ng-show="isLogged" data-ng-attr-title="logged in user is {{ user.username }}">
       <form class="navbar-form">
         <div class="btn-group">
           <button type="button" class="btn btn-success dropdown-toggle logout" data-toggle="dropdown">
-            <span>{{username}}</span> <span class="caret"></span>
+            <span>{{ username }}</span>&emsp;<span class="caret"></span>
           </button>
           <ul class="dropdown-menu">
-            <li><a href="/users/profile" ng-click="profile()">profile</a></li> <!-- TODO: choose if to use href or ng-click... -->
+            <li><a href="#" data-ng-click="viewProfile()">profile</a></li>
             <li role="separator" class="divider"></li>
-            <li><a href="/users/signout" ng-click="signout()">sign out</a></li> <!-- TODO: choose if to use href or ng-click... -->
+            <li><a href="#" data-ng-click="logout()">logout</a></li>
           </ul>
         </div>
       </form>
     </div>
-
-<!-- // do not show a signup button on navbar, just a login, then in login page put both sign-in and sign-up buttons
-    <div class="col-sm-2 col-md-2 pull-right" ng-show="!signedIn" title="sign up">
-      <form class="navbar-form" role="signup" ng-submit="signup()">
-        <div class="input-group">
-          <div class="input-group-btn">
-            <button type="submit" class="btn btn-default signup">
-              sign up &nbsp; <i class="glyphicon glyphicon-user"></i>
-            </button>
-          </div>
-        </div>
-      </form>
-    </div>
--->
 
     <div class="col-sm-4 col-md-4 pull-right">
       <form class="navbar-form" role="search" ng-submit="search()">

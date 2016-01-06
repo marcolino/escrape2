@@ -646,6 +646,7 @@ local.savePerson = function(person) {
 };
 
 local.areSimilar = function(person1, person2) {
+  if ((person1.isPresent && person1.isPresent) && (person1.phone === person2.phone)) return true;
   return (local.getClosestImages(person1, person2).distance <= config.images.thresholdDistance);
 };
 
@@ -829,7 +830,7 @@ local.getList = function(provider, $) {
     $('a[OnClick="get_position();"]').each(function(index, element) {
       var url = $(element).attr('href');
       if (url.match(/annuncio\//)) {
-        var key = url.replace(/annuncio\/(.*?)/, '$1');
+        var key = url.replace(/\.\.\/escort\/annuncio\/(.*?)/, '$1');
         val.push({ key: key, url: url });
       }
     });
@@ -1001,7 +1002,6 @@ local.getDetailsImageUrls = function($, provider) {
       .replace(/\.\.?\//g, '')
       .replace(/\?t=.*/, '')
     ;
-if (!href) { log.error('no showcase found for SGI person !'); }
     val.push({ href: href, isShowcase: true });
     $('a[rel="group"][class="fancybox"]').each(function(index, element) { //other images
       var href = provider.url + '/' + $(element).attr('href');

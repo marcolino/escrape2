@@ -1,6 +1,5 @@
 'use strict';
 
-
 angular.module('AuthenticationService', []).factory('Authentication', function($rootScope, $window) {
 /*
 app.factory('AuthenticationFactory', function($rootScope, $window) {
@@ -8,7 +7,7 @@ app.factory('AuthenticationFactory', function($rootScope, $window) {
   return {
     isLogged: false,
     check: function() {
-      if ($window.sessionStorage.token && $window.sessionStorage.user) {
+      if ($window.localStorage.token && $window.localStorage.user) {
         this.isLogged = true;
       } else {
         this.isLogged = false;
@@ -23,30 +22,40 @@ angular.module('UserAuthenticationService', []).factory('UserAuthentication', fu
 app.factory('UserAuthFactory', function($rootScope, $window, $location, $http, AuthenticationFactory) {
 */
   return {
+    register: function(username, email, password) {
+console.log('UserAuthenticationService - register - api url:', $rootScope.config.api.url);
+console.log('UserAuthenticationService - register - username, password:', username, password);
+      return $http.post($rootScope.config.api.url + '/auth/register', {
+        username: username,
+        email: email,
+        password: password
+      });
+    },
+
     login: function(username, password) {
-console.log('UserAuthenticationService - api url:', $rootScope.config.api.url);
-/*
-      return $http.post($rootScope.config.api.url + '/login', {
+console.log('UserAuthenticationService - login - api url:', $rootScope.config.api.url);
+console.log('UserAuthenticationService - login - username, password:', username, password);
+      return $http.post($rootScope.config.api.url + '/auth/login', {
         username: username,
         password: password
       });
-*/
-      return {
-        username: username,
-        password: password
-      };
     },
+
     logout: function() {
       if (Authentication.isLogged) {
+console.log('public script services auth - logout - was logged');
         Authentication.isLogged = false;
         delete Authentication.user;
         delete Authentication.userRole;
-        delete $window.sessionStorage.token;
-        delete $window.sessionStorage.user;
-        delete $window.sessionStorage.userRole;
-        $location.path('/');
+        delete $window.localStorage.token;
+        delete $window.localStorage.user;
+        delete $window.localStorage.userRole;
+        console.error('logget out!');
+        //$location.path('/');
       }
+else console.log('public script services auth - logout - was NOT logged');
     }
+
   };
 });
  
@@ -57,9 +66,9 @@ app.factory('TokenInterceptor', function($rootScope, $window, $q) {
   return {
     request: function(config) {
       config.headers = config.headers || {};
-      if ($window.sessionStorage.token) {
-        config.headers['X-Access-Token'] = $window.sessionStorage.token;
-        config.headers['X-Key'] = $window.sessionStorage.user;
+      if ($window.localStorage.token) {
+        config.headers['X-Access-Token'] = $window.localStorage.token;
+        config.headers['X-Key'] = $window.localStorage.user;
         config.headers['Content-Type'] = 'application/json';
       }
       return config || $q.when(config);

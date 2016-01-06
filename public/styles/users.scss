@@ -1,3 +1,11 @@
+form.ng-submitted input.ng-invalid {
+  border: 1px solid #B94A48 !important;
+} 
+
+.help-block {
+  color: #B94A48 !important;
+} 
+
 button.signin {
   border-radius: 4px !important;
 }
@@ -41,6 +49,7 @@ input.ng-valid.ng-dirty {
 
 .panel {
   background-color: #272b30;
+  /*background-color: #545660;*/
 }
 
 .panel-heading {

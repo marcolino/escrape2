@@ -1,16 +1,29 @@
 <div class="col-lg-offset-4 col-lg-4">
   <div class="panel">
     <div class="panel-heading">Login</div>
-    <form name="form" novalidate="novalidate">
+    <form name="form" novalidate="novalidate" ng-submit="login()">
       <div class="form-group">
         <label for="username" class="control-label">Username or Email</label>
-        <input type="text" name="username" id="username" placeholder="Username" unique-username="unique-username" required="required" ng-model="username" autofocus="autofocus" class="form-control"/><i ng-show="busy" class="halflings-icon refresh rotating"></i><span ng-show="form.username.$dirty && form.username.$error.required" class="help-block">Please choose a username</span><span ng-show="form.username.$dirty && form.username.$error.isTaken" class="help-block">Username already taken</span><span ng-show="form.username.$dirty && form.username.$error.invalidChars" class="help-block">Username may not contain any non-url-safe characters</span>
+        <input type="text" name="username" id="username" placeholder="Username" required="required" ng-model="user.username" ng-change="registrationFailed = false" autofocus="autofocus" class="form-control" />
+        <i ng-show="busy" class="glyphicon glyphicon-cog rotating"></i>
+        <span ng-show="(form.username.$dirty || form.$submitted) && form.username.$error.required" class="help-block">please enter your username</span>
       </div>
       <div class="form-group">
         <label for="password" class="control-label">Password</label>
-        <input type="password" name="password" id="password" ng-model="password" required="required" match="verification" class="form-control"/><span ng-show="form.password.$dirty && form.password.$error.required" class="help-block">Please enter a password</span>
+        <input type="password" name="password" id="password" placeholder="Password" required="required" ng-model="user.password" ng-change="registrationFailed = false" class="form-control" />
+        <span ng-show="(form.password.$dirty || form.$submitted) && form.password.$error.required" class="help-block">please enter your password</span>
       </div>
-      <input type="button" ng-click="login()" value="Login" ng-disabled="form.$invalid" class="btn btn-primary"/>
+      <div class="form-group">
+        <div class="row">
+          <span class="col-xs-6">
+            <input type="submit" value="Login" NOng-disabled="form.$invalid" class="btn btn-primary"/>
+          </span>
+          <span class="col-xs-6 pull-right" style="font-size:0.9em; margin-top:1.2em; text-align:right; padding-right:3.0em;">
+            or <a href="#" ng-click="viewRegister()" class="text-primary" style="text-decoration: underline !important;">register</a>
+          </span>
+        </div>
+        <span ng-show="form.$submitted && loginFailed" class="help-block">login failed: {{ loginFailed }}, please retry</span>
+      </div>
     </form>
   </div>
 </div>

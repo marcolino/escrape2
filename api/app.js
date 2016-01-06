@@ -74,10 +74,11 @@ app.use(express.static(staticPathData));
 app.use('/api/*', function(req, res, next) { // unforeseen request
   var status = 404;
   res.status(status);
-  res.json({ status: status, error: 'path ' + req.originalUrl + ' not found' });
+  res.json({ status: status, error: 'API path ' + req.originalUrl + ' not found' });
 });
 
 // all other (client) requests go to frontend routes
+//console.log('SENDING INDEX');
 app.use(function(req, res, next) {
   res.sendFile('index.html', { root: staticPathPublic });
 });

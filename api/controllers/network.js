@@ -13,6 +13,7 @@ var log = config.log;
  * fetch resource contents, retrying and anonymously
  */
 exports.fetch = function(resource, callback) {
+//console.warn('fetch resource.url:', resource.url);
   var options = {
     url: resource.url, // url to download
     maxAttempts: config.networking.maxAttempts, // number of attempts to retry after the first one
@@ -43,9 +44,19 @@ exports.fetch = function(resource, callback) {
         var result = {};
         result.etag = response.headers.etag;
         result.url = response.request.uri.href;
+        //result.url = response.request.req._headers.referer;
+/*
+if (resource.type === 'image') { // set encoding to binary if type is image
+if (response.request.uri.href.match(/https/)) {
+console.warn('*** response.request.req._headers.referer:', response.request.req._headers.referer);
+console.warn('result.request:', response.request);
+console.warn('result.url:', result.url);
+}
+}
+*/
         if (response.statusCode === 304) { // not changed
           result.isChanged = false;
-
+//log.debug('network fetch - 304 - contents.length:', contents ? contents.length : '<no contents>');
           if (config.env === 'development') {
             requestEtag = response.request.headers['If-None-Match'];
             if (requestEtag && (result.etag !== requestEtag)) { // TODO: just to be safe, should not need this test on production
@@ -364,7 +375,7 @@ exports.requestSmart = function(resource, error, success) {
       )
     );
     if (forbidden) {
-      log.warn('request was forbidden for uri', response.request.uri.href, '(', (response ? response.statusCode : '?'), ')');
+      log.warn('request did not succeed for uri', response.request.uri.href, '(status code is', (response ? response.statusCode : '?') + ')');
     } else {
       if (response && response.statusCode >= 400) {
         log.warn('retry strategy - unhandled condition for uri', response.request.uri.href, '(status code is:', response.statusCode + '), giving up');

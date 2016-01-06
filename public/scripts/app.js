@@ -13,6 +13,7 @@ var config = {
 
 var app = angular.module('escrape2', [
   'ngRoute',
+  'Directives',
   'HomeCtrl',
   'PersonCtrl',
   'AboutCtrl',
@@ -81,21 +82,30 @@ app.run(function($rootScope, $window, $location, Authentication) {
   Authentication.check();
  
   $rootScope.$on('$routeChangeStart', function(event, nextRoute, currentRoute) {
+    //console.log('$on $routeChangeStart - Authentication.isLogged:', Authentication.isLogged);
     if ((nextRoute.access && nextRoute.access.requiredLogin) && !Authentication.isLogged) {
       $location.path('/login');
     } else {
       // check if user object exists else fetch it (in case of a page refresh)
-      if (!Authentication.user) Authentication.user = $window.sessionStorage.user;
-      if (!Authentication.userRole) Authentication.userRole = $window.sessionStorage.userRole;
+      if (!Authentication.user) {
+        Authentication.user = $window.localStorage.user;
+      }
+      if (!Authentication.userRole) {
+        Authentication.userRole = $window.localStorage.userRole;
+      }
     }
   });
  
   $rootScope.$on('$routeChangeSuccess', function(event, nextRoute, currentRoute) {
-    $rootScope.showMenu = Authentication.isLogged;
-    $rootScope.role = Authentication.userRole;
-    // if the user is already logged in, take him to the home page
-    if (Authentication.isLogged === true && $location.path() == '/login') {
-      $location.path('/');
+    //console.log('$on $routeChangeSuccess - Authentication.isLogged:', Authentication.isLogged);
+    $rootScope.isLogged = Authentication.isLogged;
+    if (Authentication.isLogged === true) {
+      $rootScope.username = Authentication.user;
+      $rootScope.userRole = Authentication.userRole;
+      // if the user is already logged in, take him to the home page
+      if ($location.path() == '/login') {
+        $location.path('/');
+      }
     }
   });
 
@@ -104,34 +114,6 @@ app.run(function($rootScope, $window, $location, Authentication) {
 });
 
 
-
-/*
-angular.module('routes', []).config( function($routeProvider, $locationProvider) {
-  $routeProvider
-    .when('/', { // home page
-      templateUrl: 'views/persons.html',
-      controller: 'PersonController'
-    })
-    .when('/aliases', { // aliases list page
-      templateUrl: 'views/aliases.html',
-      controller: 'PersonController'
-    })
-    .when('/about', {
-      templateUrl: 'views/about.html',
-      controller: 'AboutController'
-    })
-    .when('/users/signup', { // home page
-      templateUrl: 'views/users/signup.html',
-      controller: 'AuthController'
-    })
-    .when('/users/signin', { // home page
-      templateUrl: 'views/users/signin.html',
-      controller: 'AuthController'
-    })
-  ;
-  $locationProvider.html5Mode(true);
-});
-*/
 
 ///////////////////////////////////////////////////////////////////////////////
 // DEVELOPMENT ONLY: find current active server pinging it: during

@@ -26,3 +26,10 @@ function getAll(req, res) { // get all places
     */
   });
 }
+
+// error handling
+router.use('/*', function(req, res, next) { // unforeseen request
+  var status = 404;
+  res.status(status);
+  res.json({ status: status, error: 'places path ' + req.originalUrl + ' not found' });
+});

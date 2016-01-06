@@ -38,7 +38,7 @@ exports.syncPersonsImages = function(persons, callback) {
             download(imageUrl, person, images, function(err, image) {
               if (err) { // 50x or other issues
 //log.error('syncPersonsImages - download error:', err);
-                return callbackImage(err);
+                //return callbackImage(err); // go on with other images...
               }
               if (!image || !image.isChanged) { // 40x or 304
 //log.error('syncPersonsImages - image', image.url, 'not changed');
@@ -108,16 +108,20 @@ exports.syncPersonsImages = function(persons, callback) {
     image.type = 'image';
 
 var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
-if (!image.url) log.error('!!!!!!!!!!!!!!!! SOURCE IMAGE URL IS NULL BEFORE FETCH !');
+if (!image.url) log.error('SOURCE IMAGE URL IS NULL BEFORE FETCH! image.url, img.url:', image.url, img.url);
     network.fetch(image, function(err, img) { // fetch image resource
     if (err) {
       log.error('download error:', err);
       return callback(err, image);
     }
 
-if (image.url !== img.url) log.error('!!!!!!!!!!!!!!!! SOURCE IMAGE URL AFTER FETCH CHANGES !');
+/*
+// img.url could have been redirected to https...
+if (image.url !== img.url) log.error('SOURCE IMAGE URL AFTER FETCH CHANGES! image.url, img.url:', image.url, img.url);
+*/
 
     // copy fetched properties to image
+    //image.url = img.url; // TODO: this could be changed, i.e.: for a sche change from http to https...
     image.contents = img.contents;
     image.etag = img.etag;
     image.isChanged = img.isChanged;
@@ -135,7 +139,7 @@ image.basename = personImage.basename;
 image.url += crypto.randomBytes(3).toString('ascii');
 */
 
-if (config.profile) log.debug('PROFILE fetch', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
+if (config.profile) log.debug('download image for person key', person.key + ':', process.hrtime(t)[0] + (process.hrtime(t)[1] / 1000000000), 'seconds');
 
       callback(err, image);
     });
@@ -145,10 +149,12 @@ if (config.profile) log.debug('PROFILE fetch', process.hrtime(t)[0] + '.' + proc
    * create image versions
    */
   var createImageVersions = function(image, images, callback) {
-//var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
+var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
+/*
     if (image.hasDuplicate) {
       return callback(null, image, images);
     }
+*/
 
     // use a hash of response url + current timestamp as filename to make it unique
     var hash = crypto.createHash('md5').update(image.url + Date.now()).digest('hex');
@@ -224,6 +230,7 @@ if (config.profile) log.debug('PROFILE fetch', process.hrtime(t)[0] + '.' + proc
         function(err) { // all directories and image versions created 
 //if (err) { log.error('createImageVersions final error:', err); }
 //if (config.profile) log.debug('PROFILE createImageVersions', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
+if (config.profile) log.debug('createImageVersions:', process.hrtime(t)[0] + (process.hrtime(t)[1] / 1000000000), 'seconds');
           callback(err, image, images); // finished
         }
       ); // async each versions done
@@ -236,6 +243,7 @@ if (config.profile) log.debug('PROFILE fetch', process.hrtime(t)[0] + '.' + proc
  * save image to DB
  */
 local.saveImageToDb = function(image, images, callback) {
+var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
 //image.hasDuplicate = true; // TODO: DEBUG ONLY, PROFILING THIS FUNCTION PERFORMANCE
 /*
     if (image.hasDuplicate) {
@@ -313,6 +321,7 @@ if (!image.etag || image.etag === null) {
       }
     },
     function(err, results) { // final callback
+if (config.profile) log.debug('saveImageToDb:', process.hrtime(t)[0] + (process.hrtime(t)[1] / 1000000000), 'seconds');
 //if (err) { log.error('saveImageToDb final error:', err); }
       callback(err, results);
     }
@@ -345,6 +354,7 @@ return callback(null, image, images);
 };
 
 local.findSimilarSignatureImage = function(image, images, callback) {
+var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
 /*
 // TODO: DEBUG ONLY
 image.hasDuplicate = true;
@@ -405,6 +415,7 @@ if (personImage.personKey !== image.personKey) {
     image.basename = imageMostSimilar.basename;
   }
 
+if (config.profile) log.debug('findSimilarSignatureImage:', process.hrtime(t)[0] + (process.hrtime(t)[1] / 1000000000), 'seconds');
   callback(null, image, images);
 };
 

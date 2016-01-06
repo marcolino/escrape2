@@ -32,7 +32,7 @@ module.exports = function(req, res, next) {
     }
 
     // authorize the user to see if she can access our resources
-    var dbUser = auth.validateUser(key); // the key would be the logged in user's username
+    var dbUser = auth.validateUsername(key); // the key would be the logged in user's username
 
     if (!dbUser) { // no user with this name exists, respond with a 401
       return res.status(401).json({ error: 'not authorized (invalid user)' });

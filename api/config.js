@@ -16,6 +16,7 @@ var config = {
     // enabling allowUnauthorizedRequests we allow everybody to use our APIs;
     // of course only *read* requests will succeed, other requests will fail because no user is found
     allowUnauthorizedRequests: true, // allow unauthorized requests
+    tokenExpirationDays: 7, // the days the authentication token expires after
   },
   images: {
     path: __dirname + '/..' + '/data/images',

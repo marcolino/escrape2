@@ -1,72 +1,94 @@
-var jwt = require('jwt-simple');
- 
-var auth = {
- 
-  login: function(req, res) {
-    var username = req.body.username || '';
-    var password = req.body.password || '';
-    var status;
- 
-    if (username === '' || password === '') {
-      status = 401;
-      res.status(status);
-      res.json({
-        status: status,
-        message: 'Invalid credentials'
-      });
-      return;
+var jwt = require('jwt-simple') // JSON Web Token simple
+  , user = require('../controllers/user') // user controller
+  , config = require('../config') // global configuration
+;
+var local = {};
+var log = config.log;
+
+var exports = {
+  login: function(username, password) {
+    // fire a query to DB and check if the credentials are valid
+    var dbUserObj = exports.validateCredentials(username, password);
+    if (!dbUserObj) { // authentication failed, send a 401 back
+      return {
+        error: {
+          status: 401,
+          message: 'invalid credentials',
+        }
+      };
     }
- 
-    // Fire a query to your DB and check if the credentials are valid
-    var dbUserObj = auth.validate(username, password);
-   
-    if (!dbUserObj) { // If authentication fails, we send a 401 back
-      status = 401;
-      res.status(status);
-      res.json({
-        status: status,
-        message: 'Invalid credentials'
-      });
-      return;
-    }
- 
-    if (dbUserObj) { // if authentication is successful, we will generate a token and dispatch it to the client
-      res.json(genToken(dbUserObj));
-    }
- 
+
+    // authentication is successful, send back a token
+    return {
+      token: genToken(dbUserObj)
+    };
   },
  
-  register: function(req, res) {
-    // TODO: ...
+  register: function(username, email, password) {
+    var dbUserObj = exports.validateUsername(username);
+    if (!dbUserObj) { // authentication failed, send a 401 back
+      return {
+        error: {
+          status: 500,
+          message: 'some strange error happened...',
+        }
+      };
+    }
+    return dbUserObj;
   },
 
-  validate: function(username, password) {
+  validateCredentials: function(username, password) {
     // spoofing the DB response for simplicity
-    var dbUserObj = { // spoofing a userobject from the DB. 
-      name: 'arvind',
+    var dbUserObj = { // spoofing a user object from the DB
+      name: username + ' booh',
       role: 'admin',
-      username: 'arvind@myapp.com'
+      username: username,
     };
- 
+    if (username === 'marco') {
+      return dbUserObj;
+    } else {
+      return null;
+    }
+  },
+
+  validateUsername: function(username) {
+    var validity = {};
+    var patternValidUsername = /^[a-zA-Z0-9]+([_\s\-]?[a-zA-Z0-9])*$/;
+    // spoofing the DB response for simplicity
+    validity.isTaken = (username === 'marco');
+
+console.log('username:', username);
+    validity.invalidChars = (patternValidUsername.exec(username) ? false : true);
+console.log('validity.invalidChars:', validity.invalidChars);
+
+    var user = {
+      name: username + ' booh',
+      role: 'user',
+      username: username
+    };
+    
+    var dbUserObj = { // spoofing a user object from the DB
+      validity: validity,
+      user: user
+    };
     return dbUserObj;
   },
- 
-  validateUser: function(username) {
-    // spoofing the DB response for simplicity
-    var dbUserObj = { // spoofing a userobject from the DB
-      name: 'arvind',
-      role: 'admin',
-      username: 'arvind@myapp.com'
+
+  validatePassword: function(password) {
+console.log('api controllers validatePassword - password:', password);
+    var validity = {};
+    validity.tooEasy = password.length < 4;
+
+    return {
+      validity: validity
     };
- 
-    return dbUserObj;
   },
 };
  
 // private methods
 
 function genToken(user) {
-  var expires = expiresIn(7); // 7 days
+  var expires = expiresIn(config.auth.tokenExpirationDays);
   var token = jwt.encode({
     exp: expires
   }, require('../secure/secret'));
@@ -83,4 +105,4 @@ function expiresIn(numDays) {
   return dateObj.setDate(dateObj.getDate() + numDays);
 }
  
-module.exports = auth;
+module.exports = exports;

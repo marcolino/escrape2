@@ -21,4 +21,11 @@ function signupCheckUsername(req, res) {
   });
 }
 
+// error handling
+router.use('/*', function(req, res, next) { // unforeseen request
+  var status = 404;
+  res.status(status);
+  res.json({ status: status, error: 'users path ' + req.originalUrl + ' not found' });
+});
+
 module.exports = router;

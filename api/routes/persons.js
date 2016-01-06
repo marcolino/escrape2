@@ -144,5 +144,12 @@ router.param('id', function(req, res, next, id) {
 });
 */
 
+// error handling
+router.use('/*', function(req, res, next) { // unforeseen request
+  var status = 404;
+  res.status(status);
+  res.json({ status: status, error: 'persons path ' + req.originalUrl + ' not found' });
+});
+
 // export all router methods
 module.exports = router;
