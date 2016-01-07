@@ -33,8 +33,8 @@ console.log('username:', username);
       $scope.registrationFailed = true;
       return console.error('invalid credentials');
     }
-    UserAuthentication.register(username, email, password).success(function(data) {
-console.log(' UserAuthentication.register returns', data);
+    UserAuthentication.register(username, email, password).success(function(err, data) {
+console.log(' UserAuthentication.register returns', err, data);
 /* enable this to auto-login user on registration
       Authentication.isLogged = true;
       Authentication.user = data.user.username;
@@ -45,6 +45,7 @@ console.log(' UserAuthentication.register returns', data);
 */
       $location.path('/'); // redirect to home page
     }).error(function(message) {
+console.log(' UserAuthentication.register returns error:', message);
       $scope.registrationFailed = message.error;
       return console.error(message);
     });
@@ -70,7 +71,7 @@ console.log(' UserAuthentication.login returns', data);
       Authentication.userRole = data.user.role;
       $window.localStorage.token = data.token;
       $window.localStorage.user = data.user.username; // to fetch the user details on refresh
-      $window.localStorage.userRole = data.userRole; // to fetch the user details on refresh
+      $window.localStorage.userRole = data.user.role; // to fetch the user details on refresh
       $location.path('/'); // redirect to home page
     }).error(function(message) {
       $scope.loginFailed = message.error;
@@ -80,7 +81,7 @@ console.log(' UserAuthentication.login returns', data);
 
   $scope.logout = function () {
     UserAuthentication.logout();
-    $rootScope.isLogged = Authentication.isLogged;
+    $rootScope.isLogged = Authentication.isLogged; // TODO: test if we need this...
   };
 
   $scope.search = function() {

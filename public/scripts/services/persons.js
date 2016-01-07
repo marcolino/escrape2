@@ -13,7 +13,7 @@ angular.module('PersonService', []).factory('Person', [ '$rootScope', '$http', f
       if (filter && filter.search && filter.search.term) {
         path += '/search/' + filter.search.term;
       }
-      //console.warn('public service person getAll - url is: ' + $rootScope.config.api.url + $rootScope.config.api.path + '/persons/getAll' + path);
+      console.warn('public service person getAll - url is: ' + $rootScope.config.api.url + $rootScope.config.api.path + '/persons/getAll' + path);
       $http({
         method: 'GET',
         url:

@@ -6,96 +6,105 @@ var local = {};
 var log = config.log;
 
 var exports = {
-  login: function(username, password) {
-    // fire a query to DB and check if the credentials are valid
-    var dbUserObj = exports.validateCredentials(username, password);
-    if (!dbUserObj) { // authentication failed, send a 401 back
-      return {
-        error: {
-          status: 401,
-          message: 'invalid credentials',
+  register: function(username, email, password, callback) {
+    exports.existsUsername(username, function(err, result) {
+      if (err) { // user does not exist
+        return callback(err, null);
+      }
+      var newUser = {};
+      newUser.username = username;
+      newUser.email = email;
+      newUser.password = user.cryptPassword(password);
+      newUser.roles = [ 'user' ]; // default role is 'user'
+console.error('before user insert');
+      user.insert(newUser, function(err, result) {
+console.error('after user insert:', err, result);
+        if (err) {
+console.error('User register insert error:', err);
+          return callback(err);
         }
-      };
-    }
+        var retval = result.toObject();
+        retval.validity = validatedUser.validity;
+        callback(null, retval);
+      });
+    });
+  },
 
-    // authentication is successful, send back a token
-    return {
-      token: genToken(dbUserObj)
-    };
+  login: function(username, password, callback) {
+    // fire a query to DB and check if the credentials are valid
+    exports.validateCredentials(username, password, function(err, result) {
+      if (err) { // credentials validation failed
+        return callback(err, null);
+      }
+      if (result) {
+        callback(null, genToken(result));
+      } else {
+        callback('invalid credentials', null);
+      }
+    });
   },
  
-  register: function(username, email, password) {
-    var dbUserObj = exports.validateUsername(username);
-    if (!dbUserObj) { // authentication failed, send a 401 back
-      return {
-        error: {
-          status: 500,
-          message: 'some strange error happened...',
-        }
-      };
+  existsUsername: function(username, callback) {
+    var allowable = exports.allowableUsername(username);
+    if (!allowable.ok) {
+      return callback(null, false);
     }
-    return dbUserObj;
+
+    user.getByUsername(username, function(err, result) {
+      if (err) {
+        return callback(err, null);
+      }
+      callback(null, result ? true : false);
+    });
+
   },
 
-  validateCredentials: function(username, password) {
-    // spoofing the DB response for simplicity
-    var dbUserObj = { // spoofing a user object from the DB
-      name: username + ' booh',
-      role: 'admin',
-      username: username,
-    };
-    if (username === 'marco') {
-      return dbUserObj;
-    } else {
-      return null;
+  validateCredentials: function(username, password, callback) {
+    var allowable = exports.allowableUsername(username);
+    if (!allowable.ok) {
+      return callback('username contains invalid characters', null);
     }
+
+    user.getByUsernamePassword(username, password, function(err, result) {
+      if (err) {
+        return callback(err, null);
+      }
+      callback(null, result);
+    });
   },
 
-  validateUsername: function(username) {
-    var validity = {};
+  allowableUsername: function(username) {
     var patternValidUsername = /^[a-zA-Z0-9]+([_\s\-]?[a-zA-Z0-9])*$/;
-    // spoofing the DB response for simplicity
-    validity.isTaken = (username === 'marco');
-
-console.log('username:', username);
-    validity.invalidChars = (patternValidUsername.exec(username) ? false : true);
-console.log('validity.invalidChars:', validity.invalidChars);
-
-    var user = {
-      name: username + ' booh',
-      role: 'user',
-      username: username
-    };
-    
-    var dbUserObj = { // spoofing a user object from the DB
-      validity: validity,
-      user: user
-    };
-    return dbUserObj;
-  },
-
-  validatePassword: function(password) {
-console.log('api controllers validatePassword - password:', password);
-    var validity = {};
-    validity.tooEasy = password.length < 4;
-
+    var invalidChars = patternValidUsername.exec(username) ? false : true;
     return {
-      validity: validity
+      ok: !(invalidChars),
+      invalidChars: invalidChars
     };
   },
+
+  allowablePassword: function(password) {
+    var minLength = 4;
+    var tooEasy = password.length >= minLength ? false : true;
+    return {
+      ok: !(tooEasy),
+      tooEasy: tooEasy
+    };
+  }
+
 };
  
 // private methods
 
 function genToken(user) {
-  var expires = expiresIn(config.auth.tokenExpirationDays);
+  var expirationDate = expiresIn(config.auth.tokenExpirationDays);
   var token = jwt.encode({
-    exp: expires
+    exp: expirationDate, // expiration date
+    //user: user // the user object
   }, require('../secure/secret'));
  
   return {
     token: token,
-    expires: expires,
+    expires: expirationDate,
     user: user
   };
 }

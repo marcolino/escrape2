@@ -21,20 +21,23 @@ angular.module('Directives', [])
           scope.busy = true;
   
           // send request to server
-          $http.post('/auth/validateUsername', { username: value })
-            // TODO: unify the values expected to be returned by '/auth/validateUsername'... currently returns object when user is found, null otherwise
+          $http.post('/auth/allowableUsername', { username: value })
+            // TODO: unify the values expected to be returned by '/auth/allowableUsername'... currently returns object when user is found, null otherwise
             .success(function(data) {
 console.error(' --- uniqueUsername - success - data:', data);
               scope.busy = false;
-              if (data.validity.isTaken) {
+              /* TODOOOOOOOOOOOOOOO
+              if (data.isTaken) {
                 ctrl.$setValidity('isTaken', false);
-              } else if (data.validity.invalidChars) {
+              } else */
+              if (data.invalidChars) {
                 ctrl.$setValidity('invalidChars', false);
               }
             })
             .error(function(data) {
               // should not happen...
 console.error(' --- uniqueUsername - error - data:', data);
+                ctrl.$setValidity('invalidChars', false);
             })
           ;
         });
@@ -76,7 +79,7 @@ console.log('matches-password TRUE');
     };
   })
 
-  .directive('accepablePassword', function($http) {  
+  .directive('allowablePassword', function($http) {  
     return {
       require: 'ngModel',
       link: function(scope, elem, attrs, ctrl) {
@@ -95,18 +98,18 @@ console.log('matches-password TRUE');
           scope.busy = true;
   
           // send request to server
-          $http.post('/auth/validatePassword', { password: value })
-            // TODO: unify the values expected to be returned by '/auth/validateUsername'... currently returns object when user is found, null otherwise
-            .success(function(data) {
-console.error(' --- acceptablePassword - success - data:', data);
+          $http.post('/auth/allowablePassword', { password: value })
+            // TODO: unify the values expected to be returned by '/auth/validateUser'... currently returns object when user is found, null otherwise
+            .success(function(result) {
+console.error(' --- allowablePassword - success - result:', result);
               scope.busy = false;
-              if (data.validity.tooEasy) {
+              if (result.tooEasy) {
                 ctrl.$setValidity('tooEasy', false);
               }
             })
-            .error(function(data) {
+            .error(function(result) {
               // should not happen...
-console.error(' --- acceptablePassword - error - data:', data);
+console.error(' --- allowablePassword - error - result:', result);
             })
           ;
         });

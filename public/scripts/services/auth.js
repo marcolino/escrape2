@@ -68,7 +68,9 @@ app.factory('TokenInterceptor', function($rootScope, $window, $q) {
       config.headers = config.headers || {};
       if ($window.localStorage.token) {
         config.headers['X-Access-Token'] = $window.localStorage.token;
+        /**/
         config.headers['X-Key'] = $window.localStorage.user;
+        /**/
         config.headers['Content-Type'] = 'application/json';
       }
       return config || $q.when(config);

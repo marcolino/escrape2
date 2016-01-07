@@ -21,6 +21,7 @@
     "imagediff": "^1.0.8",
     "jade": "~1.11.0",
     "jimp": "^0.2.21",
+    "jwt-simple": "^0.4.0",
     "lodash": "^3.10.1",
     "md5": "^2.0.0",
     "method-override": "^2.3.5",
