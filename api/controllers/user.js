@@ -22,17 +22,26 @@ exports.getAll = function(filter, options, callback) { // get all user
 exports.getByUsername = function(username, callback) { // get user by username
   User.findOne({ username: username }, function(err, user) {
 if (err) { log.error('User.getByUsername error:', err); }
-log.debug(' *** User.getByUsername:', user);
-    callback(err, user);
+log.debug('controller.user.getByUsername:', err, user);
+    callback(err, user ? user.toObject() : user);
   });
 };
 
 exports.getByUsernamePassword = function(username, password, callback) { // get user by username and password
-  var passwordHash = exports.cryptPassword(password);
-  User.findOne({ username: username, passwordHash: passwordHash }, function(err, user) {
-if (err) { log.error('User.getByUsernamePassword error:', err); }
-log.debug(' *** User.getByUsernamePassword:', user);
-    callback(err, user);
+  //var passwordHash = exports.cryptPassword(password);
+  User.findOne({ username: username }, function(err, user) {
+log.debug('controller.user.getByUsernamePassword, err:', err, 'user:', user);
+    if (err) {
+      return callback(err, null);
+    }
+    if (!user) {
+      return callback('no such user', null); // TODO: => 'invalid credentials'
+    }
+    user = user.toObject();
+    if (!exports.comparePassword(user.passwordHash, password)) {
+      return callback('wrong password', null); // TODO: => 'invalid credentials'
+    }
+    callback(err, user); // login successful
   });
 };
 
@@ -49,8 +58,8 @@ exports.insert = function(user, callback) { // insert user
   }
   user.passwordHash = exports.cryptPassword(user.password); // replace password with its hash
   User.create(user, function(err, user) {
-if (err) { console.error('User.insert error:', err); }
-    callback(err, user);
+if (err) { log.error('User.insert error:', err); }
+    callback(err, user ? user.toObject() : user);
   });
 };
 
@@ -81,12 +90,14 @@ var saltLength = 10;
 exports.cryptPassword = function(password) {
   var salt = generateSalt(saltLength);
   var hash = md5(password + salt);
+log.debug('cryptPassword:', hash);
   return salt + hash;
 };
 
 exports.comparePassword = function(hash, password) {
   var salt = hash.substr(0, saltLength);
   var validHash = salt + md5(password + salt);
+log.debug('comparePassword:', hash, validHash);
   return hash === validHash;
 };
 

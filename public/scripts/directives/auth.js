@@ -2,10 +2,11 @@
 
 angular.module('Directives', [])
 
-  .directive('uniqueUsername', function($http) {  
+  .directive('existsUsername', function($http) {  
     return {
       require: 'ngModel',
       link: function(scope, elem, attrs, ctrl) {
+console.log('existsUsername');
         scope.busy = false;
         scope.$watch(attrs.ngModel, function(value) {
   
@@ -21,23 +22,26 @@ angular.module('Directives', [])
           scope.busy = true;
   
           // send request to server
-          $http.post('/auth/allowableUsername', { username: value })
+          $http.post('/auth/existsUsername', { username: value })
             // TODO: unify the values expected to be returned by '/auth/allowableUsername'... currently returns object when user is found, null otherwise
-            .success(function(data) {
-console.error(' --- uniqueUsername - success - data:', data);
+            .success(function(result) {
+console.error(' --- existsUsername - success - result:', result);
               scope.busy = false;
               /* TODOOOOOOOOOOOOOOO
-              if (data.isTaken) {
+              if (result.isTaken) {
                 ctrl.$setValidity('isTaken', false);
               } else */
-              if (data.invalidChars) {
+              if (result.invalidChars) {
                 ctrl.$setValidity('invalidChars', false);
               }
+              if (result.isTaken) {
+                ctrl.$setValidity('isTaken', false);
+              }
             })
-            .error(function(data) {
+            .error(function(err) {
               // should not happen...
-console.error(' --- uniqueUsername - error - data:', data);
-                ctrl.$setValidity('invalidChars', false);
+console.error(' --- existsUsername - error:', err);
+              // do not $setValidity al all...
             })
           ;
         });
@@ -52,7 +56,6 @@ console.error(' --- uniqueUsername - error - data:', data);
         matchesPassword: '='
       },
       link: function(scope, elem, attrs, ctrl) {
-console.log('matches-password');
         scope.$watch(function() {
           var combined;
           if (scope.matchesPassword || ctrl.$viewValue) {
@@ -107,9 +110,10 @@ console.error(' --- allowablePassword - success - result:', result);
                 ctrl.$setValidity('tooEasy', false);
               }
             })
-            .error(function(result) {
+            .error(function(err) {
               // should not happen...
-console.error(' --- allowablePassword - error - result:', result);
+console.error(' --- allowablePassword - error:', err);
+              // do not $setValidity al all...
             })
           ;
         });

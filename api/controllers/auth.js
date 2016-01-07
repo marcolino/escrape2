@@ -11,21 +11,22 @@ var exports = {
       if (err) { // user does not exist
         return callback(err, null);
       }
+      if (result.isTaken) {
+        return callback('username is already taken', null);
+      }
       var newUser = {};
       newUser.username = username;
       newUser.email = email;
-      newUser.password = user.cryptPassword(password);
+      newUser.password = password;
       newUser.roles = [ 'user' ]; // default role is 'user'
 console.error('before user insert');
       user.insert(newUser, function(err, result) {
 console.error('after user insert:', err, result);
         if (err) {
 console.error('User register insert error:', err);
-          return callback(err);
+          return callback(err, null);
         }
-        var retval = result.toObject();
-        retval.validity = validatedUser.validity;
-        callback(null, retval);
+        callback(null, result);
       });
     });
   },
@@ -33,11 +34,20 @@ console.error('User register insert error:', err);
   login: function(username, password, callback) {
     // fire a query to DB and check if the credentials are valid
     exports.validateCredentials(username, password, function(err, result) {
+log.debug('controller.login - validateCredential - username:', username, 'password:', password, 'err:', err, 'result:', result);
       if (err) { // credentials validation failed
         return callback(err, null);
       }
-      if (result) {
-        callback(null, genToken(result));
+      if (result && result.valid) {
+        callback(null, generateUserToken(result));
+
+        /*
+          TODO: answer data should be:
+            data.user.username;
+            data.user.role(s);
+            data.token;
+        */
+
       } else {
         callback('invalid credentials', null);
       }
@@ -45,31 +55,38 @@ console.error('User register insert error:', err);
   },
  
   existsUsername: function(username, callback) {
-    var allowable = exports.allowableUsername(username);
-    if (!allowable.ok) {
-      return callback(null, false);
+log.debug('controller.existsUsername:', username);
+    var response = exports.allowableUsername(username);
+    if (!response.ok) {
+      return callback(null, response);
     }
 
     user.getByUsername(username, function(err, result) {
       if (err) {
         return callback(err, null);
       }
-      callback(null, result ? true : false);
+log.debug('controller.existsUsername - result:', result);
+      response.isTaken = result ? true : false;
+log.debug('controller.existsUsername - result.isTaken:', response.isTaken);
+      callback(null, response);
     });
 
   },
 
   validateCredentials: function(username, password, callback) {
-    var allowable = exports.allowableUsername(username);
-    if (!allowable.ok) {
+    var response = exports.allowableUsername(username);
+log.debug('controller.validateCredentials 1:', username);
+    if (!response.ok) {
       return callback('username contains invalid characters', null);
     }
 
     user.getByUsernamePassword(username, password, function(err, result) {
-      if (err) {
+log.debug('controller.validateCredentials 2:', err, result);
+       if (err) {
         return callback(err, null);
       }
-      callback(null, result);
+      response.valid = result ? true : false;
+      callback(null, response);
     });
   },
 
@@ -95,11 +112,11 @@ console.error('User register insert error:', err);
  
 // private methods
 
-function genToken(user) {
+function generateUserToken(user) {
   var expirationDate = expiresIn(config.auth.tokenExpirationDays);
   var token = jwt.encode({
     exp: expirationDate, // expiration date
-    //user: user // the user object
+    //user: user // the user object (TODO: should put user in token, and remove it from result, to avoid privilege escalation)
   }, require('../secure/secret'));
  
   return {

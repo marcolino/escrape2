@@ -25,7 +25,7 @@ log.debug('before auth.register');
   auth.register(username, email, password, function(err, result) {
 log.debug('after auth.register:', err, result);
     if (err) {
-      return res.status(400).json({ error: err.message });
+      return res.status(400).json({ error: err });
     }
     res.json(result);
   });
@@ -38,6 +38,7 @@ router.route('/login').post(function(req, res) {
     return res.status(401).json({ error: 'invalid credentials' });
   }
   auth.login(username, password, function(err, user) {
+log.debug('°°° routes.auth.login - err:', err);
     if (err) {
       return res.status(401).json({ error: err });
     }
@@ -47,29 +48,34 @@ router.route('/login').post(function(req, res) {
 
 router.route('/existsUsername').post(function(req, res) {
   var username = req.body.username || null;
+log.debug('route/existsUsername');
   auth.existsUsername(username, function(err, result) {
     if (err) {
-      return res.status(400).json({ error: err });
+      return res.status(400).json({ error: err.message });
     }
-    res.json(null, result);
+    res.json(result);
   });
 });
 
 router.route('/allowableUsername').post(function(req, res) {
   var username = req.body.username || null;
   var result = auth.allowableUsername(username);
+  /*
   if (!result.ok) {
     return res.status(400).json({ error: result });
   }
+  */
   res.json(result);
 });
 
 router.route('/allowablePassword').post(function(req, res) {
   var password = req.body.password || null;
   var result = auth.allowablePassword(password);
+  /*
   if (!result.ok) {
     return res.status(400).json({ error: result });
   }
+  */
   res.json(result);
 });
 
