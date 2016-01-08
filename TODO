@@ -13,6 +13,8 @@
 - use etag also for html
 - avoid re-downloading duplicate images (some way... booh)
 - filter just one person out of many who are present *and* have the same phone
+- createProviders: move to a function associated to a new route to be called externally (for example by a deploy script)
+- bootstrap authentication layout should be fixed size (short) for every screen wifth
 
 V remove all "err.context = " lines
 V use `test.server.local` (in `/etc/hosts`) @home too

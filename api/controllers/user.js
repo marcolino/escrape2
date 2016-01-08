@@ -22,7 +22,7 @@ exports.getAll = function(filter, options, callback) { // get all user
 exports.getByUsername = function(username, callback) { // get user by username
   User.findOne({ username: username }, function(err, user) {
 if (err) { log.error('User.getByUsername error:', err); }
-log.debug('controller.user.getByUsername:', err, user);
+//log.debug('controller.user.getByUsername:', err, user);
     callback(err, user ? user.toObject() : user);
   });
 };
@@ -35,11 +35,11 @@ log.debug('controller.user.getByUsernamePassword, err:', err, 'user:', user);
       return callback(err, null);
     }
     if (!user) {
-      return callback('no such user', null); // TODO: => 'invalid credentials'
+      return callback('invalid credentiaks (no such user)', null); // TODO: => 'invalid credentials'
     }
     user = user.toObject();
     if (!exports.comparePassword(user.passwordHash, password)) {
-      return callback('wrong password', null); // TODO: => 'invalid credentials'
+      return callback('invalid credentiaks (wrong password)', null); // TODO: => 'invalid credentials'
     }
     callback(err, user); // login successful
   });

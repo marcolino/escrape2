@@ -87,21 +87,32 @@ app.run(function($rootScope, $window, $location, Authentication) {
       $location.path('/login');
     } else {
       // check if user object exists else fetch it (in case of a page refresh)
+console.log('WWWWWWWW $routeChangeStart - Authentication.user:', Authentication.user);
       if (!Authentication.user) {
-        Authentication.user = $window.localStorage.user;
+        //Authentication.user = $window.localStorage.user;
+        Authentication.user = $window.localStorage.getItem('user');
+console.log('WWWWWWWW 222222222 $routeChangeStart - Authentication.user:', Authentication.user);
       }
+/*
       if (!Authentication.userRole) {
         Authentication.userRole = $window.localStorage.userRole;
       }
+*/
     }
   });
  
   $rootScope.$on('$routeChangeSuccess', function(event, nextRoute, currentRoute) {
     //console.log('$on $routeChangeSuccess - Authentication.isLogged:', Authentication.isLogged);
     $rootScope.isLogged = Authentication.isLogged;
-    if (Authentication.isLogged === true) {
+console.log('SSSSSSS $routeChangeSuccess - Authentication:', Authentication);
+    if (Authentication.isLogged) {
+      /*
       $rootScope.username = Authentication.user;
-      $rootScope.userRole = Authentication.userRole;
+      $rootScope.userRoles = Authentication.userRoles;
+      */
+      $rootScope.user = Authentication.user;
+console.log('TTTTTTTTT $rootScope:', $rootScope);
+
       // if the user is already logged in, take him to the home page
       if ($location.path() == '/login') {
         $location.path('/');

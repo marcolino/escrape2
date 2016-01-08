@@ -7,7 +7,8 @@ app.factory('AuthenticationFactory', function($rootScope, $window) {
   return {
     isLogged: false,
     check: function() {
-      if ($window.localStorage.token && $window.localStorage.user) {
+      //if ($window.localStorage.token && $window.localStorage.user) {
+      if ($window.localStorage.token) { // TODO: ok? we shouldn't need to test user, too...
         this.isLogged = true;
       } else {
         this.isLogged = false;
@@ -42,18 +43,6 @@ console.log('UserAuthenticationService - login - username, password:', username,
     },
 
     logout: function() {
-      if (Authentication.isLogged) {
-console.log('public script services auth - logout - was logged');
-        Authentication.isLogged = false;
-        delete Authentication.user;
-        delete Authentication.userRole;
-        delete $window.localStorage.token;
-        delete $window.localStorage.user;
-        delete $window.localStorage.userRole;
-        console.error('logget out!');
-        //$location.path('/');
-      }
-else console.log('public script services auth - logout - was NOT logged');
     }
 
   };
@@ -69,7 +58,7 @@ app.factory('TokenInterceptor', function($rootScope, $window, $q) {
       if ($window.localStorage.token) {
         config.headers['X-Access-Token'] = $window.localStorage.token;
         /**/
-        config.headers['X-Key'] = $window.localStorage.user;
+        config.headers['X-Key'] = $window.localStorage.getItem('user').username;
         /**/
         config.headers['Content-Type'] = 'application/json';
       }

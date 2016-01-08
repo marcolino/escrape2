@@ -27,10 +27,6 @@ console.log('existsUsername');
             .success(function(result) {
 console.error(' --- existsUsername - success - result:', result);
               scope.busy = false;
-              /* TODOOOOOOOOOOOOOOO
-              if (result.isTaken) {
-                ctrl.$setValidity('isTaken', false);
-              } else */
               if (result.invalidChars) {
                 ctrl.$setValidity('invalidChars', false);
               }

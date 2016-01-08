@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('PersonCtrl', []).controller('PersonController', function($rootScope, $scope, Person, Filter) {
+angular.module('PersonCtrl', []).controller('PersonController', function($rootScope, $scope, $window, Person, Filter) {
 
   //$scope.filter = {}; // TODO: set filter based on user's settins...
 
@@ -34,6 +34,13 @@ console.log('controller/persons loadPersons - Person.getAll elapsed time:'); con
       url = '/images' + '/' + 'person-showcase-default.png';
     }
     return encodeURIComponent(url);
+  };
+
+  $scope.thumbsUp = function() {
+    if (!$rootScope.isLogged) {
+      $window.alert('Please note that, since you are not logged in, this action will persist only in this session');
+      // TODO: ...
+    }
   };
 
   // hide person (remove from scope)

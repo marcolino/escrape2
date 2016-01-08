@@ -4,13 +4,13 @@
     <form name="form" novalidate="novalidate" ng-submit="login()">
       <div class="form-group">
         <label for="username" class="control-label">Username or Email</label>
-        <input type="text" name="username" id="username" placeholder="Username" required="required" ng-model="user.username" ng-change="registrationFailed = false" autofocus="autofocus" class="form-control" />
+        <input type="text" name="username" id="username" placeholder="Username" required="required" ng-model="user.username" ng-change="loginReset()" autofocus="autofocus" class="form-control" />
         <i ng-show="busy" class="glyphicon glyphicon-cog rotating"></i>
         <span ng-show="(form.username.$dirty || form.$submitted) && form.username.$error.required" class="help-block">please enter your username</span>
       </div>
       <div class="form-group">
         <label for="password" class="control-label">Password</label>
-        <input type="password" name="password" id="password" placeholder="Password" required="required" ng-model="user.password" ng-change="registrationFailed = false" class="form-control" />
+        <input type="password" name="password" id="password" placeholder="Password" required="required" ng-model="user.password" ng-change="loginReset()" class="form-control" />
         <span ng-show="(form.password.$dirty || form.$submitted) && form.password.$error.required" class="help-block">please enter your password</span>
       </div>
       <div class="form-group">

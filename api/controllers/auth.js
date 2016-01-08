@@ -34,7 +34,7 @@ console.error('User register insert error:', err);
   login: function(username, password, callback) {
     // fire a query to DB and check if the credentials are valid
     exports.validateCredentials(username, password, function(err, result) {
-log.debug('controller.login - validateCredential - username:', username, 'password:', password, 'err:', err, 'result:', result);
+log.debug('XXXXXXXXX controller.login - validateCredential - username:', username, 'password:', password, 'err:', err, 'result:', result);
       if (err) { // credentials validation failed
         return callback(err, null);
       }
@@ -86,6 +86,10 @@ log.debug('controller.validateCredentials 2:', err, result);
         return callback(err, null);
       }
       response.valid = result ? true : false;
+      response.username = result.username;
+      response.email = result.email;
+      response.roles = result.roles;
+      response.dateOfCreation = result.dateOfCreation;
       callback(null, response);
     });
   },
