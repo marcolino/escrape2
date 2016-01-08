@@ -1,3 +1,5 @@
+'use strict';
+
 var os = require("os")
   , winston = require('winston') // handle logging
   , providers = require('./config.providers') // configured providers

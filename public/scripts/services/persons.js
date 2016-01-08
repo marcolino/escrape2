@@ -13,7 +13,7 @@ angular.module('PersonService', []).factory('Person', [ '$rootScope', '$http', f
       if (filter && filter.search && filter.search.term) {
         path += '/search/' + filter.search.term;
       }
-      console.warn('public service person getAll - url is: ' + $rootScope.config.api.url + $rootScope.config.api.path + '/persons/getAll' + path);
+      //console.warn('public service person getAll - url is: ' + $rootScope.config.api.url + $rootScope.config.api.path + '/persons/getAll' + path);
       $http({
         method: 'GET',
         url:
@@ -24,7 +24,7 @@ angular.module('PersonService', []).factory('Person', [ '$rootScope', '$http', f
         if (response.error) {
           return console.warn('error getting persons data:', response.error);
         }
-        console.info('got persons data (size is', response.length + '):', response);
+        console.info('persons (' + response.length + '):', response);
         callback(response);
       })
       .error(function(err) {
@@ -41,13 +41,13 @@ angular.module('PersonService', []).factory('Person', [ '$rootScope', '$http', f
       })
       .success(function(response) {
         if (response.error) {
-          return console.warn('error getting persons data:', response.error);
+          return console.warn('error getting persons alias groups:', response.error);
         }
-        console.info('got persons data (size is', response.length + '):', response);
+        console.info('got persons alias groups (size is', response.length + '):', response);
         callback(response);
       })
       .error(function(err) {
-        console.warn('error getting persons data:', err);
+        console.warn('error getting persons alias groups:', err);
       });
     },
 
@@ -64,7 +64,7 @@ angular.module('PersonService', []).factory('Person', [ '$rootScope', '$http', f
         callback(response);        
       })
       .error(function(err) {
-        console.warn('error getting persons data:', err);
+        console.warn('error getting providers data:', err);
       });
     },
     

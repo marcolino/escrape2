@@ -1,3 +1,5 @@
+'use strict';
+
 var mongoose = require('mongoose') // mongo abstraction
   , config = require('../config') // global configuration
   , Place = require('../models/place') // model of place

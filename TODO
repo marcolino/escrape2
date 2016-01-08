@@ -4,10 +4,9 @@
 - do sync images only for new/changed persons (?)
 - try using `callback(new Error('err str'))` instead of `callback('err str')`
 - remove 'diff' and 'colors' packages (and all unused packages) at production
-- remove line in api/controllters/person.js: "//person.alias = null;"  (to avoid having persons with no alias, at some point in time)
 - change property 'error' to 'message' when returning err json fom api - NO!
 - change property 'error' to 'message' in Error objects
-- add status: 404, 30x, ... to route json errors (NO!)
+- add status (404, 30x, ...) to all routing errors
 - remove status from all route json errors! (and set status only in response)
 - add a notification service to client app to show messages (error/warnings/success) to user
 - use etag also for html
@@ -15,6 +14,14 @@
 - filter just one person out of many who are present *and* have the same phone
 - createProviders: move to a function associated to a new route to be called externally (for example by a deploy script)
 - bootstrap authentication layout should be fixed size (short) for every screen wifth
+- choose http / https in config, if possible
+- while authorizing, do not use x-key, but put user *inside* token:
+function generateUserToken(user) {
+  var expires = expiresIn(7);
+  var token = jwt.encode({
+  exp: expires,
+  user: user // add the user object to the token
+}, require('../config/secret')());
 
 V remove all "err.context = " lines
 V use `test.server.local` (in `/etc/hosts`) @home too
@@ -32,14 +39,15 @@ V check why there are persons images with no correspondence in db...
 V where to put common code (i.e.: `function inArray(arr, obj) { return (arr.indexOf(obj) != -1); }` ) ? (in a module, if not in lodash)
 V put "persons sync finished" at the real end
 V profile with process.hrtime() *all* image functions
+V remove line in api/controllters/person.js: "//person.alias = null;"  (to avoid having persons with no alias, at some point in time)
 
 
 
 Statistics @office:
-Full,     both-versions                  saveToDb persons images sync with eachSeries(persons), each(imageUrls): 79 seconds
-Full,     both-versions                  saveToDb persons images sync with each      (persons), each(imageUrls): 66 seconds
-Full,     both-versions               no saveToDb persons images sync with each      (persons), each(imageUrls): 65 seconds
-Full,     full-version-only saveToFs, no saveToDb persons images sync with each      (persons), each(imageUrls): 41 seconds
-Full, showcase-version-only saveToFs, no saveToDb persons images sync with each      (persons), each(imageUrls): 38 seconds
-Full,     both-versions no-write      no saveToDb persons images sync with each      (persons), each(imageUrls): 23 seconds
-Full,                    no saveToFs, no saveToDb persons images sync with each      (persons), each(imageUrls): 21 seconds
+Full,     both-versions                     saveToDb persons images sync with eachSeries(persons), each(imageUrls): 79 seconds
+Full,     both-versions                     saveToDb persons images sync with each      (persons), each(imageUrls): 66 seconds
+Full,     both-versions                  no saveToDb persons images sync with each      (persons), each(imageUrls): 65 seconds
+Full,     full-version-only saveToFs,    no saveToDb persons images sync with each      (persons), each(imageUrls): 41 seconds
+Full, showcase-version-only saveToFs,    no saveToDb persons images sync with each      (persons), each(imageUrls): 38 seconds
+Full,     both-versions     no-saveToFs, no saveToDb persons images sync with each      (persons), each(imageUrls): 23 seconds
+Full,                       no saveToFs, no saveToDb persons images sync with each      (persons), each(imageUrls): 21 seconds

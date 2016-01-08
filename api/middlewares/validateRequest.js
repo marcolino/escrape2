@@ -1,3 +1,5 @@
+'use strict';
+
 var jwt = require('jwt-simple') // JSON Web Token module
   , auth = require('../controllers/auth') // authorization controller
   , secret = require('../secure/secret.js') // our secret super secure

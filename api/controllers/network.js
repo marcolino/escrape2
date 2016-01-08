@@ -1,3 +1,5 @@
+'use strict';
+
 var requestretry = require('requestretry') // to place http requests and retry if needed
   , randomUseragent = require('random-ua') // to use a random user-agent
   , agent = require('socks5-http-client/lib/Agent') // to be able to proxy requests
@@ -40,6 +42,7 @@ exports.fetch = function(resource, callback) {
   requestretry(
     options,
     function(err, response, contents) {
+      var requestEtag;
       if (!err && (response.statusCode === 200 || response.statusCode === 304)) {
         var result = {};
         result.etag = response.headers.etag;

@@ -6,7 +6,10 @@ var config = {
   api: {
     url: null, //'http://test.server.local:3000', // http
   //url: null, //'https://test.server.local:8443', // https
-    path: '/api',
+    path: '/api'
+  },
+  auth: {
+    autoLogin: false
   },
   category: 'women',
 };
@@ -27,9 +30,6 @@ var app = angular.module('escrape2', [
 ]);
 
 app.config(function($httpProvider, $routeProvider, $locationProvider) {
-/*
-app.config(function($routeProvider, $httpProvider) {
-*/
   $httpProvider.interceptors.push('TokenInterceptor');
 
   $routeProvider
@@ -39,29 +39,33 @@ app.config(function($routeProvider, $httpProvider) {
       access: {
         requiredLogin: false
       }
-    }).when('/register', {
+    })
+    .when('/register', {
       templateUrl: 'views/auth/register.html',
       controller: 'LoginController',
       access: {
         requiredLogin: false
       }
-    }).when('/', {
+    })
+    .when('/profile', {
+      templateUrl: 'views/auth/profile.html',
+      controller: 'LoginController',
+      access: {
+        requiredLogin: true
+      }
+    })
+    .when('/', {
       templateUrl: 'views/persons.html',
       controller: 'PersonController',
       access: {
         requiredLogin: false
       }
-    }).when('/about', {
+    })
+    .when('/about', {
       templateUrl: 'views/about.html',
       controller: 'AboutController',
       access: {
         requiredLogin: false
-      }
-    }).when('/profile', {
-      templateUrl: 'views/profile.html',
-      controller: 'UserController',
-      access: {
-        requiredLogin: true
       }
     })
     .when('/aliases', {
@@ -87,31 +91,16 @@ app.run(function($rootScope, $window, $location, Authentication) {
       $location.path('/login');
     } else {
       // check if user object exists else fetch it (in case of a page refresh)
-console.log('WWWWWWWW $routeChangeStart - Authentication.user:', Authentication.user);
       if (!Authentication.user) {
-        //Authentication.user = $window.localStorage.user;
-        Authentication.user = $window.localStorage.getItem('user');
-console.log('WWWWWWWW 222222222 $routeChangeStart - Authentication.user:', Authentication.user);
+        Authentication.user = JSON.parse($window.localStorage.getItem('user'));
       }
-/*
-      if (!Authentication.userRole) {
-        Authentication.userRole = $window.localStorage.userRole;
-      }
-*/
     }
   });
  
   $rootScope.$on('$routeChangeSuccess', function(event, nextRoute, currentRoute) {
-    //console.log('$on $routeChangeSuccess - Authentication.isLogged:', Authentication.isLogged);
     $rootScope.isLogged = Authentication.isLogged;
-console.log('SSSSSSS $routeChangeSuccess - Authentication:', Authentication);
     if (Authentication.isLogged) {
-      /*
-      $rootScope.username = Authentication.user;
-      $rootScope.userRoles = Authentication.userRoles;
-      */
       $rootScope.user = Authentication.user;
-console.log('TTTTTTTTT $rootScope:', $rootScope);
 
       // if the user is already logged in, take him to the home page
       if ($location.path() == '/login') {
@@ -132,8 +121,9 @@ console.log('TTTTTTTTT $rootScope:', $rootScope);
 ///////////////////////////////////////////////////////////////////////////////
 var apiUrls = [ // list all possible api servers addresses during development
   'http://test.server.local:3000', // (client == server)
-  'http://192.168.1.2:3000', // (@Torino, client != server)
-  'http://192.168.1.90:3000', // (@Portovenere, client != server)
+  'http://192.168.1.2:3000',       // (@Torino @home, client != server)
+  'http://192.168.10.30:3000',     // (@Torino @office, client != server) // TODO: ???
+  'http://192.168.1.90:3000',      // (@Portovenere, client != server)
 ];
 /*
 var apiUrls = [ // list all possible api servers addresses during development

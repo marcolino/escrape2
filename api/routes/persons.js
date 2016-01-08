@@ -1,3 +1,5 @@
+'use strict';
+
 var express = require('express') // express
   , mongoose = require('mongoose') // mongo abstraction
 /*

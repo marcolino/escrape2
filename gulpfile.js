@@ -36,7 +36,7 @@ var app = 'public';
 var dist = 'public.dist';
 var cfg = {
   script: './bin/www',
-  url: 'http://test.server.local:3000',
+  //url: 'http://test.server.local:3000',
   browser: 'chromium-browser', // @centos: chromim-browser, @ubuntu: 'google-chrome' ...
   backend: {
     scripts: [ api + '/**/*.js', api + '/routes/**/*.*', api + '/controllers/**/*.*', api + '/models/**/*.*' ],
@@ -52,8 +52,8 @@ var cfg = {
     html: {
       reportpath: 'logs/html-angular-validate-report.json',
       relaxerror: [
-        'Element “form” does not need a “role” attribute.',
-        'Element “img” is missing required attribute “src”.',
+        'Element "form" does not need a "role" attribute.',
+        'Element "img" is missing required attribute "src".',
       ],
     },
   },

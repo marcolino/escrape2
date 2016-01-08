@@ -1,3 +1,5 @@
+'use strict';
+
 var mongoose = require('mongoose') // mongo abstraction
   , cheerio = require('cheerio') // to parse fetched DOM data
   , async = require('async') // to call many async functions in a loop
@@ -72,7 +74,7 @@ config.time = process.hrtime(); // TODO: development only
       if (err) {
         return callback(err);
       }
-log.debug('api/controllers/persons getAll - Person.aggregate - elapsed time:', process.hrtime(config.time)[0] + (process.hrtime(config.time)[1] / 1000000000), 'seconds');
+       log.debug('persons loaded in', process.hrtime(config.time)[0] + (process.hrtime(config.time)[1] / 1000000000), 'seconds');
        return callback(null, persons);
     }
   );
@@ -93,7 +95,7 @@ exports.getByKey = function(key, callback) { // get person by key
 };
 
 exports.getByPhone = function(phone, callback) { // get person by phone
-  var filter = { phone: req.phone };
+  var filter = { phone: phone };
   Person.find(filter, function(err, persons) {
     callback(err, persons);
   });
@@ -209,7 +211,7 @@ exports.sync = function() { // sync persons
                     person.name = local.getDetailsName($, provider);
                     if (!person.name) { // should not happen, network.requestRetryAnonymous should catch it
                       log.warn('person', person.key, 'name not found,', 'contents length:', result.contents.length, 'skipping');
-                      log.error('@contents@:', contents);
+                      log.error('@contents@:', result.contents);
                       return callbackInner(); // skip this inner loop
                     }
                     person.zone = local.getDetailsZone($, provider);
@@ -490,7 +492,7 @@ exports.syncAliasesLive = function(persons, callback) {
  */
 local.resetAliases = function(persons) {
   for (var i = 0, personsLen = persons.length; i < personsLen; i++) {
-    P = persons[i];
+    var P = persons[i];
     //log.silly(' XXX persons[', i, '].alias =', P.alias);
     P.alias = null;
     local.savePerson(P);
@@ -663,7 +665,7 @@ local.getClosestImages = function(person1, person2) {
 
   // compare each image from person 1 to each image from person 2
   all:
-  for (i = 0, len1 = person1.images.length; i < len1; i++) {
+  for (var i = 0, len1 = person1.images.length; i < len1; i++) {
     var image1 = person1.images[i];
     if (!image1.signature) { log.error('image 1 has no signature'); }
     for (var j = 0, len2 = person2.images.length; j < len2; j++) {
@@ -1261,7 +1263,7 @@ local.detectNationality = function(person, provider, config) {
                   for (var m = 0; m < catPatterns.length; m++) {
                     var catPatternObj = catPatterns[m];
                     for (var catPattern in catPatternObj) {
-                      country = catPatternObj[catPattern];
+                      var country = catPatternObj[catPattern];
                       var regexLangPattern = new RegExp('\\b' + catPattern + '\\b', 'gi');
                       if (field.match(regexLangPattern)) { // country pattern matched
                         // check for eventual negative look-behinds

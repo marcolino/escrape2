@@ -1,0 +1,39 @@
+<div class="col-lg-offset-4 col-lg-4">
+  <div class="panel">
+    <div class="panel-heading">Profile</div>
+    <form name="form" novalidate="novalidate" ng-submit="updateProfile()" >
+      <div class="form-group">
+        <label for="username" class="control-label">Username</label>
+        <input type="text" disabled="disabled" name="username" id="username" placeholder="Username" data-exists-username="exists-username" required="required" ng-model="user.username" ng-change="registrationReset()" autofocus="autofocus" class="form-control" />
+        <i ng-show="busy" class="glyphicon glyphicon-cog rotating"></i>
+        <span ng-show="(form.username.$dirty || form.$submitted) && form.username.$error.required" class="help-block">choose a username</span>
+        <span ng-show="(form.username.$dirty || form.$submitted) && form.username.$error.isTaken" class="help-block">username is already taken</span>
+        <span ng-show="(form.username.$dirty || form.$submitted) && form.username.$error.invalidChars" class="help-block">username contains invalid characters</span>
+      </div>
+      <div class="form-group">
+        <label for="email" class="control-label">Email</label>
+        <input type="email" name="email" id="email" placeholder="Email" NOrequired="required" ng-model="user.email" class="form-control" />
+        <span ng-show="(form.email.$dirty || form.$submitted) && form.email.$error.email" class="help-block">email is invalid</span>
+      </div>
+      <div class="form-group">
+        <label for="password" class="control-label">Password</label>
+        <input type="password" name="password" id="password" placeholder="Password" required="required" ng-model="user.password" ng-change="registrationReset()" data-allowable-password="password" class="form-control" />
+        <i ng-show="busy" class="glyphicon glyphicon-cog rotating"></i>
+        <span ng-show="(form.password.$dirty || form.$submitted) && form.password.$error.required" class="help-block">choose a password</span>
+        <span ng-show="(form.password.$dirty || form.$submitted) && !form.verification.$error.required && form.password.$error.tooEasy" class="help-block">password is too easy</span>
+      </div>
+      <div class="form-group">
+        <label for="verification" class="control-label">Confirm password</label>
+        <input type="password" name="verification" id="verification" placeholder="Confirm password" required="required" ng-model="verification" ng-change="registrationReset()" data-matches-password="form.password" class="form-control" />
+        <!-- form.verification.$error.required seems to be never set (?), so we don't use it...
+        <span ng-show="form.verification.$dirty && form.password.$error.required && form.verification.$error.required" class="help-block">password confirmation is required</span>
+        <span ng-show="form.verification.$dirty && !form.password.$error.required && !form.verification.$error.required && form.verification.$error.matchesPassword" class="help-block">passwords do not match</span>
+        -->
+        <span ng-show="(form.verification.$dirty || form.$submitted) && form.verification.$error.required" class="help-block">confirm password</span>
+        <span ng-show="(form.verification.$dirty || form.$submitted) && !form.verification.$error.required && form.verification.$error.matchesPassword" class="help-block">passwords do not match</span>
+      </div>
+      <input type="submit" value="Update profile" NOng-disabled="form.$invalid" class="btn btn-primary" />
+      <span ng-show="form.$submitted && profileupdateFailed" class="help-block">profile update failed: {{ profileupdateFailed }}</span>
+    </form>
+  </div>
+</div>

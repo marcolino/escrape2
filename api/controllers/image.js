@@ -1,3 +1,5 @@
+'use strict';
+
 //var fs = require('fs'); // file-system handling
 var mkdirp = require('mkdirp') // to make directories with parents
   , path = require('path') // path handling
@@ -108,7 +110,6 @@ exports.syncPersonsImages = function(persons, callback) {
     image.type = 'image';
 
 var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
-if (!image.url) log.error('SOURCE IMAGE URL IS NULL BEFORE FETCH! image.url, img.url:', image.url, img.url);
     network.fetch(image, function(err, img) { // fetch image resource
     if (err) {
       log.error('download error:', err);
@@ -506,7 +507,7 @@ exports.distanceBASE16 = function(signature1, signature2) {
   }
   var counter = 0;
   for (var k = 0; k < signature1.length; k++) {
-    counter += popCount(signature1[k] ^ signature2[k]); // bitwise XOR
+    counter += exports.popCount(signature1[k] ^ signature2[k]); // bitwise XOR
   }
   return (counter / signature1.length);
 };

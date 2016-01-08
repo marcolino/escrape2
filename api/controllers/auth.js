@@ -1,3 +1,5 @@
+'use strict';
+
 var jwt = require('jwt-simple') // JSON Web Token simple
   , user = require('../controllers/user') // user controller
   , config = require('../config') // global configuration
@@ -14,19 +16,17 @@ var exports = {
       if (result.isTaken) {
         return callback('username is already taken', null);
       }
+
       var newUser = {};
       newUser.username = username;
       newUser.email = email;
       newUser.password = password;
       newUser.roles = [ 'user' ]; // default role is 'user'
-console.error('before user insert');
       user.insert(newUser, function(err, result) {
-console.error('after user insert:', err, result);
         if (err) {
-console.error('User register insert error:', err);
           return callback(err, null);
         }
-        callback(null, result);
+        callback(null, result); // registration successful
       });
     });
   },
@@ -34,20 +34,11 @@ console.error('User register insert error:', err);
   login: function(username, password, callback) {
     // fire a query to DB and check if the credentials are valid
     exports.validateCredentials(username, password, function(err, result) {
-log.debug('XXXXXXXXX controller.login - validateCredential - username:', username, 'password:', password, 'err:', err, 'result:', result);
       if (err) { // credentials validation failed
         return callback(err, null);
       }
-      if (result && result.valid) {
+      if (result && result.valid) { // login successful
         callback(null, generateUserToken(result));
-
-        /*
-          TODO: answer data should be:
-            data.user.username;
-            data.user.role(s);
-            data.token;
-        */
-
       } else {
         callback('invalid credentials', null);
       }
@@ -55,7 +46,6 @@ log.debug('XXXXXXXXX controller.login - validateCredential - username:', usernam
   },
  
   existsUsername: function(username, callback) {
-log.debug('controller.existsUsername:', username);
     var response = exports.allowableUsername(username);
     if (!response.ok) {
       return callback(null, response);
@@ -65,9 +55,7 @@ log.debug('controller.existsUsername:', username);
       if (err) {
         return callback(err, null);
       }
-log.debug('controller.existsUsername - result:', result);
       response.isTaken = result ? true : false;
-log.debug('controller.existsUsername - result.isTaken:', response.isTaken);
       callback(null, response);
     });
 
@@ -75,13 +63,11 @@ log.debug('controller.existsUsername - result.isTaken:', response.isTaken);
 
   validateCredentials: function(username, password, callback) {
     var response = exports.allowableUsername(username);
-log.debug('controller.validateCredentials 1:', username);
     if (!response.ok) {
       return callback('username contains invalid characters', null);
     }
 
     user.getByUsernamePassword(username, password, function(err, result) {
-log.debug('controller.validateCredentials 2:', err, result);
        if (err) {
         return callback(err, null);
       }
