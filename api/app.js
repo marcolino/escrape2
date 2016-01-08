@@ -24,7 +24,7 @@ app.use(methodOverride()); // override with the X-HTTP-Method-Override header in
 
 // enable cross origin resource sharing
 // TODO: do we really need this? (only if deploying client apps on different domain from server, perhaps...)
-/* TODO: test if with no CORS it works o.k....
+/* TODO: test if with no CORS it works o.k.... */
 app.all('/*', function(req, res, next) {
   // CORS headers
   res.header("Access-Control-Allow-Origin", "*"); // restrict it to the required domain
@@ -37,7 +37,6 @@ app.all('/*', function(req, res, next) {
     next();
   }
 });
-*/
 
 // auth middleware: this will check if the token is valid;
 // only the requests that start with /api/* will be checked for the token;

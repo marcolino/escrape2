@@ -92,7 +92,8 @@ app.run(function($rootScope, $window, $location, Authentication) {
     } else {
       // check if user object exists else fetch it (in case of a page refresh)
       if (!Authentication.user) {
-        Authentication.user = JSON.parse($window.localStorage.getItem('user'));
+        var user = $window.localStorage.getItem('user');
+        Authentication.user = user ? JSON.parse(user) : null;
       }
     }
   });
