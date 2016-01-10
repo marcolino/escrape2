@@ -50,7 +50,7 @@ console.timeEnd('loadPersons');
     for (var i = 0, len = $scope.persons.length; i < len; ++i) {
       if ($scope.persons[i].key === person.key) {
         $scope.persons.splice(i, 1);
-        break;
+        break; // there is one person with that key: once found, bail out
       }
     }
 

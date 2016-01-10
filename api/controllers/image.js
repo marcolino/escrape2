@@ -42,6 +42,7 @@ exports.syncPersonsImages = function(persons, callback) {
 //log.error('syncPersonsImages - download error:', err);
                 //return callbackImage(err); // go on with other images...
               }
+              // TODO: decouple following check... : if (!image) {...}   if (!image.isChanged) { ... }
               if (!image || !image.isChanged) { // 40x or 304
 //log.error('syncPersonsImages - image', image.url, 'not changed');
                 return callbackImage();
@@ -112,7 +113,7 @@ exports.syncPersonsImages = function(persons, callback) {
 var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
     network.fetch(image, function(err, img) { // fetch image resource
     if (err) {
-      log.error('download error:', err);
+      log.warn('network fetch error:', err);
       return callback(err, image);
     }
 

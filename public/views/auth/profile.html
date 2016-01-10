@@ -4,7 +4,7 @@
     <form name="form" novalidate="novalidate" ng-submit="updateProfile()" >
       <div class="form-group">
         <label for="username" class="control-label">Username</label>
-        <input type="text" disabled="disabled" name="username" id="username" placeholder="Username" data-exists-username="exists-username" required="required" ng-model="user.username" ng-change="registrationReset()" autofocus="autofocus" class="form-control" />
+        <input type="text" name="username" id="username" placeholder="Username" data-exists-username="exists-username" required="required" ng-model="user.username" ng-change="registrationReset()" autofocus="autofocus" class="form-control" />
         <i ng-show="busy" class="glyphicon glyphicon-cog rotating"></i>
         <span ng-show="(form.username.$dirty || form.$submitted) && form.username.$error.required" class="help-block">choose a username</span>
         <span ng-show="(form.username.$dirty || form.$submitted) && form.username.$error.isTaken" class="help-block">username is already taken</span>

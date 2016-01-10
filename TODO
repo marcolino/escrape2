@@ -22,6 +22,9 @@ function generateUserToken(user) {
   exp: expires,
   user: user // add the user object to the token
 }, require('../config/secret')());
+- use etag also for persons urls, and check if we can skip syncPersonsImages for unchanged persons
+- person.sync: get 'category' attribute too (CM, ...)
+- try to move db methods from controllers/xxx.js to models/xxx.js
 
 V remove all "err.context = " lines
 V use `test.server.local` (in `/etc/hosts`) @home too

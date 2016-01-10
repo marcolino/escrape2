@@ -27,57 +27,63 @@ config.time = process.hrtime(); // TODO: development only
   if (filter.name) { match.name = filter.name; }
 
   // aggregate on alias field to get just the first document with the same alias
-  Person.aggregate(
-    [
-      {
-        '$match': match
-      }, {
-        '$group': {
-          '_id': {
-            '$ifNull': [ '$alias', '$_id' ]
-          },
-          'key': { '$first': '$key' },
-          'name': { '$first': '$name' },
-          'url': { '$first': '$url' },
-          'phone': { '$first': '$phone' },
-          'isPresent': { '$first': '$isPresent' },
-          'showcaseBasename': { '$first': '$showcaseBasename' },
-          'dateOfFirstSync': { '$first': '$dateOfFirstSync', },
-          'id': { '$first': '$_id' }
-        }
-      }, {
-        '$project': {
-          '_id': '$id',
-          'key': true,
-          'name': true,
-          'url': true,
-          'phone': true,
-          'isPresent': true,
-          'showcaseBasename': true,
-          'dateOfFirstSync': true,
-          'alias': {
-            '$cond': [
-              { '$eq': [ '$_id', '$id' ] },
-              null,
-              '$_id'
-            ]
-          },
+  var pipeline = [
+    {
+      '$match': match
+    }, {
+      '$group': {
+        '_id': {
+          '$ifNull': [ '$alias', '$_id' ]
         },
-      }, {
-        '$sort': {
-          'dateOfFirstSync': -1,
-        }
+        'key': { '$first': '$key' },
+        'name': { '$first': '$name' },
+        'url': { '$first': '$url' },
+        'phone': { '$first': '$phone' },
+        'isPresent': { '$first': '$isPresent' },
+        'showcaseBasename': { '$first': '$showcaseBasename' },
+        'dateOfFirstSync': { '$first': '$dateOfFirstSync', },
+        'users': { '$first': '$users', },
+        'id': { '$first': '$_id' }
       }
+    }, {
+      '$project': {
+        '_id': '$id',
+        'key': true,
+        'name': true,
+        'url': true,
+        'phone': true,
+        'isPresent': true,
+        'showcaseBasename': true,
+        'dateOfFirstSync': true,
+        'users': true,
+        'alias': {
+          '$cond': [
+            { '$eq': [ '$_id', '$id' ] },
+            null,
+            '$_id'
+          ]
+        },
+      },
+    },
+    options
+  ];
 
-    ],
-    function(err, persons) {
-      if (err) {
-        return callback(err);
-      }
-       log.debug('persons loaded in', process.hrtime(config.time)[0] + (process.hrtime(config.time)[1] / 1000000000), 'seconds');
-       return callback(null, persons);
+  Person.aggregate(pipeline).exec(function(err, persons) {
+    if (err) {
+      return callback(err);
     }
-  );
+    log.debug('persons loaded in', process.hrtime(config.time)[0] + (process.hrtime(config.time)[1] / 1000000000), 'seconds');
+
+//console.log('persons:', persons);
+for (var i = 0; i < persons.length; i++) {
+  var person = persons[i];
+  if (person.key === 'TOE/3555') {
+    console.log('*** found person TOE/3555', person.name);
+    console.log('*** person.users[0]:', person.users[0]);
+  }
+}
+    return callback(null, persons);
+  });
 };
 
 exports.getById = function(id, callback) { // get person by id
@@ -123,7 +129,7 @@ exports.sync = function() { // sync persons
       return log.error('error getting providers:', err);
     }
 //providers = providers.slice(0, 1); // to debug: limit list to first element (SGI)
-//providers = providers.slice(1, 2); // to debug: limit list to second element (TOE)
+providers = providers.slice(1, 2); // to debug: limit list to second element (TOE)
     totalProvidersCount = providers.length;
 
     // loop to get list page from all providers
@@ -140,14 +146,14 @@ exports.sync = function() { // sync persons
           resource,
           function(err, result) {
             if (err) {
-              log.warn('can\'t sync provider', provider.key + ':',  err, ',', 'skipping');
+              log.warn('can\'t sync provider', provider.key + ':',  err, ', skipping');
               return callbackOuter(); // skip this outer loop
             }
             log.info('provider', provider.key, 'list resource got');
             if (!result.contents) {
               log.warn(
                 'error syncing provider', provider.key + ':',
-                'empty contents', ',', 'skipping'
+                'empty contents, skipping'
               );
               return callbackOuter(); // skip this outer loop
             }
@@ -158,7 +164,7 @@ exports.sync = function() { // sync persons
             var $ = cheerio.load(result.contents);
             var list = local.getList(provider, $);
             totalPersonsCount += list.length;
-//list = list.slice(0, 100); log.info('list:', list); // to debug: limit list
+list = list.slice(0, 1); log.info('list:', list); // to debug: limit list
             async.each(
               list, // 1st param is the array of items
               function(element, callbackInner) { // 2nd param is the function that each item is passed to
@@ -167,14 +173,14 @@ exports.sync = function() { // sync persons
                 if (!person.url) {
                   log.warn(
                     'error syncing provider', provider.key, ',',
-                    'person with no url', ', ', 'skipping'
+                    'person with no url, skipping'
                   );
                   return callbackInner(); // skip this inner loop
                 }
                 if (!element.key) {
                   log.warn(
                     'error syncing provider', provider.key, ',',
-                    'person with no key', ',', 'skipping'
+                    'person with no key, skipping'
                   );
                   return callbackInner(); // skip this inner loop
                 }
@@ -190,27 +196,40 @@ exports.sync = function() { // sync persons
                   resource,
                   function(err, result) {
                     if (err) {
-                      log.warn('can\'t sync person', person.key + ':', err, ',', 'skipping');
+                      log.warn('can\'t sync person', person.key + ':', err, ', skipping');
                       return callbackInner(); // skip this inner loop
                     }
                     if (!result) {
                       log.warn(
                         'syncing person', person.key + ':',
-                        'empty result', ',', 'skipping'
+                        'empty result, skipping'
                       );
+                      return callbackInner(); // skip this inner loop
+                    }
+                    if (!result.isChanged) { // not changed
+                      // TODO: TEST THIS!
+                      log.info('person', person.key, 'is not changed, skipping');
                       return callbackInner(); // skip this inner loop
                     }
                     if (!result.contents) {
                       log.warn(
                         'syncing person', person.key + ':',
-                        'empty contents', ',', 'skipping'
+                        'empty contents, skipping'
                       );
                       return callbackInner(); // skip this inner loop
                     }
+
+                    // TODO: TEST THIS!
+                    person.etag = result.etag; // get person page etag
+                    if (!person.etag) { // use contents md5 sum if no etag available
+                      person.md5 = crypto.createHash('md5').update(person.contents).digest('hex');
+                      // TODO: try to use this...
+                    }
+
                     $ = cheerio.load(result.contents);
                     person.name = local.getDetailsName($, provider);
                     if (!person.name) { // should not happen, network.requestRetryAnonymous should catch it
-                      log.warn('person', person.key, 'name not found,', 'contents length:', result.contents.length, 'skipping');
+                      log.warn('person', person.key, 'name not found,', 'contents length:', result.contents.length, ', skipping');
                       log.error('@contents@:', result.contents);
                       return callbackInner(); // skip this inner loop
                     }
@@ -223,6 +242,8 @@ if (person.key === 'FORBES/Shakira') {
 }
 ///////////////////////////////////////////////////////////////
 */
+                    person.category = local.getDetailsCategory($, provider);
+log.debug('person category:', person.category);
                     var phone = local.getDetailsPhone($, provider);
                     if (phone) { // phone is found
                       person.phone = phone;
@@ -231,6 +252,8 @@ if (person.key === 'FORBES/Shakira') {
                       // do not overwrite person phone
                       person.phoneIsAvailable = false;
                     }
+                    person.etag = result.etag; // get person page etag
+log.debug('person etag:', person.etag);
                     person.nationality = local.detectNationality(person, provider, config);
                     var now = new Date();
                     person.dateOfLastSync = now;
@@ -255,7 +278,7 @@ if (person.key === 'FORBES/Shakira') {
               },
               function(err) { // 3th param is the function to call when everything's done (inner callback)
                 if (err) {
-                  log.warn('some error in the final inner async callback:', err, 'skipping inner iteration');
+                  log.warn('some error in the final inner async callback:', err, ', skipping inner iteration');
                 }
                 log.info('finished persons sync for provider', provider.key);
                 callbackOuter(); // signal outer loop that this inner loop is finished
@@ -266,8 +289,9 @@ if (person.key === 'FORBES/Shakira') {
       },
       function(err) { // 3rd param is the function to call when everything's done (outer callback)
         if (err) {
-          return log.error('some error in the final outer async callback:', err, 'skipping outer iterations');
+          return log.error('some error in the final outer async callback:', err, ', skipping outer iterations');
         }
+return log.debug('TERMINATING');
         log.info('' + retrievedProvidersCount, '/', totalProvidersCount, 'providers retrieved');
         log.info('' + retrievedPersonsCount, '/', totalPersonsCount, 'persons retrieved');
 
@@ -315,7 +339,7 @@ exports.upsert = function(person, callback) {
     { key: person.key },
     function(err, doc) {
       if (err) {
-        return callback('could not verify presence of person ' + person.name + ': ' + err.toString());
+        return callback('could not verify presence of person ' + person.key + ': ' + err.toString());
       }
       var isNew, isModified = false;
       if (!doc) { // person did not exist before
@@ -349,6 +373,38 @@ exports.upsert = function(person, callback) {
       });
     }
   );
+};
+
+exports.updatePersonUserData = function(person, user, data, callback) {
+  Person.findOne(
+    { key: person.key },
+    function(err, doc) {
+      if (err) {
+        return callback('could not verify presence of person ' + person.key + ': ' + err.toString());
+      }
+      if (!doc) { // person does not exist
+        return callback('person ' + person.key + 'does not exist');
+      }
+      if (!user || !user._id) { // user is not valid
+        return callback('user is not valid');
+      }
+
+      data.userId = user._id; // add user id to data
+      doc.users.push(data); // push user data to person's users
+
+      doc.save(function(err) {
+        if (err) {
+          return callback('could not save person ' + doc.key + ': ' + err);
+        }
+        log.info('person', doc.key, 'updated with user', user._id, 'data');
+        callback(null, doc); // success
+      });
+    }
+  );
+};
+
+exports.getAll_WITHUSERFILTER = function(filter, options, callback) {
+  // TODO: { results: { $elemMatch: { product: "xyz", score: { $gte: 8 } } } }
 };
 
 if (config.env === 'development') {
@@ -996,6 +1052,21 @@ local.getDetailsPhone = function($, provider) {
   return val;
 };
 
+local.getDetailsCategory = function($, provider) {
+  var val = null; // TODO: avoid using 'element' in all these functions...
+  if (provider.key === 'SGI') {
+    // no category provided
+  }
+  if (provider.key === 'TOE') {
+    val = $('span:contains("Categoria:")').next().text().trim().toLowerCase();
+  }
+  if (provider.key === 'FORBES') {
+    val = 'Powerful';
+  }
+  return val;
+};
+
+
 local.getDetailsImageUrls = function($, provider) {
   var val = [], href;
   if (provider.key === 'SGI') {
@@ -1342,6 +1413,37 @@ exports.getAll_TEST_AGGREGATE({}, {}, function(err, result) {
     return log.error('getAll_TEST_AGGREGATE:', err);
   }
   log.info('getAll_TEST_AGGREGATE:', result);
+});
+///////////////////////////////////////////////////////////////////////////////
+*/
+
+/*
+// TODO: DEBUG ONLY ///////////////////////////////////////////////////////////
+var db = require('../models/db'); // database wiring
+var person = {};
+person.key = 'TOE/3555';
+var user = {};
+user._id = '56901e32af7eeb223833e360'; // marco ObjectId
+var data = { hide: true };
+exports.updatePersonUserData(person, user, data, function(err, result) {
+  if (err) {
+    return log.error('updatePersonUserData error:', err);
+  }
+  //log.info('updatePersonUserData result:', result);
+
+  log.debug('show results:');
+  Person.findOne(
+    { key: person.key },
+    function(err, doc) {
+      if (err) {
+        return console.error('could not verify presence of person', person.key + ':', err);
+      }
+      if (!doc) { // person does not exist
+        return console.error('person ' + person.key + 'does not exist');
+      }
+      log.info('person', person.key, doc.toObject().users[0].hide ? 'should be' : 'should\'t', 'be hidden to it\'s first user');
+    }
+  );
 });
 ///////////////////////////////////////////////////////////////////////////////
 */
