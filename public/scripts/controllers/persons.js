@@ -49,11 +49,22 @@ console.timeEnd('loadPersons');
     //console.log($scope.persons);
     for (var i = 0, len = $scope.persons.length; i < len; ++i) {
       if ($scope.persons[i].key === person.key) {
-        $scope.persons.splice(i, 1);
+        $scope.persons.splice(i, 1); // remove person from $scope (to avoid to repeat loadPersons())
         break; // there is one person with that key: once found, bail out
       }
-    }
+    }   
 
+    // serialize hide value
+    // TODO: check user is logged, before...
+console.log('$rootScope.user:', $rootScope.user);
+    Person.updatePersonUserData(person.key, $rootScope.user, JSON.stringify({hide: true}))
+      .success(function(res) {
+        console.info(' +++ hide value stored');
+      })
+      .error(function(err) {
+        console.error(' +++ hide value NOT stored:', err);
+      })
+    ;
   };
 
 /*

@@ -6,6 +6,6 @@ var userToPersonSchema = new mongoose.Schema({
   notes: String,
 });
 
-mongoose.model('User', userSchema);
+mongoose.model('UserToPerson', userToPersonSchema);
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = mongoose.model('UserToPerson', userToPersonSchema);

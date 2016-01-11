@@ -375,30 +375,42 @@ exports.upsert = function(person, callback) {
   );
 };
 
-exports.updatePersonUserData = function(person, user, data, callback) {
+exports.updatePersonUserData = function(personKey, userId, data, callback) {
   Person.findOne(
-    { key: person.key },
+    { key: personKey },
     function(err, doc) {
       if (err) {
-        return callback('could not verify presence of person ' + person.key + ': ' + err.toString());
+        return callback('could not verify presence of person ' + personKey + ': ' + err.toString());
       }
       if (!doc) { // person does not exist
-        return callback('person ' + person.key + 'does not exist');
+        return callback('person ' + personKey + ' does not exist');
       }
-      if (!user || !user._id) { // user is not valid
+      if (!userId) { // user id is not valid
+        return callback('user id must not be empty');
+      }
+/* TODO:
+      if (userId !=== logged in user id) { // user is not logged in user
         return callback('user is not valid');
       }
-
-      data.userId = user._id; // add user id to data
-      doc.users.push(data); // push user data to person's users
-
-      doc.save(function(err) {
-        if (err) {
-          return callback('could not save person ' + doc.key + ': ' + err);
+*/
+      doc.update(
+        {
+          $set: {
+            'users.userId': userId,
+            'users.hide': data.hide
+          }
+        },
+        {
+           upsert: true
+        },
+        function(err) {
+          if (err) {
+            return callback('could not update person ' + doc.key + 'for user ' + userId + ':' + err);
+          }
+          log.info('person', doc.key, 'updated with user', userId, 'data');
+          callback(null, doc); // success
         }
-        log.info('person', doc.key, 'updated with user', user._id, 'data');
-        callback(null, doc); // success
-      });
+      );
     }
   );
 };
@@ -1421,7 +1433,7 @@ exports.getAll_TEST_AGGREGATE({}, {}, function(err, result) {
 // TODO: DEBUG ONLY ///////////////////////////////////////////////////////////
 var db = require('../models/db'); // database wiring
 var person = {};
-person.key = 'TOE/3555';
+person.key = 'FORBES/Angela Merkel';
 var user = {};
 user._id = '56901e32af7eeb223833e360'; // marco ObjectId
 var data = { hide: true };
@@ -1441,7 +1453,8 @@ exports.updatePersonUserData(person, user, data, function(err, result) {
       if (!doc) { // person does not exist
         return console.error('person ' + person.key + 'does not exist');
       }
-      log.info('person', person.key, doc.toObject().users[0].hide ? 'should be' : 'should\'t', 'be hidden to it\'s first user');
+      //log.info('person', person.key, doc.toObject().users[0].hide ? 'should be' : 'should\'t', 'be hidden to it\'s first user');
+      log.info('person', person.key, doc.toObject());
     }
   );
 });

@@ -132,6 +132,29 @@ router.route('/listAliasGroups').
 ;
 
 /*
+router.route('/updatePersonUserData/:personKey([^/]+/[^/]+)/:userId/:data').
+  post(function(req, res) { // update person user data by person key and user id
+*/
+router.route('/updatePersonUserData').
+  post(function(req, res) {
+    var personKey = req.body.personKey || null;
+    var userId = req.body.userId || null;
+    var data = req.body.data || null;
+log.debug('route updatePersonUserData - req.body:', req.body);
+log.debug('route updatePersonUserData - personKey:', personKey);
+log.debug('route updatePersonUserData - userId:', userId);
+log.debug('route updatePersonUserData - data:', data);
+    person.updatePersonUserData(personKey, userId, data, function(err, person) {
+      if (err) {
+        log.error('error updating person user data for person key', personKey, ', user id', userId + ':', err);
+        return res.status(500).json({ error: err });
+      }
+      res.json(person);
+    });
+  })
+;
+
+/*
 // route middleware to validate :id
 router.param('id', function(req, res, next, id) {
   // find the id in the database

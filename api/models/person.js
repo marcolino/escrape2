@@ -3,7 +3,7 @@ var mongoose = require('mongoose')
 
 
 // person per user child schema
-var personPerUserSchema = new mongoose.Schema({ userId: String, hide: Boolean });
+//var personPerUserSchema = new mongoose.Schema({ userId: String, hide: Boolean });
 
 // person schema
 var personSchema = new mongoose.Schema({
@@ -32,7 +32,8 @@ var personSchema = new mongoose.Schema({
   isPresent: Boolean,
   alias: String,
   showcaseBasename: String,
-  users: [ personPerUserSchema ]
+  //users: [ personPerUserSchema ]
+  users: [ mongoose.Schema.Types.Mixed ]
 },
 {
   autoIndex: config.env === 'development',
