@@ -48,11 +48,12 @@ exports.syncPersonsImages = function(persons, callback) {
                 return callbackImage();
               }
               async.waterfall(
-                [
-                  function(callback) { local.getSignatureFromImage(image, images, callback); },
+                [function(callback) {
+                  local.getSignatureFromImage(image, images, callback);
+                 },
                   local.findSimilarSignatureImage,
-                  createImageVersions,
-                  local.saveImageToDb,
+                  local.saveImageToFS,
+                  local.saveImageToDB,
                 ],
                 function (err, image) {
 //if (err) { log.error('syncPersonsImages - waterfall error:', err); }
@@ -125,6 +126,7 @@ if (image.url !== img.url) log.error('SOURCE IMAGE URL AFTER FETCH CHANGES! imag
     // copy fetched properties to image
     //image.url = img.url; // TODO: this could be changed, i.e.: for a sche change from http to https...
     image.contents = img.contents;
+    image.size = img.contents.length;
     image.etag = img.etag;
     image.isChanged = img.isChanged;
 
@@ -148,9 +150,9 @@ if (config.profile) log.debug('download image for person key', person.key + ':',
   }
 
   /**
-   * create image versions
+   * create image versions and save to filesystem
    */
-  var createImageVersions = function(image, images, callback) {
+local.saveImageToFS = function(image, images, callback) {
 var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
 /*
     if (image.hasDuplicate) {
@@ -201,7 +203,7 @@ var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
               .quality(version.quality)
               .write(destination, function(err) {
                 if (err) {
-//log.error('createImageVersions full error:', err);
+//log.error('saveImageToFS full error:', err);
                   //log.silly('can\'t write full size image version via jimp to', destination, ':', err);
                   return callbackVersion(err);
                 }
@@ -219,7 +221,7 @@ var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
               .quality(version.quality)
               .write(destination, function(err) {
                 if (err) {
-//log.error('createImageVersions showcase error:', err);
+//log.error('saveImageToFS showcase error:', err);
                   //log.silly('can\'t write other size image version via jimp to', destination, ':', err);
                   return callbackVersion(err);
                 }
@@ -230,9 +232,9 @@ var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
           }
         }, // async each versions iteration function done
         function(err) { // all directories and image versions created 
-//if (err) { log.error('createImageVersions final error:', err); }
-//if (config.profile) log.debug('PROFILE createImageVersions', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
-if (config.profile) log.debug('createImageVersions:', process.hrtime(t)[0] + (process.hrtime(t)[1] / 1000000000), 'seconds');
+//if (err) { log.error('saveImageToFS final error:', err); }
+//if (config.profile) log.debug('PROFILE saveImageToFS', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
+if (config.profile) log.debug('saveImageToFS:', process.hrtime(t)[0] + (process.hrtime(t)[1] / 1000000000), 'seconds');
           callback(err, image, images); // finished
         }
       ); // async each versions done
@@ -242,9 +244,9 @@ if (config.profile) log.debug('createImageVersions:', process.hrtime(t)[0] + (pr
 };
 
 /**
- * save image to DB
+ * save image to database
  */
-local.saveImageToDb = function(image, images, callback) {
+local.saveImageToDB = function(image, images, callback) {
 var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
 //image.hasDuplicate = true; // TODO: DEBUG ONLY, PROFILING THIS FUNCTION PERFORMANCE
 /*
@@ -252,7 +254,7 @@ var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
 
       // TODO: save at least image.url, it could be changed, and old could be wrong, now!!!
 
-      //log.silly('saveImageToDb: image is void (has duplicate): SKIPPING');
+      //log.silly('saveImageToDB: image is void (has duplicate): SKIPPING');
       return callback(null, null);
     }
 */
@@ -264,7 +266,7 @@ var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
 
         // TODO: we should check there is no other image with the same url, for this person... (probably not here...)
 if (!image.etag || image.etag === null) {
-  console.error('saveImageToDb, image.etag is undefined or null!', image.etag);
+  console.error('saveImageToDB, image.etag is undefined or null!', image.etag);
 }
         Image.findOneAndUpdate(
           { basename: image.basename, personKey: image.personKey}, // query
@@ -289,7 +291,7 @@ if (!image.etag || image.etag === null) {
         );
       },
       person: function(callbackInternal) {
-//log.debug('saveImageToDb - 2 - before getShowcase - image.url:', image.url);
+//log.debug('saveImageToDB - 2 - before getShowcase - image.url:', image.url);
         var showcase = exports.getShowcase(image.personKey, images);
         if (!showcase) {
 //log.debug('no showcase found yet for image for person', image.personKey, ', images.length:', images.length);
@@ -323,8 +325,8 @@ if (!image.etag || image.etag === null) {
       }
     },
     function(err, results) { // final callback
-if (config.profile) log.debug('saveImageToDb:', process.hrtime(t)[0] + (process.hrtime(t)[1] / 1000000000), 'seconds');
-//if (err) { log.error('saveImageToDb final error:', err); }
+if (config.profile) log.debug('saveImageToDB:', process.hrtime(t)[0] + (process.hrtime(t)[1] / 1000000000), 'seconds');
+//if (err) { log.error('saveImageToDB final error:', err); }
       callback(err, results);
     }
   );
@@ -388,7 +390,7 @@ if (personImage.personKey !== image.personKey) {
     // check image url, beforehand
     if (image.url === personImage.url) {
       image.hasDuplicate = true;
-      image.basename = personImage.basename; // copy old properties since image will be saved without createImageVersions
+      image.basename = personImage.basename; // copy old properties since image will be saved without saveImageToFS
 //log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE (SAME URL):', image.personKey, image.url, personImage.url);
       break; // same url, break loop here
     }
@@ -443,7 +445,7 @@ exports.rebuildAllSignatures = function(callback) { // TODO: do we need this fun
             var distance = exports.distance(signature, image.signature);
             image.signature = signature; // reset;
             log.warn('image for person', image.personKey, image.basename, 'has different signature (distance is ' + distance + '):', '\n', signature, '\n', image.signature);
-            local.saveImageToDb(image, images, function() {
+            local.saveImageToDB(image, images, function() {
               if (err) { 
                 return cb(err);
               }

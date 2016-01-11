@@ -6,6 +6,7 @@ var imageSchema = new mongoose.Schema({
   url: { type: String, required: true },
   personKey: { type: String, required: true }, // person.providerKey + '/' + person.key
   etag: String, // ETag
+  size: Number, // image contents size
   lastModified: String, // last modified tag
   basename: String, // image file base name
   dateOfFirstSync: { type: Date, default: Date.now }, // date of first sync

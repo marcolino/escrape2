@@ -34,7 +34,7 @@ exports.fetch = function(resource, callback) {
   if (resource.type === 'image') { // set encoding to binary if type is image
     options.encoding = 'binary';
   }
-log.debug(' *** network.fetch(): resource:', resource);
+//log.debug(' *** network.fetch(): resource:', resource);
   if (resource.etag) { // must check etag is not null, can't set a null If-None-Match header
     options.headers['If-None-Match'] = resource.etag; // eTag field
   }
@@ -44,7 +44,7 @@ log.debug(' *** network.fetch(): resource:', resource);
     options,
     function(err, response, contents) {
       var requestEtag;
-log.debug(' *** network.fetch(): response.headers:', response.headers);
+//log.debug(' *** network.fetch(): response.headers:', response.headers);
       if (!err && (response.statusCode === 200 || response.statusCode === 304)) {
         var result = {};
         result.etag = response.headers.etag;
@@ -101,7 +101,7 @@ if (resource.type === 'image') {
             }
           }
         }
-log.debug('network.fetch(): result.etag:', result.etag);
+//log.debug('network.fetch(): result.etag:', result.etag);
 
         callback(null, result); // success
       } else {

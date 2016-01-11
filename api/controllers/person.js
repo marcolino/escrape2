@@ -73,15 +73,16 @@ config.time = process.hrtime(); // TODO: development only
       return callback(err);
     }
     log.debug('persons loaded in', process.hrtime(config.time)[0] + (process.hrtime(config.time)[1] / 1000000000), 'seconds');
-
-//console.log('persons:', persons);
-for (var i = 0; i < persons.length; i++) {
-  var person = persons[i];
-  if (person.key === 'TOE/3555') {
-    console.log('*** found person TOE/3555', person.name);
-    console.log('*** person.users[0]:', person.users[0]);
-  }
-}
+    /*
+    //console.log('persons:', persons);
+    for (var i = 0; i < persons.length; i++) {
+      var person = persons[i];
+      if (person.key === 'TOE/3555') {
+        console.log('*** found person TOE/3555', person.name);
+        console.log('*** person.users[0]:', person.users[0]);
+      }
+    }
+    */
     return callback(null, persons);
   });
 };
@@ -129,7 +130,7 @@ exports.sync = function() { // sync persons
       return log.error('error getting providers:', err);
     }
 //providers = providers.slice(0, 1); // to debug: limit list to first element (SGI)
-providers = providers.slice(1, 2); // to debug: limit list to second element (TOE)
+//providers = providers.slice(1, 2); // to debug: limit list to second element (TOE)
     totalProvidersCount = providers.length;
 
     // loop to get list page from all providers
@@ -164,7 +165,7 @@ providers = providers.slice(1, 2); // to debug: limit list to second element (TO
             var $ = cheerio.load(result.contents);
             var list = local.getList(provider, $);
             totalPersonsCount += list.length;
-list = list.slice(0, 1); log.info('list:', list); // to debug: limit list
+//list = list.slice(0, 1); log.info('list:', list); // to debug: limit list
             async.each(
               list, // 1st param is the array of items
               function(element, callbackInner) { // 2nd param is the function that each item is passed to
@@ -219,14 +220,19 @@ list = list.slice(0, 1); log.info('list:', list); // to debug: limit list
                       return callbackInner(); // skip this inner loop
                     }
 
+                    $ = cheerio.load(result.contents);
+
                     // TODO: TEST THIS!
-                    person.etag = result.etag; // get person page etag
-                    if (!person.etag) { // use contents md5 sum if no etag available
-                      person.md5 = crypto.createHash('md5').update(person.contents).digest('hex');
+                    if (result.etag) {
+                      person.etag = result.etag; // get person page etag
+                    } else { // use contents md5 sum if no etag available
+                      var imagesSectionsContent = local.getImagesSections($, provider);
+                      person.md5 = crypto.createHash('md5').update(imagesSectionsContent).digest('hex');
                       // TODO: try to use this...
                     }
+//log.debug('person.etag:', person.etag);
+//log.debug('person.md5:', person.md5);
 
-                    $ = cheerio.load(result.contents);
                     person.name = local.getDetailsName($, provider);
                     if (!person.name) { // should not happen, network.requestRetryAnonymous should catch it
                       log.warn('person', person.key, 'name not found,', 'contents length:', result.contents.length, ', skipping');
@@ -243,7 +249,7 @@ if (person.key === 'FORBES/Shakira') {
 ///////////////////////////////////////////////////////////////
 */
                     person.category = local.getDetailsCategory($, provider);
-log.debug('person category:', person.category);
+//log.debug('person category:', person.category);
                     var phone = local.getDetailsPhone($, provider);
                     if (phone) { // phone is found
                       person.phone = phone;
@@ -252,8 +258,6 @@ log.debug('person category:', person.category);
                       // do not overwrite person phone
                       person.phoneIsAvailable = false;
                     }
-                    person.etag = result.etag; // get person page etag
-log.debug('person etag:', person.etag);
                     person.nationality = local.detectNationality(person, provider, config);
                     var now = new Date();
                     person.dateOfLastSync = now;
@@ -291,7 +295,7 @@ log.debug('person etag:', person.etag);
         if (err) {
           return log.error('some error in the final outer async callback:', err, ', skipping outer iterations');
         }
-return log.debug('TERMINATING');
+//return log.debug('TERMINATING');
         log.info('' + retrievedProvidersCount, '/', totalProvidersCount, 'providers retrieved');
         log.info('' + retrievedPersonsCount, '/', totalPersonsCount, 'persons retrieved');
 
@@ -1078,6 +1082,31 @@ local.getDetailsCategory = function($, provider) {
   return val;
 };
 
+local.getImagesSections = function($, provider) {
+  var val = null; // TODO: avoid using 'element' in all these functions...
+//var v1, v2;
+  if (provider.key === 'SGI') {
+    val += $('tr[id="ctl00_content_TableRow0"]').html();
+//v1 = $('tr[id="ctl00_content_TableRow0"]').html();
+//log.warn('getImagesSections SGI cover length:', v1);
+    val += $('table[id="ctl00_content_tableFoto"]').html();
+//v2 = $('table[id="ctl00_content_tableFoto"]').html();
+//log.warn('getImagesSections SGI icons length:', v2);
+  val = val.replace(/\?t=\d+/g, ''); // remove timestamp part from image urls
+//log.warn('getImagesSections SGI images:', val);
+  }
+  if (provider.key === 'TOE') {
+    val += $('div[class~="pi-img-shadow"]').html();
+//v1 = $('div[class~="pi-img-shadow"]').html();
+//log.warn('getImagesSections TOE cover length:', v1.length);
+    val += $('div[id="links"]').html();
+//v2 = $('div[id="links"]').html();
+//log.warn('getImagesSections TOE icons length:', v2.length);
+  }
+  if (provider.key === 'FORBES') {
+  }
+  return val;
+};
 
 local.getDetailsImageUrls = function($, provider) {
   var val = [], href;
