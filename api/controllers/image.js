@@ -126,7 +126,7 @@ if (image.url !== img.url) log.error('SOURCE IMAGE URL AFTER FETCH CHANGES! imag
     // copy fetched properties to image
     //image.url = img.url; // TODO: this could be changed, i.e.: for a sche change from http to https...
     image.contents = img.contents;
-    image.size = img.contents.length;
+    image.size = img.contents ? img.contents.length : null;
     image.etag = img.etag;
     image.isChanged = img.isChanged;
 
