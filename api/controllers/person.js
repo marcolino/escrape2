@@ -186,7 +186,10 @@ exports.sync = function() { // sync persons
                   return callbackInner(); // skip this inner loop
                 }
                 person.key = provider.key + '/' + element.key; // person key is the sum of provider key and element key
-//if (person.key !== 'SGI/adv5646') return callbackInner(); // TODO: DEBUG ONLY - sync only one person
+
+// PAMELA
+if (person.key !== 'SGI/adv3056a') return callbackInner(); // TODO: DEBUG ONLY - sync only one person
+
                 resource = {
                   url: person.url,
                   type: 'text',
@@ -345,34 +348,53 @@ exports.upsert = function(person, callback) {
       if (err) {
         return callback('could not verify presence of person ' + person.key + ': ' + err.toString());
       }
-      var isNew, isModified = false;
+      var isNew = false;
+      var isSomeFieldChanged = false;
+      var isUrlPageChanged = false;
+
       if (!doc) { // person did not exist before
         isNew = true;
         doc = new Person();
         doc.dateOfFirstSync = new Date();
       }
 
+      // TODO: should choose which tests to do to assert a person did change...
       // merge sync'd person data to database person object
       for (var prop in person) {
         // record if any intrinsic property was modified
         if (!isNew) {
-          // dateOfLastSync is always modified; isPresent is modified later
-          if (prop in doc && prop !== 'dateOfLastSync' && prop !== 'isPresent' && prop !== 'alias' && doc._doc[prop] !== person[prop]) {
+          // check if change control fields contents did change
+          if ((prop === 'etag') && (doc.etag && person.etag) && (doc.etag != person.etag)) {
+            log.debug('person', doc.key, doc.name, 'url page ETAG did change');
+            isUrlPageChanged = true;
+          }
+          if ((prop === 'md5') && (doc.md5 && person.md5) && (doc.md5 != person.md5)) {
+            log.debug('person', doc.key, doc.name, 'url page MD5 did change');
+            isUrlPageChanged = true;
+          }
+
+          // etag and md5 are second level; dateOfLastSync is always modified; isPresent is modified later
+          if (prop in doc && prop === 'etag' && prop === 'md5' && prop !== 'dateOfLastSync' && prop !== 'isPresent' && prop !== 'alias' && doc._doc[prop] !== person[prop]) {
             if (config.env === 'development') {
               log.info('person', person.key, person.name + ':', 'changed'.red + ' "' + prop + '" property:', local.diffColor(doc[prop], person[prop]));
             }
-            isModified = true;
+            isSomeFieldChanged = true;
           }
         }
-        doc[prop] = person[prop]; // TODO: if some sort of historical recording needed, do it here...
+      }
+
+      // merge sync'd person data to database person object
+      for (/*var */prop in person) {
+        doc[prop] = person[prop]; // TODO: if some sort of historical recording is needed, do it here...
       }
 
       doc.save(function(err) {
         if (err) {
           return callback('could not save person ' + doc.key + ': ' + err.toString());
         }
-        log.info('person', doc.key, doc.name, (isNew ? 'inserted'.cyan : isModified ? 'modified'.red : 'not changed'.grey));
-        doc.isChanged = isNew || isModified;
+        log.info('person', doc.key, doc.name, 'etag/md5', (isUrlPageChanged ? 'changed'.red : 'not changed'.grey));
+        log.info('person', doc.key, doc.name, (isNew ? 'inserted'.cyan : isSomeFieldChanged ? 'changed'.red : 'not changed'.grey));
+        doc.isChanged = isNew || isUrlPageChanged || isSomeFieldChanged;
         callback(null, doc); // success
       });
     }

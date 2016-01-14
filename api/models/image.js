@@ -12,7 +12,7 @@ var imageSchema = new mongoose.Schema({
   dateOfFirstSync: { type: Date, default: Date.now }, // date of first sync
   //dateOfLastSync: { type: Date, default: Date.now }, // date of last sync
   signature: String, // 64) binary ([0-1])bytes signature (perceptual hash)
-  hasDuplicate: Boolean, // this image has a duplicate
+  //hasDuplicate: Boolean, // this image has a duplicate
   isShowcase: Boolean, // this image is showcase for person
   isTruthful: Boolean // this image is to be considered thruthful
 },

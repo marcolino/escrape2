@@ -61,7 +61,7 @@ console.warn('result.url:', result.url);
 */
         if (response.statusCode === 304) { // not changed
           result.isChanged = false;
-//log.debug('network fetch - 304 - contents.length:', contents ? contents.length : '<no contents>');
+log.debug('*** network fetch - 304 - contents.length:', contents ? contents.length : '<no contents>');
           if (config.env === 'development') {
             requestEtag = response.request.headers['If-None-Match'];
             if (requestEtag && (result.etag !== requestEtag)) { // TODO: just to be safe, should not need this test on production
@@ -77,13 +77,11 @@ console.warn('result.url:', result.url);
 
         } else {
 
-/*
 // with some images, etag keeps changing even if image does not change... no problem, downloading it again...
 if (resource.type === 'image') {
-  log.debug('*** network.fetch - url:', response.request.uri.href, '- response.statusCode:', response.statusCode,
+  log.debug('*** network.fetch - 200 - url:', response.request.uri.href, '- response.statusCode:', response.statusCode,
             'request etag:', response.request.headers['If-None-Match'], '- response etag:', result.etag);
 }
-*/
 
           result.isChanged = true;
           result.contents = contents;

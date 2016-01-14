@@ -34,6 +34,13 @@ exports.syncPersonsImages = function(persons, callback) {
     async.eachSeries( // TODO: should we better serialize persons? (YES, otherwise too many ECONNRESET in request()...)
       persons,
       function(person, callbackPerson) {
+        /* TODO: try this!
+        // do not download images if a person did not change
+        if (!person.isChanged) { return callbackPerson(); }
+        */
+if (person.isChanged) { log.debug('person', person.key, person.name, 'did change'.white); } else
+                      { log.debug('person', person.key, person.name, 'did not change'.cyan); }
+
         async.eachSeries( // TODO: we have to serialize images sync, otherwise findSimilarSignatureImages will not find same person images (RIGHT?)
           person.imageUrls,
           function(imageUrl, callbackImage) {
@@ -159,6 +166,9 @@ var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
       return callback(null, image, images);
     }
 */
+    if (image.hasTwin) {
+      return callback(null, image, images);
+    }
 
     // use a hash of response url + current timestamp as filename to make it unique
     var hash = crypto.createHash('md5').update(image.url + Date.now()).digest('hex');
@@ -258,6 +268,7 @@ var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
       return callback(null, null);
     }
 */
+// TODO: if (image.hasTwin) { ??? }
 
   // save image and person in series
   async.series(
@@ -375,6 +386,7 @@ return callback(null, image, images);
     images
   );
 
+  image.hasTwin = false;
   image.hasDuplicate = false;
   for (var i = 0, len = personImages.length; i < len; i++) {
 //log.debug(i, '-------------------');
@@ -406,14 +418,22 @@ if (personImage.personKey !== image.personKey) {
       imageMostSimilar = personImage;
     }
   }
-  if (minDistance <= config.images.thresholdDistanceSamePerson) {
-    image.hasDuplicate = true;
+  if (minDistance <= 0) { // the image found is identical
+    image.hasTwin = true;
+console.warn('image.hasTwin');
+  } else {
+    if (minDistance <= config.images.thresholdDistanceSamePerson) {
+      image.hasDuplicate = true;
+console.warn('image.hasDuplicate');
 //log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.personKey, image.url, imageMostSimilar.url);
-  } //else { log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, ', distance:', minDistance); }
+    } //else { log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, ', distance:', minDistance); }
+else { console.warn('image.new'); }
+  }
 
 //if (config.profile) log.debug('PROFILE findSimilarSignatureImage', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
   // TODO: we should save image to DB even if it is a duplicate, since old version url could be unavailable, now
 
+// TODO: CHECK HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
   if (image.hasDuplicate && imageMostSimilar) { // copy properties (which should be set afterwards) from imageMostSimilar to image
 //log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE AND IMAGEMOSTSIMILAR EXISTS, setting image.basename from:', image.basename, 'to', imageMostSimilar.basename);
     image.basename = imageMostSimilar.basename;
