@@ -34,7 +34,8 @@ exports.syncPersonsImages = function(persons, callback) {
     async.eachSeries( // TODO: should we better serialize persons? (YES, otherwise too many ECONNRESET in request()...)
       persons,
       function(person, callbackPerson) {
-        /* TODO: try this!
+        /*
+        // TODO: try this!
         // do not download images if a person did not change
         if (!person.isChanged) { return callbackPerson(); }
         */
