@@ -162,14 +162,14 @@ if (config.profile) log.debug('download image for person key', person.key + ':',
    */
 local.saveImageToFS = function(image, images, callback) {
 var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
-/*
     if (image.hasDuplicate) {
       return callback(null, image, images);
     }
-*/
+    /*
     if (image.hasTwin) {
       return callback(null, image, images);
     }
+    */
 
     // use a hash of response url + current timestamp as filename to make it unique
     var hash = crypto.createHash('md5').update(image.url + Date.now()).digest('hex');
@@ -260,7 +260,6 @@ if (config.profile) log.debug('saveImageToFS:', process.hrtime(t)[0] + (process.
 local.saveImageToDB = function(image, images, callback) {
 var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
 //image.hasDuplicate = true; // TODO: DEBUG ONLY, PROFILING THIS FUNCTION PERFORMANCE
-/*
     if (image.hasDuplicate) {
 
       // TODO: save at least image.url, it could be changed, and old could be wrong, now!!!
@@ -268,7 +267,6 @@ var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
       //log.silly('saveImageToDB: image is void (has duplicate): SKIPPING');
       return callback(null, null);
     }
-*/
 // TODO: if (image.hasTwin) { ??? }
 
   // save image and person in series
@@ -387,7 +385,7 @@ return callback(null, image, images);
     images
   );
 
-  image.hasTwin = false;
+  //image.hasTwin = false;
   image.hasDuplicate = false;
   for (var i = 0, len = personImages.length; i < len; i++) {
 //log.debug(i, '-------------------');
@@ -403,13 +401,19 @@ if (personImage.personKey !== image.personKey) {
     // check image url, beforehand
     if (image.url === personImage.url) {
       image.hasDuplicate = true;
-      image.basename = personImage.basename; // copy old properties since image will be saved without saveImageToFS
+/*
+var d = exports.distance(image.signature, personImage.signature);
+if (d !== 0) {
+log.warn('image has the same url (', image.url, ') as person image (', personImage.basename, ') but their difference is as high as', d);
+}
+*/
+      ///image.basename = personImage.basename; // copy old properties since image will be saved without saveImageToFS
 //log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE (SAME URL):', image.personKey, image.url, personImage.url);
       break; // same url, break loop here
     }
 
-    if (!image.signature) {
-//log.warn('findSimilarSignatureImage - image with no signature:', personImage.url);
+    if (!image.signature) { // should not happen
+log.warn('findSimilarSignatureImage - image with no signature:', personImage.url);
       break; // skip this image without signature
     }
     var distance = exports.distance(image.signature, personImage.signature);
@@ -419,26 +423,27 @@ if (personImage.personKey !== image.personKey) {
       imageMostSimilar = personImage;
     }
   }
-  if (minDistance <= 0) { // the image found is identical
-    image.hasTwin = true;
-console.warn('image.hasTwin');
-  } else {
+  //if (minDistance <= 0) { // the image found is identical
+  //  image.hasTwin = true;
+  //} else {
     if (minDistance <= config.images.thresholdDistanceSamePerson) {
       image.hasDuplicate = true;
-console.warn('image.hasDuplicate');
-//log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.personKey, image.url, imageMostSimilar.url);
+console.warn('image has duplicate');
+//log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE INSIDE SAME PERSON:', image.personKey, image.url, imageMostSimilar.url);
     } //else { log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, ', distance:', minDistance); }
-else { console.warn('image.new'); }
-  }
+else { console.warn('image is new'); }
+  //}
 
 //if (config.profile) log.debug('PROFILE findSimilarSignatureImage', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
   // TODO: we should save image to DB even if it is a duplicate, since old version url could be unavailable, now
 
+/*
 // TODO: CHECK HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
   if (image.hasDuplicate && imageMostSimilar) { // copy properties (which should be set afterwards) from imageMostSimilar to image
 //log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE AND IMAGEMOSTSIMILAR EXISTS, setting image.basename from:', image.basename, 'to', imageMostSimilar.basename);
     image.basename = imageMostSimilar.basename;
   }
+*/
 
 if (config.profile) log.debug('findSimilarSignatureImage:', process.hrtime(t)[0] + (process.hrtime(t)[1] / 1000000000), 'seconds');
   callback(null, image, images);
@@ -643,9 +648,9 @@ local.grep = function(what, where) {
 module.exports = exports;
 
 // TODO: DEBUG ONLY ///////////////////////////////////////////////////////////
+/*
 var db = require('../models/db'); // database wiring
 
-/*
 Image.find({ $or: [ {basename:'b332ce4783bae8f37ad7d19f8eadd6ed.jpg'}, {basename: '28a799820ecc0e863c4de6f7a095cae7.jpg'} ] }, function(err, images) {
   if (err) {
     return log.error('Image.find:', err);
@@ -667,6 +672,8 @@ Image.find({ $or: [ {basename:'b332ce4783bae8f37ad7d19f8eadd6ed.jpg'}, {basename
 */
 
 /*
+var db = require('../models/db'); // database wiring
+
 Image.find({ $or: [ {basename:'b332ce4783bae8f37ad7d19f8eadd6ed.jpg'}, {basename: '28a799820ecc0e863c4de6f7a095cae7.jpg'} ] }, function(err, images) {
   if (err) {
     return log.error('Image.find:', err);

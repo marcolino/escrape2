@@ -188,7 +188,7 @@ exports.sync = function() { // sync persons
                 person.key = provider.key + '/' + element.key; // person key is the sum of provider key and element key
 
 // PAMELA
-if (person.key !== 'SGI/adv3056a') return callbackInner(); // TODO: DEBUG ONLY - sync only one person
+//if (person.key !== 'SGI/adv3056a') return callbackInner(); // TODO: DEBUG ONLY - sync only one person
 
                 resource = {
                   url: person.url,
@@ -392,7 +392,7 @@ exports.upsert = function(person, callback) {
         if (err) {
           return callback('could not save person ' + doc.key + ': ' + err.toString());
         }
-        log.info('person', doc.key, doc.name, 'etag/md5', (isUrlPageChanged ? 'changed'.red : 'not changed'.grey));
+        log.info('person', doc.key, doc.name, 'etag/md5', ((isNew || isUrlPageChanged) ? 'changed'.red : 'not changed'.grey));
         log.info('person', doc.key, doc.name, (isNew ? 'inserted'.cyan : isSomeFieldChanged ? 'changed'.red : 'not changed'.grey));
         doc.isChanged = isNew || isUrlPageChanged || isSomeFieldChanged;
         callback(null, doc); // success
