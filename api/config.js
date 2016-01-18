@@ -60,7 +60,7 @@ var config = {
     retryDelay: 3 * 1000 // wait for 3" before trying again
   },
   tor: {
-    available: (os.hostname() === 'malibox'), // TOR is available only @malibox, at the moment...
+    available: (os.hostname() === 'DISABLE-TOR-malibox'), // TOR is available only @malibox, at the moment...
     host: 'localhost',
     port: 9050
   },

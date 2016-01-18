@@ -187,7 +187,7 @@ exports.sync = function() { // sync persons
                 }
                 person.key = provider.key + '/' + element.key; // person key is the sum of provider key and element key
                 person.whenImageChangesUrlChangesToo = provider.whenImageChangesUrlChangesToo; // to spped-up images sync, when possible
-log.debug('SET PERSON whenImageChangesUrlChangesToo');
+//log.debug('SET PERSON whenImageChangesUrlChangesToo');
 // PAMELA
 //if (person.key !== 'SGI/adv3056a') return callbackInner(); // TODO: DEBUG ONLY - sync only one person
 

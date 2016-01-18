@@ -486,7 +486,7 @@ console.warn('image.hasTwin');
 console.warn('image.hasDuplicate');
 //log.debug('findSimilarSignatureImage - IMAGE HAS DUPLICATE:', image.personKey, image.url, imageMostSimilar.url);
     } //else { log.info('findSimilarSignatureImage - IMAGE IS UNIQUE:', image.url, ', distance:', minDistance); }
-else { console.warn('image.new'); }
+else { log.warn('image.new'); }
   }
 
 //if (config.profile) log.debug('PROFILE findSimilarSignatureImage', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');

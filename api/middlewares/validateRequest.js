@@ -30,6 +30,7 @@ module.exports = function(req, res, next) {
   try {
     var decoded = jwt.decode(token, secret);
     if (decoded.exp <= Date.now()) {
+      // TODO: cause client to load login page.., or, better, to invalidate token in localstorage, so a login button appears (and if possible add a message to say token was expired, ...)
       return res.status(400).json({ error: 'not authorized (token expired)' });
     }
 

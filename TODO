@@ -25,7 +25,6 @@ function generateUserToken(user) {
 - use etag also for persons urls, and check if we can skip syncPersonsImages for unchanged persons
 - person.sync: get 'category' attribute too (CM, ...)
 - try to move db methods from controllers/xxx.js to models/xxx.js
-- add whenImageChangesUrlChangesToo: true, to config.providers
 
 V remove all "err.context = " lines
 V use `test.server.local` (in `/etc/hosts`) @home too
@@ -44,6 +43,7 @@ V where to put common code (i.e.: `function inArray(arr, obj) { return (arr.inde
 V put "persons sync finished" at the real end
 V profile with process.hrtime() *all* image functions
 V remove line in api/controllters/person.js: "//person.alias = null;"  (to avoid having persons with no alias, at some point in time)
+V add whenImageChangesUrlChangesToo: true, to config.providers
 
 
 
