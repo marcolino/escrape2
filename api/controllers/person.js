@@ -186,7 +186,8 @@ exports.sync = function() { // sync persons
                   return callbackInner(); // skip this inner loop
                 }
                 person.key = provider.key + '/' + element.key; // person key is the sum of provider key and element key
-
+                person.whenImageChangesUrlChangesToo = provider.whenImageChangesUrlChangesToo; // to spped-up images sync, when possible
+log.debug('SET PERSON whenImageChangesUrlChangesToo');
 // PAMELA
 //if (person.key !== 'SGI/adv3056a') return callbackInner(); // TODO: DEBUG ONLY - sync only one person
 
@@ -230,8 +231,11 @@ exports.sync = function() { // sync persons
                       person.etag = result.etag; // get person page etag
                     } else { // use contents md5 sum if no etag available
                       var imagesSectionsContent = local.getImagesSections($, provider);
-                      person.md5 = crypto.createHash('md5').update(imagesSectionsContent).digest('hex');
-                      // TODO: try to use this...
+                      if (!imagesSectionsContent) {
+                        log.warn('person', person.key, 'images sections content not found, skipping md5 handling');
+                      } else {
+                        person.md5 = crypto.createHash('md5').update(imagesSectionsContent).digest('hex');
+                      }
                     }
 //log.debug('person.etag:', person.etag);
 //log.debug('person.md5:', person.md5);
@@ -314,6 +318,7 @@ if (person.key === 'FORBES/Shakira') {
           log.info('persons images sync started');
           config.timeStart = process.hrtime(); // TODO: development only
           image.syncPersonsImages(persons, function(err, persons) {
+//image.syncPersonsImagesCheck(persons, function(err, persons) {
             if (err) {
               return log.warn('can\'t sync persons images:', err);
             }
@@ -322,6 +327,7 @@ if (person.key === 'FORBES/Shakira') {
               'persons images sync finished',
               '- elapsed time:', process.hrtime(config.timeStart)[0], 'seconds'
             );
+//return log.debug('image.syncPersonsImagesCheck finished');
 
             // sync persons aliases
             log.info('persons aliases sync started');
@@ -393,7 +399,7 @@ exports.upsert = function(person, callback) {
           return callback('could not save person ' + doc.key + ': ' + err.toString());
         }
         log.info('person', doc.key, doc.name, 'etag/md5', ((isNew || isUrlPageChanged) ? 'changed'.red : 'not changed'.grey));
-        log.info('person', doc.key, doc.name, (isNew ? 'inserted'.cyan : isSomeFieldChanged ? 'changed'.red : 'not changed'.grey));
+        log.info('person', doc.key, doc.name, (isNew ? 'inserted'.cyan : isSomeFieldChanged ? 'some field changed'.red : 'some field not changed'.grey));
         doc.isChanged = isNew || isUrlPageChanged || isSomeFieldChanged;
         callback(null, doc); // success
       });
@@ -742,7 +748,10 @@ local.savePerson = function(person) {
 };
 
 local.areSimilar = function(person1, person2) {
-  if ((person1.isPresent && person1.isPresent) && (person1.phone === person2.phone)) return true;
+  if ((person1.isPresent && person2.isPresent) && (person1.phone >= 0 && person2.phone >= 0) && (person1.phone === person2.phone)) {
+    return true;
+  }
+//log.debug('areSimilar - closest images distance * 64:', local.getClosestImages(person1, person2).distance * 64);
   return (local.getClosestImages(person1, person2).distance <= config.images.thresholdDistance);
 };
 
@@ -1085,7 +1094,7 @@ local.getDetailsPhone = function($, provider) {
     }
   }
   if (provider.key === 'FORBES') {
-    val = '333.33333333';
+    val = '-1';
   }
   return val;
 };
@@ -1114,7 +1123,7 @@ local.getImagesSections = function($, provider) {
     val += $('table[id="ctl00_content_tableFoto"]').html();
 //v2 = $('table[id="ctl00_content_tableFoto"]').html();
 //log.warn('getImagesSections SGI icons length:', v2);
-  val = val.replace(/\?t=\d+/g, ''); // remove timestamp part from image urls
+    val = val.replace(/\?t=\d+/g, ''); // remove timestamp part from image urls
 //log.warn('getImagesSections SGI images:', val);
   }
   if (provider.key === 'TOE') {
@@ -1126,6 +1135,7 @@ local.getImagesSections = function($, provider) {
 //log.warn('getImagesSections TOE icons length:', v2.length);
   }
   if (provider.key === 'FORBES') {
+    val += $('table[class="sinottico"]').html();
   }
   return val;
 };

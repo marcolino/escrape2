@@ -6,7 +6,7 @@ var os = require("os")
 ;
 
 var env = 'development'; // default env mode, overridable by environment
-var profile = false; // profile timings flag
+var profile = true; // profile timings flag
 
 var config = {
   env: process.env.NODE_ENV ? process.env.NODE_ENV : env,

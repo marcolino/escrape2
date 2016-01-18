@@ -61,7 +61,7 @@ console.warn('result.url:', result.url);
 */
         if (response.statusCode === 304) { // not changed
           result.isChanged = false;
-log.debug('*** network fetch - 304 - contents.length:', contents ? contents.length : '<no contents>');
+log.debug('*** network fetch - 304 - contents is', contents ? contents.length + ' bytes long' : 'empty');
           if (config.env === 'development') {
             requestEtag = response.request.headers['If-None-Match'];
             if (requestEtag && (result.etag !== requestEtag)) { // TODO: just to be safe, should not need this test on production
