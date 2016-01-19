@@ -3,12 +3,30 @@
 angular.module('AuthenticationService', []).factory('Authentication', function($rootScope, $window) {
   return {
     isLogged: false,
+    isExpired: false,
     check: function() {
       if ($window.localStorage.token) { // if we have a token a user is logged
-        this.isLogged = true;
+        if (!this.checkExpired()) {
+          this.isLogged = true;
+          this.isExpired = false;
+        } else {
+          this.isLogged = false;
+          this.isExpired = true;          
+        }
       } else {
         this.isLogged = false;
+        this.isExpired = false;
         delete this.user;
+      }
+    },
+    checkExpired: function() {
+      if ($window.localStorage.token) { // if we have a token a user is logged
+        console.log('$window.localStorage.token:', $window.localStorage.token);
+        console.log('$window.localStorage.token.split(.)[1]:', $window.localStorage.token.split('.')[1]);
+        console.log('$window.atob($window.localStorage.token.split(.)[1]):', $window.atob($window.localStorage.token.split('.')[1]));
+        this.isExpired = JSON.parse($window.atob($window.localStorage.token.split('.')[1])).exp < new Date();
+        console.log('isExpired:', this.isExpired);
+        return this.isExpired;
       }
     }
   };

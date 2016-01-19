@@ -100,6 +100,7 @@ app.run(function($rootScope, $window, $location, Authentication) {
  
   $rootScope.$on('$routeChangeSuccess', function(event, nextRoute, currentRoute) {
     $rootScope.isLogged = Authentication.isLogged;
+    $rootScope.isExpired = Authentication.isExpired;
     if (Authentication.isLogged) {
       $rootScope.user = Authentication.user;
 

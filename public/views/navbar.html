@@ -17,6 +17,9 @@
       <li><a href="/about">about</a></li>
     </ul>
 
+    <div class="col-sm-2 col-md-2 pull-right" style="font-size: 10px; color: #000;" ng-show="isExpired"><!-- TODO: make something better... -->
+      <span>please log in again, your authentication is expired for security reasons</span>
+    </div>
     <div class="col-sm-2 col-md-2 pull-right" ng-show="!isLogged" title="log in or register, to be able to use and set your preferences">
       <form class="navbar-form" role="login" ng-submit="viewLogin()">
         <div class="input-group">

@@ -437,7 +437,7 @@ exports.updatePersonUserData = function(personKey, userId, data, callback) {
         },
         function(err) {
           if (err) {
-            return callback('could not update person ' + doc.key + 'for user ' + userId + ':' + err);
+            return callback('could not update person ' + doc.key + ' for user ' + userId + ': ' + err);
           }
           log.info('person', doc.key, 'updated with user', userId, 'data');
           callback(null, doc); // success

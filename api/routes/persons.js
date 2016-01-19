@@ -146,7 +146,7 @@ log.debug('route updatePersonUserData - userId:', userId);
 log.debug('route updatePersonUserData - data:', data);
     person.updatePersonUserData(personKey, userId, data, function(err, person) {
       if (err) {
-        log.error('error updating person user data for person key', personKey, ', user id', userId + ':', err);
+        log.error('error updating person user data for person key', personKey, 'user id', userId, ':', err);
         return res.status(500).json({ error: err });
       }
       res.json(person);
