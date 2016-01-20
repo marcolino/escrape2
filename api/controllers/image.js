@@ -459,6 +459,7 @@ if (personImage.personKey !== image.personKey) {
 //  log.warn('findSimilarSignatureImage - signature to be checked here');
 //}
     // check image url, beforehand
+log.warn('TWIN URL CHECK:', image.url, '===', personImage.url);
     if (image.url === personImage.url) {
       image.hasDuplicate = true;
       image.basename = personImage.basename; // copy old properties since image will be saved without saveImageToFS

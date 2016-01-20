@@ -59,7 +59,7 @@ console.warn('result.url:', result.url);
 }
 }
 */
-        if (response.statusCode === 304) { // not changed
+        if (response.statusCode === 304) { // 304, not changed
           result.isChanged = false;
 log.debug('*** network fetch - 304 - contents is', contents ? contents.length + ' bytes long' : 'empty');
           if (config.env === 'development') {
@@ -75,7 +75,7 @@ log.debug('*** network fetch - 304 - contents is', contents ? contents.length + 
             }
           }
 
-        } else {
+        } else { // 200, downloaded
 
 // with some images, etag keeps changing even if image does not change... no problem, downloading it again...
 if (resource.type === 'image') {
@@ -336,7 +336,6 @@ exports.requestSmart = function(resource, error, success) {
     // TODO: debug only
     if (response &&
         response.statusCode !== 200 &&
-        response.statusCode !== 304 &&
         response.statusCode !== 403 &&
         response.statusCode !== 404 &&
         response.statusCode !== 502 &&
