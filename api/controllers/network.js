@@ -80,7 +80,7 @@ log.debug('*** network fetch - 304 - contents is', contents ? contents.length + 
 // with some images, etag keeps changing even if image does not change... no problem, downloading it again...
 if (resource.type === 'image') {
   log.debug('*** network.fetch - 200 - url:', response.request.uri.href, '- response.statusCode:', response.statusCode,
-            'request etag:', response.request.headers['If-None-Match'], '- response etag:', result.etag);
+            'request etag:', response.request.response.headers/*response.request.headers['If-None-Match']*/, '- response etag:', result.etag);
 }
 
           result.isChanged = true;

@@ -57,7 +57,7 @@ console.timeEnd('loadPersons');
     // serialize hide value
     // TODO: check user is logged, before...
 console.log('$rootScope.user:', $rootScope.user);
-    Person.updatePersonUserData(person.key, $rootScope.user, JSON.stringify({hide: true}))
+    Person.updatePersonUserData(person.key, $rootScope.user, {hide: true})
       .success(function(res) {
         console.info(' +++ hide value stored');
       })

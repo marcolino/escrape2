@@ -83,6 +83,21 @@ config.time = process.hrtime(); // TODO: development only
       }
     }
     */
+    var username = 'marco'; // TODO: get username from client
+    for (var i = 0; i < persons.length; i++) {
+      var person = persons[i];
+      for (var u = 0; u < person.users.length; u++) {
+        if (person.users[u].username === 'marco') {
+          console.log('*** found person with users data:', person.name);
+          console.log('*** person.users.username:', person.users[u].username);
+          console.log('*** person.users.hide:', person.users[u].hide);
+          if (person.users[u].hide) {
+            // remove this person from result
+            persons.splice(i, 1);
+          }
+        }
+      }
+    }
     return callback(null, persons);
   });
 };
@@ -407,7 +422,7 @@ exports.upsert = function(person, callback) {
   );
 };
 
-exports.updatePersonUserData = function(personKey, userId, data, callback) {
+exports.updatePersonUserData = function(personKey, user, data, callback) {
   Person.findOne(
     { key: personKey },
     function(err, doc) {
@@ -417,9 +432,13 @@ exports.updatePersonUserData = function(personKey, userId, data, callback) {
       if (!doc) { // person does not exist
         return callback('person ' + personKey + ' does not exist');
       }
-      if (!userId) { // user id is not valid
-        return callback('user id must not be empty');
+      if (!user) { // user is not valid
+        return callback('user cannot be empty');
       }
+      if (!user.username) { // user is not valid
+        return callback('user name cannot be empty');
+      }
+log.info('api controllers persons updatePersonUserData - user:', user, data);
 /* TODO:
       if (userId !=== logged in user id) { // user is not logged in user
         return callback('user is not valid');
@@ -427,9 +446,15 @@ exports.updatePersonUserData = function(personKey, userId, data, callback) {
 */
       doc.update(
         {
-          $set: {
-            'users.userId': userId,
-            'users.hide': data.hide
+          //$set: {
+          //  'users.username': user.username,
+          //  'users.hide': data.hide
+          //}
+          $push: {
+            'users': {
+              'username': user.username,
+              'hide': data.hide
+            }
           }
         },
         {
@@ -437,9 +462,9 @@ exports.updatePersonUserData = function(personKey, userId, data, callback) {
         },
         function(err) {
           if (err) {
-            return callback('could not update person ' + doc.key + ' for user ' + userId + ': ' + err);
+            return callback('could not update person ' + doc.key + ' for user ' + user.username + ': ' + err);
           }
-          log.info('person', doc.key, 'updated with user', userId, 'data');
+          log.info('person', doc.key, 'updated with user', user.username, 'data');
           callback(null, doc); // success
         }
       );

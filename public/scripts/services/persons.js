@@ -68,11 +68,11 @@ angular.module('PersonService', []).factory('Person', [ '$rootScope', '$http', f
       });
     },
     
-    updatePersonUserData: function(personKey, userId, data, callback) { // call to update person user data
+    updatePersonUserData: function(personKey, user, data, callback) { // call to update person user data
       // TODO: use this schema (simply `return $http(...)) in all client-side services, when possible
       return $http.post($rootScope.config.api.url + $rootScope.config.api.path + '/persons/updatePersonUserData', {
         personKey: personKey,
-        userId: userId,
+        user: user,
         data: data
       });
     },
