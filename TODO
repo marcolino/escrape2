@@ -25,6 +25,12 @@ function generateUserToken(user) {
 - use etag also for persons urls, and check if we can skip syncPersonsImages for unchanged persons
 - person.sync: get 'category' attribute too (CM, ...)
 - try to move db methods from controllers/xxx.js to models/xxx.js
+- follow http://stackoverflow.com/questions/34682277/mongodb-a-query-issue/34687799#34687799 advise:
+   var currentUserId = '123...';
+   var personIds = db.userToPerson.distinct("personId", { _id: currentUserId });
+   var personsRatedByCurrentUser = db.person.find({ _id: {$in, personIds}});
+
+
 
 V remove all "err.context = " lines
 V use `test.server.local` (in `/etc/hosts`) @home too

@@ -73,21 +73,33 @@ config.time = process.hrtime(); // TODO: development only
       return callback(err);
     }
     log.debug('persons loaded in', process.hrtime(config.time)[0] + (process.hrtime(config.time)[1] / 1000000000), 'seconds');
-    /*
-    //console.log('persons:', persons);
-    for (var i = 0; i < persons.length; i++) {
-      var person = persons[i];
-      if (person.key === 'TOE/3555') {
-        console.log('*** found person TOE/3555', person.name);
-        console.log('*** person.users[0]:', person.users[0]);
-      }
+
+    /* THIS IS GOOD!!!
+    var currentUserId = 'marco';
+    var userToPersons = UserToPerson.distinct('personId', { _id: currentUserId });
+    //var userToPersons = [
+    //  { userId: 'marco', personKey: 'FORBES/Shakira', hide: false },
+    //  { userId: 'marco', personKey: 'FORBES/Ursula Burns', hide: true },
+    //];
+    return callback(null, getPersonsForUser(persons, userToPersons, currentUserId));
+
+    function getPersonsForUser(persons, userToPersons, userId) {
+      var visiblePersons = persons.filter(function(eP, iP, aP) {
+        var isThisPersonVisible = !userToPersons.filter(function(eU, iU, aU) {
+          return (!eU.userId || (eU.personKey === eP.key && eU.hide && eU.userId === userId));
+        }).length;
+        return isThisPersonVisible;
+      });
+      return visiblePersons;
     }
     */
+
     var username = 'marco'; // TODO: get username from client
     for (var i = 0; i < persons.length; i++) {
       var person = persons[i];
+      console.log('person', i, ':', person.name);
       for (var u = 0; u < person.users.length; u++) {
-        if (person.users[u].username === 'marco') {
+        if (person.users[u].username === username) {
           console.log('*** found person with users data:', person.name);
           console.log('*** person.users.username:', person.users[u].username);
           console.log('*** person.users.hide:', person.users[u].hide);
@@ -99,6 +111,7 @@ config.time = process.hrtime(); // TODO: development only
       }
     }
     return callback(null, persons);
+
   });
 };
 
