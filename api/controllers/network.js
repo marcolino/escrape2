@@ -60,6 +60,11 @@ console.warn('result.url:', result.url);
 }
 */
         if (response.statusCode === 304) { // 304, not changed
+if (resource.type === 'image') {
+  log.debug('*** network.fetch - 304 - url:', response.request.uri.href, '- response.statusCode:', response.statusCode,
+            'request etag:', response.request.headers['If-None-Match'], '- response etag:', response.headers.etag);
+}
+
           result.isChanged = false;
 log.debug('*** network fetch - 304 - contents is', contents ? contents.length + ' bytes long' : 'empty');
           if (config.env === 'development') {
@@ -77,10 +82,10 @@ log.debug('*** network fetch - 304 - contents is', contents ? contents.length + 
 
         } else { // 200, downloaded
 
-// with some images, etag keeps changing even if image does not change... no problem, downloading it again...
+// with some images, etag keeps changing even if image does not change... no problem, downloading it again... (???)
 if (resource.type === 'image') {
-  log.debug('*** network.fetch - 200 - url:', response.request.uri.href, '- response.statusCode:', response.statusCode,
-            'request etag:', response.request.response.headers/*response.request.headers['If-None-Match']*/, '- response etag:', result.etag);
+  log.error('*** network.fetch - 200 - url:', response.request.uri.href, '- response.statusCode:', response.statusCode,
+            'request etag:', response.request.headers['If-None-Match'], '- response etag:', response.headers.etag);
 }
 
           result.isChanged = true;
@@ -336,6 +341,7 @@ exports.requestSmart = function(resource, error, success) {
     // TODO: debug only
     if (response &&
         response.statusCode !== 200 &&
+        response.statusCode !== 304 &&
         response.statusCode !== 403 &&
         response.statusCode !== 404 &&
         response.statusCode !== 502 &&

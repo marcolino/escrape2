@@ -203,8 +203,8 @@ exports.sync = function() { // sync persons
                 person.key = provider.key + '/' + element.key; // person key is the sum of provider key and element key
                 person.whenImageChangesUrlChangesToo = provider.whenImageChangesUrlChangesToo; // to spped-up images sync, when possible
 //log.debug('SET PERSON whenImageChangesUrlChangesToo');
-// PAMELA
-//if (person.key !== 'SGI/adv3056a') return callbackInner(); // TODO: DEBUG ONLY - sync only one person
+// SANDRA UNGHERESE
+//if (person.key !== 'SGI/adv5710') return callbackInner(); // TODO: DEBUG ONLY - sync only one person
 
                 resource = {
                   url: person.url,
@@ -226,11 +226,13 @@ exports.sync = function() { // sync persons
                       );
                       return callbackInner(); // skip this inner loop
                     }
+                    /*
                     if (!result.isChanged) { // not changed
-                      // TODO: TEST THIS!
+                      // TODO: TO USE THIS WE SHOULD ADD ETAG HANDLING TO PERSONS PAGES
                       log.info('person', person.key, 'is not changed, skipping');
                       return callbackInner(); // skip this inner loop
                     }
+                    */
                     if (!result.contents) {
                       log.warn(
                         'syncing person', person.key + ':',
@@ -413,8 +415,8 @@ exports.upsert = function(person, callback) {
         if (err) {
           return callback('could not save person ' + doc.key + ': ' + err.toString());
         }
-        log.info('person', doc.key, doc.name, 'etag/md5', ((isNew || isUrlPageChanged) ? 'changed'.red : 'not changed'.grey));
-        log.info('person', doc.key, doc.name, (isNew ? 'inserted'.cyan : isSomeFieldChanged ? 'some field changed'.red : 'some field not changed'.grey));
+        log.info('person', doc.key, doc.name, (isNew ? 'inserted'.cyan : isUrlPageChanged ? 'page sum changed'.red : isSomeFieldChanged ? 'page field changed'.red : 'unchanged'.grey));
+
         doc.isChanged = isNew || isUrlPageChanged || isSomeFieldChanged;
         callback(null, doc); // success
       });
