@@ -34,81 +34,51 @@ exports.fetch = function(resource, callback) {
   if (resource.type === 'image') { // set encoding to binary if type is image
     options.encoding = 'binary';
   }
-//log.debug(' *** network.fetch(): resource:', resource);
   if (resource.etag) { // must check etag is not null, can't set a null If-None-Match header
     options.headers['If-None-Match'] = resource.etag; // eTag field
   }
 
-  //requestretry( // sometimes gives SOCKS error (really is requestretry() ? RE-TEST REQUESTRETRY!!!)...
+  // TODO: requestretry() sometimes gives SOCKS error (really is requestretry() ? RE-TEST REQUESTRETRY!!!)...
   requestretry(
     options,
     function(err, response, contents) {
       var requestEtag;
-//log.debug(' *** network.fetch(): response.headers:', response.headers);
       if (!err && (response.statusCode === 200 || response.statusCode === 304)) {
         var result = {};
         result.etag = response.headers.etag;
         result.url = response.request.uri.href;
-        //result.url = response.request.req._headers.referer;
-/*
-if (resource.type === 'image') { // set encoding to binary if type is image
-if (response.request.uri.href.match(/https/)) {
-console.warn('*** response.request.req._headers.referer:', response.request.req._headers.referer);
-console.warn('result.request:', response.request);
-console.warn('result.url:', result.url);
-}
-}
-*/
-        if (response.statusCode === 304) { // 304, not changed
-if (resource.type === 'image') {
-  log.debug('*** network.fetch - 304 - url:', response.request.uri.href, '- response.statusCode:', response.statusCode,
-            'request etag:', response.request.headers['If-None-Match'], '- response etag:', response.headers.etag);
-}
-
+        if (response.statusCode === 304) { // unchanged
           result.isChanged = false;
-log.debug('*** network fetch - 304 - contents is', contents ? contents.length + ' bytes long' : 'empty');
-          if (config.env === 'development') {
-            requestEtag = response.request.headers['If-None-Match'];
-            if (requestEtag && (result.etag !== requestEtag)) { // TODO: just to be safe, should not need this test on production
+
+          if (config.env === 'development') { // TODO: just to be safe, should not need this test on production
+            if (requestEtag && (result.etag !== response.request.headers['If-None-Match'])) {
               log.warn(
                 'result', result.url, 'not downloaded, but etag does change, If-None-Match not honoured;',
                 'response status code:', response.statusCode, ';',
-                'eTags - response:', result.etag, ', request:', requestEtag, ';',
+                'eTags - response:', result.etag, ', request:', response.request.headers['If-None-Match'], ';',
                 'contents length:', (contents ? contents.length : 'zero')
               );
-              //return callback(null, result);
             }
           }
 
-        } else { // 200, downloaded
-
-// with some images, etag keeps changing even if image does not change... no problem, downloading it again... (???)
-if (resource.type === 'image') {
-  log.error('*** network.fetch - 200 - url:', response.request.uri.href, '- response.statusCode:', response.statusCode,
-            'request etag:', response.request.headers['If-None-Match'], '- response etag:', response.headers.etag);
-}
-
+        } else { // downloaded
           result.isChanged = true;
           result.contents = contents;
 
-          if (config.env === 'development') {
-            requestEtag = response.request.headers['If-None-Match'];
-            if (requestEtag && (result.etag === requestEtag)) { // TODO: just to be safe, should not need this test on production
+          if (config.env === 'development') { // TODO: just to be safe, should not need this test on production
+            if (requestEtag && (result.etag === response.request.headers['If-None-Match'])) {
               log.warn(
                 'result', result.url, 'downloaded, but etag does not change, If-None-Match not honoured;',
                 'response status code:', response.statusCode, ';',
-                'eTags - response:', result.etag, ', request:', requestEtag, ';',
+                'eTags - response:', result.etag, ', request:', response.request.headers['If-None-Match'], ';',
                 'contents length:', (contents ? contents.length : 'zero')
               );
-              //return callback(null, result);
             }
           }
-        }
-//log.debug('network.fetch(): result.etag:', result.etag);
 
+        }
         callback(null, result); // success
       } else {
-//log.warn('fetch - error - response:', response, err);
         callback(err, response); // error
       }
     }
