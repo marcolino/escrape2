@@ -11,6 +11,7 @@ var mongoose = require('mongoose') // mongo abstraction
   , image = require('../controllers/image') // network handling
   , provider = require('./provider') // provider's controller
   , Person = require('../models/person') // model of person
+  , UserToPerson = require('../models/userToPerson') // model of user-to-person
   , Image = require('../models/image') // model of image
   , config = require('../config') // global configuration
 ;
@@ -72,28 +73,51 @@ config.time = process.hrtime(); // TODO: development only
     if (err) {
       return callback(err);
     }
-    log.debug('persons loaded in', process.hrtime(config.time)[0] + (process.hrtime(config.time)[1] / 1000000000), 'seconds');
+    log.debug('' + persons.length, 'persons loaded in', process.hrtime(config.time)[0] + (process.hrtime(config.time)[1] / 1000000000), 'seconds');
 
-    /* THIS IS GOOD!!!
-    var currentUserId = 'marco';
-    var userToPersons = UserToPerson.distinct('personId', { _id: currentUserId });
-    //var userToPersons = [
-    //  { userId: 'marco', personKey: 'FORBES/Shakira', hide: false },
-    //  { userId: 'marco', personKey: 'FORBES/Ursula Burns', hide: true },
-    //];
-    return callback(null, getPersonsForUser(persons, userToPersons, currentUserId));
+    /* THIS IS GOOD!!! */
+    var currentUserId = 'marco'; // TODO: use _id...
+log.debug('currentUserId:', currentUserId);
+    UserToPerson.find({ username: currentUserId }, function(err, userToPerson) {
+      if (err) {
+        log.error('UserToPerson.find() error:', err);
+        return callback(err);
+      }
+//log.debug(' *** userToPerson:', userToPerson);
+      //var userToPerson = [
+      //  { userId: 'marco', personKey: 'FORBES/Shakira', hide: false },
+      //  { userId: 'marco', personKey: 'FORBES/Ursula Burns', hide: true },
+      //];
+      var userToPersonObjects = userToPerson.map(function (e) { return e.toObject(); });
+//log.debug(' *** userToPersonObjects:', userToPersonObjects);
+      return callback(null, getPersonsForUser(persons, userToPersonObjects, currentUserId));
+    });
 
-    function getPersonsForUser(persons, userToPersons, userId) {
-      var visiblePersons = persons.filter(function(eP, iP, aP) {
-        var isThisPersonVisible = !userToPersons.filter(function(eU, iU, aU) {
-          return (!eU.userId || (eU.personKey === eP.key && eU.hide && eU.userId === userId));
+    function getPersonsForUser(persons, userToPerson, username) {
+      var visiblePersons = persons.filter(function(elementP, indexP, arrayP) {
+//log.debug('# elementP.key:', elementP.key);
+        var isThisPersonVisible = !userToPerson.filter(function(elementU, indexU, arrayU) {
+          return (!elementU.username || (elementU.personKey === elementP.key && elementU.hide && elementU.username === username));
         }).length;
         return isThisPersonVisible;
       });
       return visiblePersons;
     }
-    */
 
+/*
+function getVisible(selUserId){
+  var visiblePersons = persons.filter(function(v,i,a){
+    var isThisPersonVisible = !usersToPersons.filter(function(vv,ii,aa){
+      return (vv.personId === v.id && !vv.hide && vv.userId === selUserId || !vv.userId);
+    }).length;
+
+    return isThisPersonVisible;
+  });
+
+  return visiblePersons;
+}
+*/
+/*
     var username = 'marco'; // TODO: get username from client
     for (var i = 0; i < persons.length; i++) {
       var person = persons[i];
@@ -110,8 +134,8 @@ config.time = process.hrtime(); // TODO: development only
         }
       }
     }
-    return callback(null, persons);
-
+*/
+    //return callback(null, persons);
   });
 };
 
@@ -437,6 +461,29 @@ exports.upsert = function(person, callback) {
 };
 
 exports.updatePersonUserData = function(personKey, user, data, callback) {
+log.debug('updatePersonUserData - ', 'personKey:', personKey, 'user:', user, 'data:', data);
+  if (!user) { // user is not valid
+    return callback('user cannot be empty');
+  }
+  if (!user.username) { // user is not valid
+    return callback('user name cannot be empty');
+  }
+/* TODO:
+  if (userId !=== logged in user id) { // user is not logged in user
+    return callback('user is not valid');
+  }
+*/
+  var query = { username: user.username, personKey: personKey};
+  //data.username = user.username;
+  UserToPerson.findOneAndUpdate(query, data, { upsert: true }, function(err, doc) {
+    if (err) {
+      return callback('could not update data of user ' + user.username + ' for person ' + personKey + ': ' + err.toString());
+    }
+    callback(null, doc); // success
+  });
+};
+
+exports.updatePersonUserDataARRAY = function(personKey, user, data, callback) {
   Person.findOne(
     { key: personKey },
     function(err, doc) {

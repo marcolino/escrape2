@@ -1,10 +1,6 @@
 var mongoose = require('mongoose')
   , config = require('../config'); // application configuration
 
-
-// person per user child schema
-//var personPerUserSchema = new mongoose.Schema({ userId: String, hide: Boolean });
-
 // person schema
 var personSchema = new mongoose.Schema({
   key: String,
@@ -33,7 +29,7 @@ var personSchema = new mongoose.Schema({
   alias: String,
   showcaseBasename: String,
   //users: [ personPerUserSchema ]
-  users: [ mongoose.Schema.Types.Mixed ]
+  //users: [ mongoose.Schema.Types.Mixed ]
 },
 {
   autoIndex: config.env === 'development',
