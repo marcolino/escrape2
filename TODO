@@ -29,8 +29,8 @@ function generateUserToken(user) {
    var currentUserId = '123...';
    var personIds = db.userToPerson.distinct("personId", { _id: currentUserId });
    var personsRatedByCurrentUser = db.person.find({ _id: {$in, personIds}});
-
-
+- use lean in mongo queryes everywhere it's possible
+- move gethead.js to a method in network.js, to check if resource did change etag *quickly*
 
 V remove all "err.context = " lines
 V use `test.server.local` (in `/etc/hosts`) @home too

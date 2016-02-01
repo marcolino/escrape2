@@ -30,7 +30,7 @@ exports.syncPersonsImagesCheck = function(persons, callback) {
     async.eachSeries(
       persons,
       function(person, callbackPerson) {
-        async.eachSeries( // TODO: we have to serialize images sync, otherwise findSimilarSignatureImages will not find same person images (RIGHT?)
+        async.eachSeries( // TODO: we have to serialize images sync, otherwise findSimilarSignatureImage will not find same person images (RIGHT?)
           person.imageUrls,
           function(imageUrl, callbackImage) {
             var personImages = local.grep(
@@ -100,7 +100,8 @@ if (person.isChanged) { log.debug('person', person.key, person.name, 'did change
           return callbackPerson();
         }
 
-        async.eachSeries( // TODO: we have to serialize images sync, otherwise findSimilarSignatureImages will not find same person images (RIGHT?)
+      //async.eachSeries( // TODO: we have to serialize images sync, otherwise findSimilarSignatureImage will not find same person images (RIGHT?)
+        async.each(
           person.imageUrls,
           function(imageUrl, callbackImage) {
             download(imageUrl, person, images, function(err, image) {
@@ -178,7 +179,7 @@ if (person.isChanged) { log.debug('person', person.key, person.name, 'did change
     }
     image.type = 'image';
 
-var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
+//var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
     network.fetch(image, function(err, img) { // fetch image resource
     if (err) {
       log.warn('network fetch error:', err);
@@ -210,7 +211,7 @@ image.basename = personImage.basename;
 image.url += crypto.randomBytes(3).toString('ascii');
 */
 
-if (config.profile) log.debug('download image for person key', person.key + ':', process.hrtime(t)[0] + (process.hrtime(t)[1] / 1000000000), 'seconds');
+//if (config.profile) log.debug('download image for person key', person.key + ':', process.hrtime(t)[0] + (process.hrtime(t)[1] / 1000000000), 'seconds');
 
       callback(err, image);
     });
@@ -220,7 +221,7 @@ if (config.profile) log.debug('download image for person key', person.key + ':',
    * create image versions and save to filesystem
    */
 local.saveImageToFS = function(image, images, callback) {
-var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
+//var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
     if (image.hasDuplicate) {
       return callback(null, image, images);
     }
@@ -303,8 +304,7 @@ var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
         }, // async each versions iteration function done
         function(err) { // all directories and image versions created 
 //if (err) { log.error('saveImageToFS final error:', err); }
-//if (config.profile) log.debug('PROFILE saveImageToFS', process.hrtime(t)[0] + '.' + process.hrtime(t)[1], 'seconds');
-if (config.profile) log.debug('saveImageToFS:', process.hrtime(t)[0] + (process.hrtime(t)[1] / 1000000000), 'seconds');
+//if (config.profile) log.debug('saveImageToFS:', process.hrtime(t)[0] + (process.hrtime(t)[1] / 1000000000), 'seconds');
           callback(err, image, images); // finished
         }
       ); // async each versions done
@@ -341,10 +341,7 @@ local.saveImageToDB = function(image, images, callback) {
             if (err) {
               log.warn('can\'t save image', doc.basename, ':', err);
             } else {
-              log.info('image', doc.personKey, doc.basename, raw.lastErrorObject.updatedExisting ? 'updated' : 'added');
-              //log.debug('raw:', raw);
-              //log.debug('doc:', doc);
-              //log.info('IMAGE BEING PUSHED BACK TO IMAGES:', doc.basename);
+              //log.info('image', doc.personKey, doc.basename, raw.lastErrorObject.updatedExisting ? 'updated' : 'added');
               images.push(doc); // push added image
             }
             callbackInternal(err, doc); // finish image save
@@ -425,9 +422,9 @@ local.findSimilarSignatureImage = function(image, images, callback) {
 
   if (minDistance <= config.images.thresholdDistanceSamePerson) {
     image.hasDuplicate = true;
-    console.info('image for person', image.personKey, 'with url <img src="'+image.url+'"> has duplicate in <img src="'+imageMostSimilar.url+'">'.white);
+    //console.info('image for person', image.personKey, 'with url <img src="'+image.url+'"> has duplicate in <img src="'+imageMostSimilar.url+'">'.white);
   } else {
-    console.info('image for person', image.personKey, 'with url <img src="'+image.url+'"> is new'.cyan);
+    //console.info('image for person', image.personKey, 'with url <img src="'+image.url+'"> is new'.cyan);
   }
 
   if (image.hasDuplicate) { // copy properties (which should be set afterwards for new images) from imageMostSimilar
