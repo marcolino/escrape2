@@ -90,8 +90,8 @@ exports.syncPersonsImages = function(persons, callback) {
       persons,
       function(person, callbackPerson) {
 
-if (person.isChanged) { log.debug('person', person.key, person.name, 'did change (new or modified)'.cyan); } else
-                      { log.debug('person', person.key, person.name, 'did not change'.white); }
+if (person.isChanged) { log.debug('images for person', person.key, person.name, 'did possibly change'.blue); } else
+                      { log.debug('images for person', person.key, person.name, 'did not change'.white); }
 
         // TODO: try this!
         // do not download images if a person did not change and whenImageChangesUrlChangesToo
@@ -341,7 +341,11 @@ local.saveImageToDB = function(image, images, callback) {
             if (err) {
               log.warn('can\'t save image', doc.basename, ':', err);
             } else {
-              //log.info('image', doc.personKey, doc.basename, raw.lastErrorObject.updatedExisting ? 'updated' : 'added');
+              if (raw.lastErrorObject.updatedExisting) {
+                //log.info('image', doc.personKey, doc.basename, 'updated'.cyan);
+              } else {
+                log.info(' ' + 'image', doc.personKey, doc.basename, 'added'.magenta);
+              }
               images.push(doc); // push added image
             }
             callbackInternal(err, doc); // finish image save

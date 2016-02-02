@@ -5,7 +5,8 @@ var request = require('request'),
 var googleSearchByImageUrl = 'https://www.google.com/searchbyimage';
 var userAgent = 'Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11';
 
-var image = 'http://www.torinoerotica.com/photo-escort/91126-4137/1-988916588-3643649102.JPG';
+//var image = 'http://www.torinoerotica.com/photo-escort/91126-4137/1-988916588-3643649102.JPG';
+var image = 'https://www.sexyguidaitalia.com/public/29276/copertina.jpg?t=635900234397057994';
 
 var options = {
   url: googleSearchByImageUrl,
