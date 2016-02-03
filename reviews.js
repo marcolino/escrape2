@@ -74,14 +74,23 @@ exports.searchTopics = function(search, callback) {
 };
 
 exports.searchPosts = function(topic, callback) {
-  var topicUrlStart = tpoic.url.replace(/\/msg\d+\.*/, null);
+  var topicUrlStart = topic.url.replace(/\/msg\d+\.*/, null);
+  // TODO: ...
+};
+
+exports.searchEscortAdvisorPosts = function(search, callback) {
+  var url = 'http://www.escort-advisor.com/ea/Numbers/?num=' + search;
   // TODO: ...
 };
 
 module.exports = exports;
 
 // test /////////////////////////////////////////////////
-exports.searchTopics('3888350421', function(err, results) {
+//var phone = '3888350421'; // SANDRA
+//var phone = '3240810872'; // ANE MARIE
+//var phone = '3897876672'; // KSIUSCHA
+  var phone = '3426856330'; // GIULIA
+exports.searchTopics(phone, function(err, results) {
   if (err) {
     return console.error(err);
   }

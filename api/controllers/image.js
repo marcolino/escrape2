@@ -90,8 +90,11 @@ exports.syncPersonsImages = function(persons, callback) {
       persons,
       function(person, callbackPerson) {
 
-if (person.isChanged) { log.debug('images for person', person.key, person.name, 'did possibly change'.yellow); } else
-                      { log.debug('images for person', person.key, person.name, 'did not change'.white); }
+        if (person.isChanged) {
+          log.debug('images for person', person.key, person.name, 'did possibly change'.yellow);
+        } else {
+          //log.debug('images for person', person.key, person.name, 'did not change'.white);
+        }
 
         // TODO: try this!
         // do not download images if a person did not change and whenImageChangesUrlChangesToo
