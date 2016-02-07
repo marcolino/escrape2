@@ -1,4 +1,4 @@
-- add mongo dependency and (http://docs.mongodb.org/manual/installation/) start it in deploy script (?)
+- add check ongo dependency and (http://docs.mongodb.org/manual/installation/) start it in deploy script (?)
 - make bootswatch theme in index.html configurable (on the server only)
 - use `handlebars` for html templating (to have variables in index.html)
 - do sync images only for new/changed persons (?)
@@ -31,6 +31,8 @@ function generateUserToken(user) {
    var personsRatedByCurrentUser = db.person.find({ _id: {$in, personIds}});
 - use lean in mongo queryes everywhere it's possible
 - move gethead.js to a method in network.js, to check if resource did change etag *quickly*
+- use isNew / isChanged (person.isUrlPageChanged || person.isSomeFieldChanged) in controllers/images.js
+- use syncSeries also for images sync (to avoid new images duplication of SGI/cover.jpg and SGI/cover-thumb.jpg)
 
 V remove all "err.context = " lines
 V use `test.server.local` (in `/etc/hosts`) @home too

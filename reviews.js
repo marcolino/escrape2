@@ -1,8 +1,6 @@
 var request = require('request')
   , cheerio = require('cheerio')
-  , querystring = require('querystring')
-  , util = require('util')
-  , randomUseragent = require('random-ua') // to use a random user-agent
+  , async = require('async') // to call many async functions in a loop
   , config = require('./api/config') // global configuration
 ;
 
@@ -14,27 +12,9 @@ exports.searchTopics = function(search, callback) {
 
   var tagTopic = 'topic_details';
 
-  var requestOptions = {
+  var options = {
     url: url,
     method: 'POST',
-    headers: {
-      'Origin': 'http://gnoccaforum.com',
-      'Accept-Language': 'en-US,en;q=0.8,it;q=0.6',
-      'Upgrade-Insecure-Requests': 1,
-      'User-Agent': randomUseragent.generate(), // user agent: pick a random one
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-      'Cache-Control': 'max-age=0',
-      'Referer': 'http://gnoccaforum.com/escort/search',
-      'Connection': 'keep-alive',
-    },
-    /*
-    agentClass: config.tor.available ? agent : null, // socks5-http-client/lib/Agent
-    agentOptions: { // TOR socks host/port
-      socksHost: config.tor.available ? config.tor.host : null, // TOR socks host
-      socksPort: config.tor.available ? config.tor.port : null, // TOR socks port
-    },
-    */
     form: {
       search: search,
       advanced: 1,
@@ -47,35 +27,97 @@ exports.searchTopics = function(search, callback) {
     timeout: config.networking.timeout, // number of milliseconds to wait for a server to send response headers before aborting the request
   }
 
-  request(requestOptions, function (err, response, body) {
-    if ((err == null) && response.statusCode === 200) {
-      //console.log(body);
-      var $ = cheerio.load(body);
-      var topics = [];
-
-      $('div[class~="'+tagTopic+'"]').each(function (i, element) { // topics loop
-        var topic = {};
-        //console.log($(element).html());
-        topic.counter = $(element).find('div[class^="counter"]').text();
-        topic.section = $(element).find('a').eq(0).text();
-        topic.url = $(element).find('a').eq(1).attr('href');
-        topic.title = $(element).find('a').eq(1).text();
-        topic.author = {};
-        topic.author.name = $(element).find('a').eq(2).text();
-        topic.author.url = $(element).find('a').eq(2).attr('href');
-        topic.dateOfCreation = $(element).find('em').text().trim();
-        topics.push(topic);
-      })
-      callback(null, topics);
-    } else {
-      callback(new Error('Error on response' + (response ? ' (' + response.statusCode + ')' : '') + ':' + err + ' : ' + body), null);
+  request(options, function (err, response, body) {
+    if (err || response.statusCode !== 200) {
+      return callback(new Error('Error on response' + (response ? ' (' + response.statusCode + ')' : '') + ':' + err + ' : ' + body), null);
     }
+    //console.log(body);
+    var $ = cheerio.load(body);
+    var topics = [];
+
+    $('div[class~="'+tagTopic+'"]').each(function (i, element) { // topics loop
+      var topic = {};
+      //console.log($(element).html());
+      topic.counter = $(element).find('div[class^="counter"]').text();
+      topic.section = $(element).find('a').eq(0).text();
+      topic.url = $(element).find('a').eq(1).attr('href');
+      topic.title = $(element).find('a').eq(1).text();
+      topic.author = {};
+      topic.author.name = $(element).find('a').eq(2).text();
+      topic.author.url = $(element).find('a').eq(2).attr('href');
+      topic.dateOfCreation = $(element).find('em').text().trim();
+      topics.push(topic);
+    });
+
+    callback(null, topics);
   })
 };
 
 exports.searchPosts = function(topic, callback) {
-  var topicUrlStart = topic.url.replace(/\/msg\d+\.*/, null);
-  // TODO: ...
+  var topicUrlStart = topic.url.replace(/\/msg\d+\/.*/, '');
+
+  var posts = [];
+
+  var url = topicUrlStart;
+
+  async.whilst(
+    function() { console.log('TEST:', url); return url !== 'undefined'; },
+    function(callbackWhilst) {
+      console.log('REQUESTING');
+      request(url, function(err, response, body) {
+        if (err || response.statusCode !== 200) {
+          return callback(new Error('Error on response' + (response ? ' (' + response.statusCode + ')' : '') + ':' + err + ' : ' + body), null);
+        }
+        var $ = cheerio.load(body);
+        $('table[border-color="#cccccc"]').each(function(i, element) { // post elements
+          var post = {};
+          post.n = 1 + posts.length;
+          var postHtml = $(element).html();
+    
+          post.author = {};
+          post.author.name = $(element).find('a[title^="View the profile of "]').text(); // post author name regex
+    
+          var authorHtml = $(element).find('span[class="smalltext"]').html();
+    
+          var authorKarmaRE = /Karma:\s*(.*?)\s*<br>/; // post author karma regex
+          post.author.karma = authorKarmaRE.exec(authorHtml)[1];
+    
+          var authorPostsRE = /Posts:\s*(.*?)\s*<br>/; // post author posts count regex
+          post.author.postsCount = authorPostsRE.exec(authorHtml)[1];
+    
+          var dateRE = /&#xAB;\s*<b>(?:.*?)\s*on\:<\/b>\s*(.*?)\s*&#xBB;/; // post date regex
+          post.date = dateRE.exec(postHtml)[1];
+    
+          var contents = $(element).find('div.post').html();
+          var contentsQuotesRE = /(.*?)(<div class="quoteheader"><div class="topslice_quote"><a .*?>.*?<\/a><\/div><\/div><blockquote.*?>.*?<\/blockquote><div class="quotefooter"><div class="botslice_quote"><\/div><\/div>)(.*)/;
+          var quotes = contentsQuotesRE.exec(contents);
+          if (quotes) {
+            contents = quotes[1] + quotes[3];
+          }
+          contents = contents.replace(/^\s*/, '');
+          contents = contents.replace(/\s*$/, '');
+          contents = contents.replace(/^(<br>)*/, '');
+          contents = contents.replace(/(<br>)*$/, '');
+          post.contents = contents; 
+    
+          posts.push(post);
+        });
+        console.log('posts:', posts);
+  
+        url = $('a[class="navPages"]').attr('href'); // next url
+
+        // TODO: with multipla pages, navPages is present also on the last page...
+        // find a different way to detect last page...
+
+        console.log('url +++++++++++++++++++++:', url);
+        callbackWhilst();
+      });
+    },
+    function(err, done) {
+      console.log(' ************************** done:', done);
+      callback(null, posts);
+    }
+  );
 };
 
 exports.searchEscortAdvisorPosts = function(search, callback) {
@@ -85,7 +127,21 @@ exports.searchEscortAdvisorPosts = function(search, callback) {
 
 module.exports = exports;
 
+
+
 // test /////////////////////////////////////////////////
+var topic = {};
+//topic.url = 'http://gnoccaforum.com/escort/info-torino-e-provincia-111/una-nuova-e-bella-russa-nastia-(ma-sara-anche-nasty)/msg1326531/#msg1326531';
+topic.url = 'http://gnoccaforum.com/escort/girlescort-torino/italiana-semplice-ma-molto-disponibile/';
+exports.searchPosts(topic, function(err, results) {
+  if (err) {
+    return console.error(err);
+  }
+  console.log('results.length:', results.length);
+});
+/////////////////////////////////////////////////////////
+
+/*
 //var phone = '3888350421'; // SANDRA
 //var phone = '3240810872'; // ANE MARIE
 //var phone = '3897876672'; // KSIUSCHA
@@ -97,3 +153,4 @@ exports.searchTopics(phone, function(err, results) {
   console.log(results);
 });
 /////////////////////////////////////////////////////////
+*/

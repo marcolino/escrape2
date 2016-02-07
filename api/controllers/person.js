@@ -453,7 +453,7 @@ exports.upsert = function(person, callback) {
         if (err) {
           return callback('could not save person ' + doc.key + ': ' + err.toString());
         }
-        log.info('person', doc.key, doc.name, (isNew ? 'inserted'.magenta : isUrlPageChanged ? 'page sum changed'.cyan : isSomeFieldChanged ? 'page field changed'.cyan : 'unchanged'.grey));
+        log.info('person', doc.key, doc.name, (isNew ? 'inserted'.yellow : isUrlPageChanged ? 'page sum changed'.cyan : isSomeFieldChanged ? 'page field changed'.cyan : 'unchanged'.grey));
         doc.isChanged = isNew || isUrlPageChanged || isSomeFieldChanged;
         callback(null, doc); // success
       });

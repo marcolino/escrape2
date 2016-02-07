@@ -86,7 +86,7 @@ exports.syncPersonsImages = function(persons, callback) {
       return callback(err);
     }
     log.debug('all images array length:', images.length);
-    async.eachSeries( // TODO: should we better serialize persons? (YES, otherwise too many ECONNRESET in request()...)
+    async.eachSeries( // TODO: should we better serialize person images sync? (YES, otherwise too many ECONNRESET or EAI_AGAIN in request()...)
       persons,
       function(person, callbackPerson) {
 
@@ -103,8 +103,7 @@ exports.syncPersonsImages = function(persons, callback) {
           return callbackPerson();
         }
 
-      //async.eachSeries( // TODO: we have to serialize images sync, otherwise findSimilarSignatureImage will not find same person images (RIGHT?)
-        async.each(
+      async.eachSeries( // TODO: we have to serialize images sync, otherwise findSimilarSignatureImage will not find same person images
           person.imageUrls,
           function(imageUrl, callbackImage) {
             download(imageUrl, person, images, function(err, image) {
