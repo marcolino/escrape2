@@ -1,5 +1,5 @@
-var request = require('request')
-  , cheerio = require('cheerio')
+var request = require('request') // to place http requests
+  , cheerio = require('cheerio') // to parse fetched DOM data
   , async = require('async') // to call many async functions in a loop
   , config = require('./api/config') // global configuration
 ;
@@ -61,7 +61,7 @@ exports.searchPosts = function(topic, callback) {
   var url = topicUrlStart;
 
   async.whilst(
-    function() { console.log('TEST:', url); return url !== 'undefined'; },
+    function() { return url !== null; },
     function(callbackWhilst) {
       console.log('REQUESTING');
       request(url, function(err, response, body) {
@@ -88,6 +88,7 @@ exports.searchPosts = function(topic, callback) {
           var dateRE = /&#xAB;\s*<b>(?:.*?)\s*on\:<\/b>\s*(.*?)\s*&#xBB;/; // post date regex
           post.date = dateRE.exec(postHtml)[1];
     
+          // remove quotes of previous post from post
           var contents = $(element).find('div.post').html();
           var contentsQuotesRE = /(.*?)(<div class="quoteheader"><div class="topslice_quote"><a .*?>.*?<\/a><\/div><\/div><blockquote.*?>.*?<\/blockquote><div class="quotefooter"><div class="botslice_quote"><\/div><\/div>)(.*)/;
           var quotes = contentsQuotesRE.exec(contents);
@@ -104,17 +105,22 @@ exports.searchPosts = function(topic, callback) {
         });
         console.log('posts:', posts);
   
-        url = $('a[class="navPages"]').attr('href'); // next url
-
-        // TODO: with multipla pages, navPages is present also on the last page...
-        // find a different way to detect last page...
-
-        console.log('url +++++++++++++++++++++:', url);
+        var last = $('a[name="lastPost"]').next().html();
+        //console.log(' *** LAST:', last);
+        var nextRE = /\[<strong>\d+<\/strong>\] <a class="navPages" href="(.*?)".*>/g;
+        var match = nextRE.exec(last);
+        if (match && match[1]) {
+          url = match[1];
+          //console.log(' QQQQQQQQQ next page url found:', url);
+        } else {
+          url = null;
+          //console.log(' QQQQQQQQQ NO NEXT URL FOUND');
+        }
         callbackWhilst();
       });
     },
     function(err, done) {
-      console.log(' ************************** done:', done);
+      //console.log(' ************************** done:', done ? done : '');
       callback(null, posts);
     }
   );
@@ -123,6 +129,8 @@ exports.searchPosts = function(topic, callback) {
 exports.searchEscortAdvisorPosts = function(search, callback) {
   var url = 'http://www.escort-advisor.com/ea/Numbers/?num=' + search;
   // TODO: ...
+
+  // NOT FOUND: <div class='light30'>Numero non trovato</div>
 };
 
 module.exports = exports;
@@ -131,8 +139,9 @@ module.exports = exports;
 
 // test /////////////////////////////////////////////////
 var topic = {};
-//topic.url = 'http://gnoccaforum.com/escort/info-torino-e-provincia-111/una-nuova-e-bella-russa-nastia-(ma-sara-anche-nasty)/msg1326531/#msg1326531';
-topic.url = 'http://gnoccaforum.com/escort/girlescort-torino/italiana-semplice-ma-molto-disponibile/';
+topic.url = 'http://gnoccaforum.com/escort/info-torino-e-provincia-111/una-nuova-e-bella-russa-nastia-(ma-sara-anche-nasty)/msg1326531/#msg1326531';
+//topic.url = 'http://gnoccaforum.com/escort/girlescort-torino/italiana-semplice-ma-molto-disponibile/';
+//topic.url = 'http://gnoccaforum.com/escort/info-torino-e-provincia-111/scuderia-russe-bollettino/1290/';
 exports.searchPosts(topic, function(err, results) {
   if (err) {
     return console.error(err);
