@@ -24,6 +24,7 @@ config.time = process.hrtime(); // TODO: development only
   var match = {};
   match.isPresent = true; // do not show persons who are not present
   match.showcaseBasename = { '$exists': true }; // do not show persons with no showcase basename (yet)
+  match.category = { '$ne': 'centro-massaggi' }; // exclude specific categories
   // TODO: generalize for all filter properties...
   if (filter.name) { match.name = filter.name; }
 

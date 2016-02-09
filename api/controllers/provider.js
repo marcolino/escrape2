@@ -18,7 +18,7 @@ mongoose.connection.on('open', function() {
 });
 
 exports.getAll = function(filter, callback) { // get all providers
-  Provider.getAll(filter, function(err, providers) {
+  Provider.find(filter, function(err, providers) {
     if (err) {
       console.error('Error retrieving providers:', err);
       callback(err);
@@ -29,7 +29,7 @@ exports.getAll = function(filter, callback) { // get all providers
 };
 
 exports.getUrl = function(key, category, callback) { // get provider URL
-  Provider.model.findOne({ key: key }, function(err, provider) {
+  Provider.findOne({ key: key }, function(err, provider) {
     if (err) {
       console.error('Error retrieving provider with key', key, ' :', err);
       callback(err);
@@ -65,7 +65,7 @@ exports.createProviders = function(providers, callback) {
 
   // remove Provider collection
   function remove(callback) {
-    Provider.model.remove({}, function(err) {
+    Provider.remove({}, function(err) {
       if (err) {
         return callback(err);
       }
@@ -75,7 +75,7 @@ exports.createProviders = function(providers, callback) {
 
   // create Provider collection
   function create(providers, callback) {
-    Provider.model.create(providers, function(err, provider) {
+    Provider.create(providers, function(err, provider) {
       if (err) {
         return callback(err);
       }
@@ -85,7 +85,7 @@ exports.createProviders = function(providers, callback) {
 
   // TODO: collectionName is not used ?!?!?
   function collectionExists(collectionName, callback) {
-    Provider.getAll({}, function(err, providers) {
+    Provider.find({}, function(err, providers) {
       if (err) {
         return callback(false);
       } else {

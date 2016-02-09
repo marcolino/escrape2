@@ -8,10 +8,12 @@ var providerSchema = new mongoose.Schema({
   url: String,
   language: String,
   categories: Object,
-  whenImageChangesUrlChangesToo: Boolean
+  whenImageChangesUrlChangesToo: Boolean,
+  pathSearch: String,
 }, {
   autoIndex: config.env === 'development'
 });
+providerSchema.index({ key: 1 }, { unique: true });
 
 /*
 // virtual method example
@@ -19,11 +21,13 @@ providerSchema.virtual('mode.type').get(function () {
   return this.mode + ' ' + this.type;
 });
 */
-
+/*
 var model = mongoose.model('Provider', providerSchema);
 
 var getAll = function(filter, result) { // get all providers
+console.log('model.providers:', filter);
   model.find(filter, function(err, providers) {
+console.log('PROVIDERS:', providers);
     result(err, providers);
   });
 };
@@ -33,3 +37,5 @@ module.exports = {
   schema: providerSchema,
   model: model
 };
+*/
+module.exports = mongoose.model('Provider', providerSchema);
