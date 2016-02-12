@@ -3,7 +3,9 @@
 var express = require('express')
   , bodyParser = require('body-parser') // to parse information from POST
   , provider = require('../controllers/provider')
+  , config = require('../config') // global configuration
 ;
+var log = config.log;
 
 var router = express.Router();
 router.use(bodyParser.urlencoded({ extended: true })); // already in app.js (is it sufficient???)
@@ -17,8 +19,19 @@ router.param('category', function(req, res, next, category) {
   next(); // go on to the next thing
 });
 
+router.get('/setup', setup);
 router.get('/', getAll);
 router.get('/:key/:category/geturl', getUrl);
+
+function setup(req, res) { // setup providers: to be run once on deploy
+  provider.createProviders(config.providers, function(err, providers) {
+    if (err) {
+      res.json(err);
+    } else {
+      res.json(true);
+    }
+  });
+}
 
 function getAll(req, res) { // get all providers
   var filter = {}; //req; // TODO: extract parameters in req which are suitable for getAll(), with some checks...
@@ -45,9 +58,7 @@ function getUrl(req, res) { // get provider URL
 
 // error handling
 router.use('/*', function(req, res, next) { // unforeseen request
-  var status = 404;
-  res.status(status);
-  res.json({ status: status, error: 'providers path ' + req.originalUrl + ' not found' });
+  res.status(404).json({ error: 'providers path ' + req.originalUrl + ' not found' });
 });
 
 // export all router methods

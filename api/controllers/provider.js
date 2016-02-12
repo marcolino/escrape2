@@ -1,13 +1,14 @@
 'use strict';
 
 var mongoose = require('mongoose') // mongo abstraction
-  , config = require('../config') // global configuration
   , Provider = require('../models/provider') // model of provider
+  , config = require('../config') // global configuration
 ;
 
 var local = {}; // define private objects container
 var log = config.log;
 
+/*
 mongoose.connection.on('open', function() {
   // create providers
   exports.createProviders(config.providers, function(err) {
@@ -16,6 +17,7 @@ mongoose.connection.on('open', function() {
     }
   });
 });
+*/
 
 exports.getAll = function(filter, callback) { // get all providers
   Provider.find(filter, function(err, providers) {
@@ -40,6 +42,19 @@ exports.getUrl = function(key, category, callback) { // get provider URL
   });
 };
 
+/**
+ * remove and create providers
+ */
+exports.createProviders = function(providers, callback) {
+  Provider.remove({}, function(err) {
+    if (err) {
+      return callback(err);
+    }
+    Provider.create(providers, callback);
+  });
+};
+
+/*
 exports.createProviders = function(providers, callback) {
   // populate model (remove ad create)
   collectionExists('Provider', function(exists) {
@@ -93,7 +108,7 @@ exports.createProviders = function(providers, callback) {
       }
     });
   }
-
 };
+*/
 
 module.exports = exports;

@@ -63,7 +63,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/persons', require('./routes/persons'));
 app.use('/api/providers', require('./routes/providers'));
 app.use('/api/places', require('./routes/places'));
-app.use('/api/comments', require('./routes/comments'));
+app.use('/api/reviews', require('./routes/reviews'));
 
 // public routes
 app.use(express.static(staticPathPublic));
