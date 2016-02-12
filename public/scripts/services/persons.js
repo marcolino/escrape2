@@ -39,7 +39,7 @@ angular.module('PersonService', []).factory('Person', [ '$rootScope', '$http', f
         if (response.error) {
           return console.warn('error getting person data:', response.error);
         }
-        console.info('person (' + response.length + '):', response);
+        console.info('person:', response);
         callback(response);
       })
       .error(function(err) {

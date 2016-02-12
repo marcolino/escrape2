@@ -35,7 +35,7 @@ console.warn('id:', id);
     });
   };
 
-  $scope.getShowcaseUrl = function(person) {
+  $scope.getPersonShowcaseUrl = function(person) {
     var url;
     if (person.showcaseBasename) {
       //console.log('person.showcaseBasename:', person.showcaseBasename);
@@ -44,6 +44,12 @@ console.warn('id:', id);
       //console.log('person.showcaseBasename is EMPTY', person);
       url = '/images' + '/' + 'person-showcase-default.png';
     }
+    return encodeURIComponent(url);
+  };
+
+  $scope.getImageShowcaseUrl = function(image) {
+    var url;
+    url = '/images' + '/' + image.personKey + '/showcase' + '/' + image.basename;
     return encodeURIComponent(url);
   };
 

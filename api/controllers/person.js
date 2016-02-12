@@ -142,8 +142,19 @@ function getVisible(selUserId){
 
 exports.getById = function(id, callback) { // get person by id
   var filter = { _id: id };
-  Person.find(filter, function(err, persons) {
-    callback(err, persons);
+  Person.findOne(filter).lean().exec(function(err, person) {
+    if (err) {
+      return callback(err);
+    }
+log.warn('/api/controllers/person/getById()', 'person:', person);
+    Image.find({ personKey: person.key }).lean().exec(function(err, images) {
+      if (err) {
+        return callback(err);
+      }
+log.warn('/api/controllers/person/getById()', 'images:', images);
+      person.images = images;
+      callback(null, person);
+    });
   });
 };
 

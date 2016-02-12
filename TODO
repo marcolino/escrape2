@@ -33,6 +33,8 @@ function generateUserToken(user) {
 - move gethead.js to a method in network.js, to check if resource did change etag *quickly*
 - use isNew / isChanged (person.isUrlPageChanged || person.isSomeFieldChanged) in controllers/images.js
 - use syncSeries also for images sync (to avoid new images duplication of SGI/cover.jpg and SGI/cover-thumb.jpg)
+- when token is expired, we should not get fatal errors (persons.html should be visible...)
+- when token is expired and then login done, the message 'login again please...' should be hidden
 
 V remove all "err.context = " lines
 V use `test.server.local` (in `/etc/hosts`) @home too

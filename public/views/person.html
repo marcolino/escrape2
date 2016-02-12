@@ -2,50 +2,51 @@
 
   <!-- person's thumbnail images slider -->
   <style>
-  .slider-wrapper {
-    _text-align: left;
-    _position: relative;
-    _margin-bottom: 20px !important;
-    _max-width: 800px;
-    }
     .slider {
       overflow-x: scroll;
       overflow-y: hidden;
-      height: 220px;
+      height: 320px;
       white-space: nowrap;
     }
     .slider img {
-      max-height: 200px;
+      height: 300px;
       margin: 2px;
       cursor: pointer;
       vertical-align: middle;
     }
   </style>
-  <div class="slider-wrapper">
-    <div class="slider">
-      <div data-ng-repeat="(url) in person.images.urls" class="col-xs-12">
-        <img data-ng-src="{{ url }}" alt="..." />
-      </div>
-      <img src="http://placehold.it/200x200" />
-      <img src="http://placehold.it/200x200" />
-      <img src="http://placehold.it/200x200" />
-      <img src="http://placehold.it/200x200" />
-      <img src="http://placehold.it/200x200" />
-      <img src="http://placehold.it/200x200" />
-      <img src="http://placehold.it/200x200" />
-      <img src="http://placehold.it/200x200" />
-      <img src="http://placehold.it/200x200" />
-      <img src="http://placehold.it/200x200" />
-      <img src="http://placehold.it/200x200" />
-      <img src="http://placehold.it/200x200" />
-      <img src="http://placehold.it/200x200" />
-      <img src="http://placehold.it/200x200" />
-      <img src="http://placehold.it/200x200" />
-      <img src="http://placehold.it/200x200" />
-      <img src="http://placehold.it/200x200" />
-      <img src="http://placehold.it/200x200" />
-      <img src="http://placehold.it/200x200" />
-      <img src="http://placehold.it/200x200" />
+  <!--<pre>{{person.images}}</pre>-->
+  <div class="slider">
+    <span data-ng-repeat="image in person.images" _class="col-xs-12">
+      <img data-ng-src="{{ getImageShowcaseUrl(image) }}" alt="..." />
+    </span>
+  </div>
+</div>
+
+<div style="padding:0.6em;">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h1 class="panel-title" style="text-align:left">About her</h1>
     </div>
+    <div class="panel-body">
+      <div class="row">
+        <div class="col-xs-12">
+          <!-- tabs left -->
+          <div class="tabbable">
+            <ul class="nav nav-pills nav-stacked col-xs-2">
+              <li class="active"><a href="#a" data-toggle="tab">Reviews</a></li>
+              <li><a href="#b" data-toggle="tab">Photos tracks</a></li>
+              <li><a href="#c" data-toggle="tab">Phone tracks</a></li>
+            </ul>
+            <div class="tab-content col-xs-10">
+              <div class="tab-pane active" id="a" style="min-height:300px;">1</div>
+              <div class="tab-pane" id="b">2</div>
+              <div class="tab-pane" id="c">3</div>
+            </div>
+          </div>
+          <!-- /tabs -->
+        </div>
+      </div>
     </div>
   </div>
+</div>
