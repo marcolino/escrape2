@@ -16,9 +16,7 @@ angular.module('PersonService', []).factory('Person', [ '$rootScope', '$http', f
       //console.warn('public service person getAll - url is: ' + $rootScope.config.api.url + $rootScope.config.api.path + '/persons/getAll' + path);
       $http({
         method: 'GET',
-        url:
-          $rootScope.config.api.url + $rootScope.config.api.path + '/persons/getAll' +
-          path
+        url: $rootScope.config.api.url + $rootScope.config.api.path + '/persons/getAll' + path,
       })
       .success(function(response) {
         if (response.error) {
@@ -29,6 +27,23 @@ angular.module('PersonService', []).factory('Person', [ '$rootScope', '$http', f
       })
       .error(function(err) {
         console.warn('error getting persons data:', err);
+      });
+    },
+
+    getById: function(id, callback) { // call to get one person by id
+      $http({
+        method: 'GET',
+        url: $rootScope.config.api.url + $rootScope.config.api.path + '/persons/getById' + '/' + id,
+      })
+      .success(function(response) {
+        if (response.error) {
+          return console.warn('error getting person data:', response.error);
+        }
+        console.info('person (' + response.length + '):', response);
+        callback(response);
+      })
+      .error(function(err) {
+        console.warn('error getting person data:', err);
       });
     },
 

@@ -33,6 +33,9 @@ app.config(function($httpProvider, $routeProvider, $locationProvider) {
   $httpProvider.interceptors.push('TokenInterceptor');
 
   $routeProvider
+    .when('/', {
+      redirectTo: '/persons'
+    })
     .when('/login', {
       templateUrl: 'views/auth/login.html',
       controller: 'LoginController',
@@ -54,8 +57,15 @@ app.config(function($httpProvider, $routeProvider, $locationProvider) {
         requiredLogin: true
       }
     })
-    .when('/', {
+    .when('/persons', {
       templateUrl: 'views/persons.html',
+      controller: 'PersonController',
+      access: {
+        requiredLogin: false
+      }
+    })
+    .when('/person', {
+      templateUrl: 'views/person.html',
       controller: 'PersonController',
       access: {
         requiredLogin: false
@@ -78,6 +88,7 @@ app.config(function($httpProvider, $routeProvider, $locationProvider) {
       redirectTo: '/'
     })
   ;
+
   $locationProvider.html5Mode(true);
 });
 

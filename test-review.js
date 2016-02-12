@@ -7,6 +7,7 @@ var phone = '3240810872'; // ANE MARIE (1) (18=18)
 //var phone = '3426856330'; // GIULIA (0) (0=0)
 //var phone = '3276104785'; // ILARIA (1) (8=8)
 //var phone = '3206771993'; // BARBARA
+//var phone = '3886531900'; // RELENAS
 
 review.syncPosts(phone, function(err, results) {
 //local.searchTopics(phone, function(err, results) {

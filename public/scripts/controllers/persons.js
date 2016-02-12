@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('PersonCtrl', []).controller('PersonController', function($rootScope, $scope, $window, Person, Filter) {
+angular.module('PersonCtrl', []).controller('PersonController', function($rootScope, $scope, $location, $routeParams, $window, Person, Filter) {
 
   //$scope.filter = {}; // TODO: set filter based on user's settins...
 
@@ -15,6 +15,17 @@ var t = console.time('loadPersons'); // TODO: development only
     Person.getAll(Filter.get()/*$scope.filter*/, function(response) {
 console.timeEnd('loadPersons');
       $scope.persons = response;
+    });
+  };
+
+  $scope.loadPerson = function(id) {
+    if (!id) { // if not set, get id from command line parameter
+      id = $routeParams.id;
+console.warn('rP id:', id);
+    }
+console.warn('id:', id);
+    Person.getById(id, function(response) {
+      $scope.person = response;
     });
   };
 
@@ -65,6 +76,12 @@ console.log('$rootScope.user:', $rootScope.user);
         console.error(' +++ hide value NOT stored:', err);
       })
     ;
+  };
+
+  // open person's page
+  $scope.open = function(person) {
+console.warn('person._id:', person._id);
+    $location.url('/person' + '/' + '?id=' + person._id);
   };
 
 /*
