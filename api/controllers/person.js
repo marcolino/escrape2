@@ -13,6 +13,7 @@ var mongoose = require('mongoose') // mongo abstraction
   , Person = require('../models/person') // model of person
   , UserToPerson = require('../models/userToPerson') // model of user-to-person
   , Image = require('../models/image') // model of image
+  , Review = require('../models/review') // model of review
   , config = require('../config') // global configuration
 ;
 var local = {};
@@ -146,12 +147,12 @@ exports.getById = function(id, callback) { // get person by id
     if (err) {
       return callback(err);
     }
-log.warn('/api/controllers/person/getById()', 'person:', person);
+//log.warn('/api/controllers/person/getById()', 'person:', person);
     Image.find({ personKey: person.key }).lean().exec(function(err, images) {
       if (err) {
         return callback(err);
       }
-log.warn('/api/controllers/person/getById()', 'images:', images);
+//log.warn('/api/controllers/person/getById()', 'images:', images);
       person.images = images;
       callback(null, person);
     });

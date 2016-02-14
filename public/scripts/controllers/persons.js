@@ -1,8 +1,39 @@
 'use strict';
 
-angular.module('PersonCtrl', []).controller('PersonController', function($rootScope, $scope, $location, $routeParams, $window, Person, Filter) {
+angular.module('PersonCtrl', []).controller('PersonController', function($rootScope, $scope, $location, $routeParams, $window, $timeout, Person, Filter, Review) {
 
-  //$scope.filter = {}; // TODO: set filter based on user's settins...
+  $scope.sections = {
+    'data': {
+      visible: true,
+    },
+    'slider': {
+      visible: true,
+    },
+    'reviewstracks': {
+      visible: true,
+    },
+    'carousel': {
+      visible: false,
+    },
+  };
+
+  $scope.panels = {
+    'reviews': {
+      name: 'Reviews',
+      active: true,
+      data: [ 'reviews data 1' ],
+    },
+    'photostracks': {
+      name: 'Photos Tracks',
+      active: false,
+      data: [ ],
+    },
+    'phonetracks': {
+      name: 'Phone Tracks',
+      active: false,
+      data: [ ],
+    },
+  };
 
   $scope.$watch(function() { return Filter.get(); }, function(newValue, oldValue) {
     if (newValue !== oldValue) { // filter did change, re-load persons
@@ -21,11 +52,28 @@ console.timeEnd('loadPersons');
   $scope.loadPerson = function(id) {
     if (!id) { // if not set, get id from command line parameter
       id = $routeParams.id;
-console.warn('rP id:', id);
     }
-console.warn('id:', id);
+var t = console.time('loadPerson'); // TODO: development only
     Person.getById(id, function(response) {
+console.timeEnd('loadPerson');
       $scope.person = response;
+      //$scope.person.images[0].active = true;
+      $timeout(function () {
+        $scope.person.images[0].active = true;
+      }, 1000);
+      $scope.loadReviews($scope.person.phone);
+    });
+  };
+
+  $scope.loadReviews = function(phone) {
+    if (!phone) {
+      return;
+    }
+var t = console.time('loadReviews'); // TODO: development only
+    Review.getByPhone(phone, function(response) {
+console.timeEnd('loadReviews');
+console.info('reviews data:', response);
+      $scope.panels.reviews.data = response;
     });
   };
 
@@ -50,6 +98,14 @@ console.warn('id:', id);
   $scope.getImageShowcaseUrl = function(image) {
     var url;
     url = '/images' + '/' + image.personKey + '/showcase' + '/' + image.basename;
+    //console.log('getImageShowcaseUrl():', encodeURIComponent(url));
+    return encodeURIComponent(url);
+  };
+
+  $scope.getImageFullsizeUrl = function(image) {
+    var url;
+    url = '/images' + '/' + image.personKey + '/full' + '/' + image.basename;
+    //console.log('getImageFullsizeUrl():', encodeURIComponent(url));
     return encodeURIComponent(url);
   };
 
@@ -99,5 +155,24 @@ console.warn('person._id:', person._id);
     return o;
   }
 */
+
+  $scope.carouselOpen = function(index) {
+    $scope.sections.data.visible = false;
+    $scope.sections.slider.visible = false;
+    $scope.sections.reviewstracks.visible = false;
+    $scope.sections.carousel.visible = true;
+    for (var i = 0; i < $scope.person.images.length; i++) {
+      $scope.person.images[i].active = (i === index);
+    }
+  };
+  $scope.carouselClose = function() {
+    $scope.sections.data.visible = true;
+    $scope.sections.slider.visible = true;
+    $scope.sections.reviewstracks.visible = true;
+    $scope.sections.carousel.visible = false;
+    for (var i = 0; i < $scope.person.images.length; i++) {
+      $scope.person.images[i].active = false;
+    }
+  };
 
 });

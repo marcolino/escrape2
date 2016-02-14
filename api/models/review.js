@@ -3,10 +3,27 @@ var mongoose = require('mongoose')
 
 // review schema
 var reviewSchema = new mongoose.Schema({
-  key: String,
+  phone: String,
   url: String,
-  author: { }
-,  content: String,
+  topic: String,
+  content: String,
+  author: {
+    name: String,
+    karma: String,
+    postsCount: Number
+  },
+  title: String,
+  date: Date,
+  contents: String,
+  beauty: Number,
+  performance: Number,
+  sympathy: Number,
+  cleanliness: Number,
+  site: {
+  	quality: Number,
+  	cleanliness: Number,
+  	reachability: Number,
+  }
 },
 {
   autoIndex: config.env === 'development',

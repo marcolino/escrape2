@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <base href="/">
+    <title>slides</title>
+
+    <link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/bootswatch/3.3.5/slate/bootstrap.min.css">
+
+    <style>
+      #slides_control > div {
+        height: 200px;
+      }
+      img{
+        margin: auto;
+        width: 400px;
+      }
+      #slides_control {
+        position: absolute;
+        width: 400px;
+        left: 50%;
+        top: 20px;
+        margin-left: -200px;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-ng-app="slapp">
+
+      <div ng-controller="CarouselDemoCtrl" id="slides_control">
+        <div id="slides_control">
+          <carousel interval="myInterval">
+            <slide ng-repeat="slide in slides" active="slide.active">
+              <img ng-src="{{slide.image}}">
+              <div class="carousel-caption">
+                <h4>Slide {{$index+1}}</h4>
+              </div>
+            </slide>
+          </carousel>
+        </div>
+      </div>
+<!--
+      <div ng-controller="CarouselDemoCtrl" id="slides_control">
+        <div>
+          <carousel interval="myInterval">
+            <slide ng-repeat="slide in slides" active="slide.active">
+              <img ng-src="{{slide.image}}">
+              <div class="carousel-caption">
+                <h4>Slide {{$index+1}}</h4>
+              </div>
+            </slide>
+          </carousel>
+        </div>
+      </div>
+-->
+    </div>  
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.8/angular.min.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.10.0/ui-bootstrap-tpls.min.js"></script>
+    
+    <script type="text/javascript">
+      angular.module('slapp', ['ui.bootstrap']);
+      function CarouselDemoCtrl($scope) {
+        $scope.myInterval = 3000;
+        $scope.slides = [
+          {
+            image: 'http://lorempixel.com/400/200/'
+          },
+          {
+            image: 'http://lorempixel.com/400/200/food'
+          },
+          {
+            image: 'http://lorempixel.com/400/200/sports'
+          },
+          {
+            image: 'http://lorempixel.com/400/200/people'
+          }
+        ];
+      }
+    </script>
+  </body>
+</html>

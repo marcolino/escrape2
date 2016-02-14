@@ -10,16 +10,16 @@ var mongoose = require('mongoose') // mongo abstraction
 var local = {};
 var log = config.log;
 
-exports.getTopics = function(provider, search, callback) {
+exports.getTopics = function(provider, phone, callback) {
   var url = provider.url + provider.pathSearch;
   console.log('getTopics()', provider.key, 'requesting topics from url:', url);
 
-  // TODO: we currently search only on the first page of topics, but should search also next pages (?)
+  // TODO: we currently search only on the first page of topics, but should search also next pages (yes?)
   request(
     {
       url: url,
       method: 'POST',
-      form: { search: search },
+      form: { phone: phone },
       timeout: config.networking.timeout, // number of milliseconds to wait for a server to send response headers before aborting the request
     },
     function (err, response, body) {
@@ -31,9 +31,9 @@ exports.getTopics = function(provider, search, callback) {
       var topics = [];
       $('div[class~="topic_details"]').each(function (i, element) { // topics loop
         var topic = {};
-        //console.log($(element).html());
+        topic.phone = phone;
         topic.providerKey = provider.key;
-        topic.body = null; // this driver doesn't use topic body
+        topic.body = null; // this driver doesn't use topic's body
         topic.counter = $(element).find('div[class^="counter"]').text();
         topic.section = $(element).find('a').eq(0).text();
         topic.url = $(element).find('a').eq(1).attr('href');
@@ -75,6 +75,7 @@ exports.getPosts = function(provider, topics, callback) {
             var $ = cheerio.load(body);
             $('table[border-color="#cccccc"]').each(function(i, element) { // post elements
               var post = {};
+              post.phone = topic.phone;
               post.topic = topic.title;
               var postHtml = $(element).html();
         

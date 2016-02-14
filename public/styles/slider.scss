@@ -1,0 +1,18 @@
+.slider {
+  overflow-x: scroll;
+  overflow-y: hidden;
+  max-height: 320px;
+  white-space: nowrap;
+}
+.slider img {
+  height: 200px;
+  margin: 2px;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.panel-reviews {
+  overflow-x: hidden;
+  overflow-y: scroll;
+  max-height: 640px;
+  white-space: nowrap;
+}

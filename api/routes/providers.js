@@ -21,7 +21,7 @@ router.param('category', function(req, res, next, category) {
 
 router.get('/setup', setup);
 router.get('/', getAll);
-router.get('/:key/:category/geturl', getUrl);
+router.get('/:key/:category/getUrl', getUrl);
 
 function setup(req, res) { // setup providers: to be run once on deploy
   provider.createProviders(config.providers, function(err, providers) {

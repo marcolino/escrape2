@@ -11,12 +11,12 @@ angular.module('PersonService', []).factory('Person', [ '$rootScope', '$http', f
     getAll: function(filter, callback) { // call to get all persons
       var path = '';
       if (filter && filter.search && filter.search.term) {
-        path += '/search/' + filter.search.term;
+        path = 'search/' + filter.search.term;
       }
       //console.warn('public service person getAll - url is: ' + $rootScope.config.api.url + $rootScope.config.api.path + '/persons/getAll' + path);
       $http({
         method: 'GET',
-        url: $rootScope.config.api.url + $rootScope.config.api.path + '/persons/getAll' + path,
+        url: $rootScope.config.api.url + $rootScope.config.api.path + '/persons/getAll' + '/' + path,
       })
       .success(function(response) {
         if (response.error) {

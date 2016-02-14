@@ -126,3 +126,9 @@ a:hover, a:visited, a:link, a:active {
 .absent {
   @include opacity(0.4);
 }
+
+.label-as-badge {
+  border-radius: 1em;
+  position: relative;
+  bottom: 1px;
+}

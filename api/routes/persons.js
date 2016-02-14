@@ -21,7 +21,6 @@ router.route('/sync').
     person.sync();
   })
 ;
-
 router.route('/getAll').get(function(req, res) { getAll(req, res); }); // get all persons
 router.route('/getAll/search/:search').get(function(req, res) { getAll(req, res); }); // get all persons, with search filter
 

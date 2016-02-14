@@ -16,6 +16,10 @@ var config = {
 
 var app = angular.module('escrape2', [
   'ngRoute',
+  'ngSanitize',
+  //'ngTouch', 
+  //'ngAnimate',
+  'ui.bootstrap',
   'Directives',
   'HomeCtrl',
   'PersonCtrl',
@@ -26,7 +30,8 @@ var app = angular.module('escrape2', [
   'TokenInterceptorService',
   'UserService',
   'FilterService',
-  'PersonService'
+  'PersonService',
+  'ReviewService'
 ]);
 
 app.config(function($httpProvider, $routeProvider, $locationProvider) {
