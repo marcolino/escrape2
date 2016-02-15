@@ -21,22 +21,24 @@
       <div class="panel panel-default">
         <div class="panel-heading">
           <h4 class="panel-title" style="text-align:left">
-            <a data-toggle="collapse" data-parent="#accordion-reviewstracks" data-target="#collapse-reviewstracks">Reviews and Tracks about this person</a>
+            <a data-toggle="collapse" data-parent="#accordion-reviewstracks" data-target="#collapse-reviewstracks">Reviews and Tracks</a>
           </h4>
         </div>
         <div id="collapse-reviewstracks" class="panel-collapse collapse in">
           <div class="panel-body">
   
-            <div id="accordion-{{ panelKey }}" class="panel-group" data-ng-repeat="(panelkey, panel) in panels">
+            <div id="accordion-{{ panelKey }}" class="panel-group" data-ng-repeat="(panelKey, panel) in panels">
+
               <div class="panel panel-default">
                 <div class="panel-heading">
                   <h4 class="panel-title" style="text-align:left">
-                    <a data-toggle="collapse" data-parent="#accordion-{{ panelKey }}" data-target="#collapse-{{ panelkey }}">{{ panel.name }} &emsp; <span class="label label-success label-as-badge">{{ panel.data.length }}</span></a>
+                    <a data-toggle="collapse" data-parent="#accordion-{{ panelKey }}" data-target="#collapse-{{ panelKey }}">{{ panel.name }} &emsp; <span class="label label-success label-as-badge">{{ panel.data.length }}</span></a>
                   </h4>
                 </div>
-                <div id="collapse-{{ panelkey }}" class="panel-collapse collapse" ng-class="{ in: panel.active }">
-                  <div class="panel-body">
+                <div id="collapse-{{ panelKey }}" class="panel-collapse collapse" ng-class="{ in: panel.active }">
+                  <div class="panel-body" style="max-height: 480px; overflow-y: auto; overflow-x: hidden">
 
+                    <div ng-if="panelKey === 'reviews'">
                     <div id="accordion-{{ topicKey }}" class="panel-group" data-ng-repeat="(topicKey, topic) in panels.reviews.topics">
                       <div class="panel panel-default">
                         <div class="panel-heading">
@@ -75,12 +77,12 @@
                                       <div ng-bind-html="post.author.name"></div>
                                     </div>
                                   </div>
-                                  <div class="row" style="font-size: 0.8em;" OLDstyle="white-space: no-wrap; overflow: hidden;">
+                                  <div class="row" style="font-size: 0.8em;">
                                     <div class="col-xs-5" style="text-align: right;">
                                       <i>Autor&nbsp;karma</i>
                                     </div>
                                     <div class="col-xs-7">
-                                      <div ng-bind-html="post.author.karma" OLDstyle="max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis"></div>
+                                      <div ng-bind-html="post.author.karma"></div>
                                     </div>
                                   </div>
                                   <div class="row" style="font-size: 0.8em;">
@@ -96,13 +98,14 @@
                                   <div ng-bind-html="post.contents" style="color: #cccc33; max-height: 120px; overflow-y: auto; overflow-x: hidden"></div>
                                 </div>
                               </div>
-                              <hr style="margin: 0.3em;">
+                              <hr style="margin: 0.5em;">
                             </div>
                             <!-- ---------------------------------------------------------------------------- -->
 
                           </div>
                         </div>
                       </div>
+                    </div>
                     </div>
 
                     <!--<pre>{{ panel.data }}</pre>-->
@@ -117,8 +120,7 @@
     </div>
   </div>
 
-<!--
-  <div id="section-carousel" ng-show="sections['carousel'].visible"> <!-- carousel panel - ->
+  <div id="section-carousel" ng-show="sections['carousel'].visible"> <!-- carousel panel -->
     <div id="carousel" class="carousel slide" data-ride="carousel" interval="0"> 
 
       <ol class="carousel-indicators">
@@ -143,5 +145,5 @@
 
     </div>
   </div>
--->
+
 </div>

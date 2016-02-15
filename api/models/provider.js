@@ -3,7 +3,7 @@ var mongoose = require('mongoose')
 
 var providerSchema = new mongoose.Schema({
   key: String,
-  //mode: String,
+  active: { type: Boolean, default: true },
   type: String,
   url: String,
   language: String,

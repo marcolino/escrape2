@@ -20,6 +20,7 @@ mongoose.connection.on('open', function() {
 */
 
 exports.getAll = function(filter, callback) { // get all providers
+  filter.active = true;
   Provider.find(filter, function(err, providers) {
     if (err) {
       console.error('Error retrieving providers:', err);
@@ -30,8 +31,23 @@ exports.getAll = function(filter, callback) { // get all providers
   });
 };
 
+exports.getAllLean = function(filter, callback) { // get all providers
+  filter.active = true;
+  Provider.find(filter).lean().exec(function(err, providers) {
+    if (err) {
+      console.error('Error retrieving providers:', err);
+      callback(err);
+    } else {
+      callback(null, providers);
+    }
+  });
+};
+
 exports.getUrl = function(key, category, callback) { // get provider URL
-  Provider.findOne({ key: key }, function(err, provider) {
+  var filter = {};
+  filter.active = true;
+  filter.key = key;
+  Provider.findOne(filter, function(err, provider) {
     if (err) {
       console.error('Error retrieving provider with key', key, ' :', err);
       callback(err);

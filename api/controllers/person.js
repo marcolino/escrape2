@@ -9,11 +9,10 @@ var mongoose = require('mongoose') // mongo abstraction
   , colors = require('colors') // colors
   , network = require('../controllers/network') // network handling
   , image = require('../controllers/image') // network handling
-  , provider = require('./provider') // provider's controller
+  , provider = require('../controllers/provider') // provider's controller
   , Person = require('../models/person') // model of person
   , UserToPerson = require('../models/userToPerson') // model of user-to-person
   , Image = require('../models/image') // model of image
-  , Review = require('../models/review') // model of review
   , config = require('../config') // global configuration
 ;
 var local = {};

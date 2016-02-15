@@ -5,7 +5,7 @@ var mongoose = require('mongoose') // mongo abstraction
   , cheerio = require('cheerio') // to parse fetched DOM data
   , async = require('async') // to call many async functions in a loop
   //, provider = require('../controllers/provider') // provider's controller
-  , Provider = require('../models/provider') // model of provider
+  , provider = require('../controllers/provider') // controller of provider
   , Review = require('../models/review') // model of reviews
   , reviewGF = require('./reviewGF') // GF provider methods
   , reviewEA = require('./reviewEA') // EA provider methods
@@ -28,7 +28,7 @@ var perProviderMethods = {
 
 exports.sync = function(phone, callback) {
   console.log('sync()', 'syncyng reviews for phone value', phone);
-  Provider.find({ type: 'reviews' }).lean().exec(function(err, providers) {
+  provider.getAllLean({ type: 'reviews' }, function(err, providers) {
     if (err) {
       return log.error('error getting providers:', err);
     }
