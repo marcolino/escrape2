@@ -1,10 +1,10 @@
 <div ng-init="loadPerson()">
 
   <div id="section-data" class="panel" ng-show="sections['data'].visible"> <!-- person's data -->
-    <button type="button" class="btn btn-primary">{{ person.name }}</button>
-    <button type="button" class="btn btn-error">{{ person.key }}</button>
-    <button type="button" class="btn btn-info">{{ person.dateOfFirstSync }}</button>
-    <button type="button" class="btn btn-success">{{ person.phone }}</button>
+    <button type="button" class="btn btn-primary">{{ personName }}</button>
+    <button type="button" class="btn btn-error">{{ personKey }}</button>
+    <button type="button" class="btn btn-info">{{ personDateOfFirstSync }}</button>
+    <button type="button" class="btn btn-success">{{ personPhone }}</button>
   </div>
 
   <div id="section-slider" class="panel" ng-show="sections['slider'].visible"> <!-- person's thumbnail images slider -->
@@ -15,6 +15,7 @@
     </div>
   </div>
 
+<!-- TODO: reviewstracks -> footprints -->
   <div id="section-reviewstracks" ng-show="sections['reviewstracks'].visible">
     <div id="accordion-reviewstracks" class="panel-group">
       <div class="panel panel-default">
@@ -26,11 +27,11 @@
         <div id="collapse-reviewstracks" class="panel-collapse collapse in">
           <div class="panel-body">
   
-            <div id="accordion" class="panel-group" data-ng-repeat="(panelkey, panel) in panels">
+            <div id="accordion-{{ panelKey }}" class="panel-group" data-ng-repeat="(panelkey, panel) in panels">
               <div class="panel panel-default">
                 <div class="panel-heading">
                   <h4 class="panel-title" style="text-align:left">
-                    <a data-toggle="collapse" data-parent="#accordion" data-target="#collapse-{{ panelkey }}">{{ panel.name }} <span class="label label-success label-as-badge">{{ panel.data.length }}</span></a>
+                    <a data-toggle="collapse" data-parent="#accordion-{{ panelKey }}" data-target="#collapse-{{ panelkey }}">{{ panel.name }} &emsp; <span class="label label-success label-as-badge">{{ panel.data.length }}</span></a>
                   </h4>
                 </div>
                 <div id="collapse-{{ panelkey }}" class="panel-collapse collapse" ng-class="{ in: panel.active }">
@@ -61,26 +62,26 @@
   </div>
 
   <div id="section-carousel" ng-show="sections['carousel'].visible"> <!-- carousel panel -->
-    <div id="carousel" class="carousel slide" data-ride="carousel"> 
+    <div id="carousel" class="carousel slide" data-ride="carousel" interval="0"> 
 
       <ol class="carousel-indicators">
         <li data-target="#carousel" ng-repeat="image in person.images" data-slide-to="{{ $index }}" ng-class="{ active: $first }"></li>
       </ol>
 
       <div class="carousel-inner">
-        <div class="item" ng-repeat="image in person.images" ng-class="{active: image.active}"> <!-- TODO: active is not yes set on load... -->
-          <img ng-src="{{ getImageFullsizeUrl(image) }}">
+        <div class="item" ng-repeat="image in person.images" ng-class="{active: image.active}">
+          <img ng-src="{{ getImageFullsizeUrl(image) }}" class="img-responsive">
         </div>
       </div>
 
       <div class="carousel-control-close">
-        <span class="glyphicon glyphicon-remove carousel-control-close-glyph" ng-click="carouselClose()"></span>
+        <span class="glyphicon glyphicon-remove carousel-control-close-glyph embossed" ng-click="carouselClose()"></span>
       </div>
-      <a class="left carousel-control" href="#carousel" data-slide="prev">
-        <span class="glyphicon glyphicon-chevron-left"></span>
+      <a class="left carousel-control" data-target="#carousel" data-slide="prev">
+        <span class="glyphicon glyphicon-chevron-left embossed"></span>
       </a>
-      <a class="right carousel-control" href="#carousel" data-slide="next">
-        <span class="glyphicon glyphicon-chevron-right"></span>
+      <a class="right carousel-control" data-target="#carousel" data-slide="next">
+        <span class="glyphicon glyphicon-chevron-right embossed"></span>
       </a>
 
     </div>

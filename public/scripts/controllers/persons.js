@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('PersonCtrl', []).controller('PersonController', function($rootScope, $scope, $location, $routeParams, $window, $timeout, Person, Filter, Review) {
+angular.module('PersonCtrl', []).controller('PersonController', function($rootScope, $scope, $location, $routeParams, $window, Person, Filter, Review) {
 
   $scope.sections = {
     'data': {
@@ -37,6 +37,9 @@ angular.module('PersonCtrl', []).controller('PersonController', function($rootSc
 
   $scope.$watch(function() { return Filter.get(); }, function(newValue, oldValue) {
     if (newValue !== oldValue) { // filter did change, re-load persons
+      if ($location.path() !== '/persons') { // go to /persons, if not already there
+        $location.path('/persons');
+      }
       $scope.loadPersons();
     }
   }, true); // last parameter is for object deep watch
@@ -57,10 +60,12 @@ var t = console.time('loadPerson'); // TODO: development only
     Person.getById(id, function(response) {
 console.timeEnd('loadPerson');
       $scope.person = response;
-      //$scope.person.images[0].active = true;
-      $timeout(function () {
-        $scope.person.images[0].active = true;
-      }, 1000);
+
+      $scope.personName = $scope.showPersonName($scope.person);
+      $scope.personKey = $scope.showPersonKey($scope.person);
+      $scope.personDateOfFirstSync = $scope.showPersonDateOfFirstSync($scope.person);
+      $scope.personPhone = $scope.showPersonPhone($scope.person);
+
       $scope.loadReviews($scope.person.phone);
     });
   };
@@ -118,8 +123,6 @@ console.info('reviews data:', response);
 
   // hide person (remove from scope)
   $scope.hide = function(person) {
-    //console.log('hiding person', person.key);
-    //console.log($scope.persons);
     for (var i = 0, len = $scope.persons.length; i < len; ++i) {
       if ($scope.persons[i].key === person.key) {
         $scope.persons.splice(i, 1); // remove person from $scope (to avoid to repeat loadPersons())
@@ -141,20 +144,9 @@ console.log('$rootScope.user:', $rootScope.user);
   };
 
   // open person's page
-  $scope.open = function(person) {
-console.warn('person._id:', person._id);
+  $scope.personOpen = function(person) {
     $location.url('/person' + '/' + '?id=' + person._id);
   };
-
-/*
-  function toObject(arr, key) {
-    var o = {};
-    for (var i = 0, len = arr.length; i < len; ++i) {
-      o[arr[i][key]] = arr[i];
-    }
-    return o;
-  }
-*/
 
   $scope.carouselOpen = function(index) {
     $scope.sections.data.visible = false;
@@ -165,6 +157,7 @@ console.warn('person._id:', person._id);
       $scope.person.images[i].active = (i === index);
     }
   };
+
   $scope.carouselClose = function() {
     $scope.sections.data.visible = true;
     $scope.sections.slider.visible = true;
@@ -175,4 +168,65 @@ console.warn('person._id:', person._id);
     }
   };
 
+  $scope.showPersonName = function(person) {
+    var name = person.name;
+    return name;
+  };
+
+  $scope.showPersonKey = function(person) {
+    var key = person.key;
+    return key;
+  };
+
+  $scope.showPersonDateOfFirstSync = function(person) {
+    //var date = person.dateOfFirstSync;
+    var date = new Date(person.dateOfFirstSync);
+    var today = new Date();
+    var elapsedDays = Date.daysBetween(date, today);
+    var elapsedTime;
+    if (elapsedDays < 1) {
+      elapsedTime = 'today';
+    } else
+    if (elapsedDays < 2) {
+      elapsedTime = 'yesterday';
+    } else
+    if (elapsedDays < 30) {
+      elapsedTime = elapsedDays + ' days ago';
+    } else
+    if (elapsedDays < (30 * 2)) {
+      elapsedTime = Math.floor(elapsedDays / 30) + ' month ago';
+    } else
+    if (elapsedDays < 365) {
+      elapsedTime = Math.floor(elapsedDays / 30) + ' months ago';
+    } else
+    if (elapsedDays < (365 * 2)) {
+      elapsedTime = Math.floor(elapsedDays / 365) + ' year ago';
+    } else
+      elapsedTime = Math.floor(elapsedDays / 365) + ' years ago';
+    return elapsedTime;
+  };
+
+  $scope.showPersonPhone = function(person) {
+    var phone = person.phone;
+    if (!phone || phone === '-1') {
+      return 'no phone number';
+    } else {
+      return phone;
+    }
+  };
 });
+
+Date.daysBetween = function(date1, date2) {
+  // get one day in milliseconds
+  var one_day = 1000 * 60 * 60 * 24;
+
+  // convert both dates to milliseconds
+  var date1_ms = date1.getTime();
+  var date2_ms = date2.getTime();
+
+  // calculate the difference in milliseconds
+  var difference_ms = date2_ms - date1_ms;
+    
+  // convert back to days and return
+  return Math.round(difference_ms / one_day); 
+};
