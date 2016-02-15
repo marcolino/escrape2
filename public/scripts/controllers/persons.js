@@ -78,6 +78,9 @@ var t = console.time('loadReviews'); // TODO: development only
     Review.getByPhone(phone, function(response) {
 console.timeEnd('loadReviews');
 console.info('reviews data:', response);
+
+      $scope.panels.reviews.topics = [ { id: response[0].topic }, { id: response[1].topic }, ]; // TODO: ...
+
       $scope.panels.reviews.data = response;
     });
   };

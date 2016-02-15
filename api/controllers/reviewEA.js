@@ -192,9 +192,6 @@ exports.getPosts = function(provider, topics, callback) {
 
     },
     function(err, done) { // all topics are done, call return callback
-//console.log('getPosts()', 'done async.each - postsHead: ', postsHead, '\n\n\n - postsBody:', postsBody);
-//console.log('getPosts()', 'done async.each - posts:', posts);
-//console.log('getPosts()', 'done async.each - posts:', mergeArraysOfObjects(postsHead, postsBody));
       callback(null, mergeArraysOfObjects(postsHead, postsBody));
     }
   );

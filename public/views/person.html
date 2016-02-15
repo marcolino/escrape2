@@ -15,7 +15,7 @@
     </div>
   </div>
 
-<!-- TODO: reviewstracks -> footprints -->
+<!-- TODO: reviewstracks => footprints -->
   <div id="section-reviewstracks" ng-show="sections['reviewstracks'].visible">
     <div id="accordion-reviewstracks" class="panel-group">
       <div class="panel panel-default">
@@ -37,16 +37,72 @@
                 <div id="collapse-{{ panelkey }}" class="panel-collapse collapse" ng-class="{ in: panel.active }">
                   <div class="panel-body">
 
-                    <div data-ng-repeat="post in panel.data">
-                      <div class="row">
-                        <div class="col-xs-2">
-                          <span ng-bind-html="post.author.name"></span>
+                    <div id="accordion-{{ topicKey }}" class="panel-group" data-ng-repeat="(topicKey, topic) in panels.reviews.topics">
+                      <div class="panel panel-default">
+                        <div class="panel-heading">
+                          <h4 class="panel-title" style="text-align:left">
+                            <a data-toggle="collapse" data-parent="#accordion-{{ topicKey }}" data-target="#collapse-{{ topicKey }}">Topic &emsp; <i>{{ topic.id }}</i> &emsp; <span class="label label-success label-as-badge">{{ 1 }}</span></a>
+                          </h4>
                         </div>
-                        <div class="col-xs-10">
-                          <span ng-bind-html="post.contents"></span>
+                        <div id="collapse-{{ topicKey }}" class="panel-collapse collapse" ng-class="{ in: false }">
+                          <div class="panel-body">
+                  
+                            <!-- ---------------------------------------------------------------------------- -->
+                            <div data-ng-repeat="post in panel.data">
+                              <div class="row">
+                                <div class="col-xs-3">
+                                  <div class="row" style="font-size: 0.8em;">
+                                    <div class="col-xs-5" style="text-align: right;">
+                                      <i>Post&nbsp;n°</i>
+                                    </div>
+                                    <div class="col-xs-7">
+                                      <div>{{ 1 + $index }}</div>
+                                    </div>
+                                  </div>
+                                  <div class="row" style="font-size: 0.8em;">
+                                    <div class="col-xs-5" style="text-align: right;">
+                                      <i>Post&nbsp;date</i>
+                                    </div>
+                                    <div class="col-xs-7">
+                                      <div>{{ post.date | date:'yyyy-MM-dd' }}</div>
+                                    </div>
+                                  </div>
+                                  <div class="row" style="font-size: 0.8em;">
+                                    <div class="col-xs-5" style="text-align: right;">
+                                      <i>Autor&nbsp;name</i>
+                                    </div>
+                                    <div class="col-xs-7">
+                                      <div ng-bind-html="post.author.name"></div>
+                                    </div>
+                                  </div>
+                                  <div class="row" style="font-size: 0.8em;" OLDstyle="white-space: no-wrap; overflow: hidden;">
+                                    <div class="col-xs-5" style="text-align: right;">
+                                      <i>Autor&nbsp;karma</i>
+                                    </div>
+                                    <div class="col-xs-7">
+                                      <div ng-bind-html="post.author.karma" OLDstyle="max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis"></div>
+                                    </div>
+                                  </div>
+                                  <div class="row" style="font-size: 0.8em;">
+                                    <div class="col-xs-5" style="text-align: right;">
+                                      <i>Autor&nbsp;posts</i>
+                                    </div>
+                                    <div class="col-xs-7">
+                                      <div ng-bind-html="post.author.postsCount"></div>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div class="col-xs-9">
+                                  <div ng-bind-html="post.contents" style="color: #cccc33; max-height: 120px; overflow-y: auto; overflow-x: hidden"></div>
+                                </div>
+                              </div>
+                              <hr style="margin: 0.3em;">
+                            </div>
+                            <!-- ---------------------------------------------------------------------------- -->
+
+                          </div>
                         </div>
                       </div>
-                      <hr>
                     </div>
 
                     <!--<pre>{{ panel.data }}</pre>-->
@@ -61,7 +117,8 @@
     </div>
   </div>
 
-  <div id="section-carousel" ng-show="sections['carousel'].visible"> <!-- carousel panel -->
+<!--
+  <div id="section-carousel" ng-show="sections['carousel'].visible"> <!-- carousel panel - ->
     <div id="carousel" class="carousel slide" data-ride="carousel" interval="0"> 
 
       <ol class="carousel-indicators">
@@ -86,5 +143,5 @@
 
     </div>
   </div>
-
+-->
 </div>

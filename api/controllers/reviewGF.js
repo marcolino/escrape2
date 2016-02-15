@@ -51,23 +51,20 @@ exports.getTopics = function(provider, phone, callback) {
 };
 
 exports.getPosts = function(provider, topics, callback) {
-  //log.info('getPosts:', provider.key);
+log.info('getPosts:', provider.key);
   var posts = [];
-  //var url;
 
   async.each(
     topics,
     function(topic, callbackTopics) {
       console.log('getPosts()', provider.key, 'scraping topic:', topic.title);
+      topic.url = topic.url.replace(/\/msg\d+\/.*/, ''); // transform specific post url to topic base url
+      console.log('getPosts()', provider.key, 'url set to:', topic.url);
 
       async.whilst(
         function() { console.log('whilst check:', topic.url); return topic.url !== null; },
         function(callbackWhilst) {
-          //if (!topic.url) {
-            topic.url = topic.url.replace(/\/msg\d+\/.*/, ''); // transform specific post url to topic base url
-            console.log('getPosts()', provider.key, 'url was undefinened, set to:', topic.url);
-          //}
-          console.log('getPosts()', provider.key, 'requesting url:', topic.url);
+          console.log('getPosts()', 'requesting url', topic.url);
           request(topic.url, function(err, response, body) {
             if (err || response.statusCode !== 200) {
               return callback(new Error('error on response' + (response ? ' (' + response.statusCode + ')' : '') + ':' + err + ' : ' + body), null);
@@ -92,11 +89,11 @@ exports.getPosts = function(provider, topics, callback) {
               var authorPostsRE = /Posts:\s*(.*?)\s*<br>/; // post author posts count regex
               post.author.postsCount = authorPostsRE.exec(authorHtml);
               post.author.postsCount = post.author.postsCount && post.author.postsCount.length >= 1 ? post.author.postsCount[1] : null;
-        
+
               var dateRE = /&#xAB;\s*<b>(?:.*?)\s*on\:<\/b>\s*(.*?)\s*&#xBB;/; // post date regex
               post.date = dateRE.exec(postHtml);
               post.date = post.date && post.date.length >= 1 ? post.date[1] : null;
-        
+
               // remove quotes of previous post from post
               var contents = $(element).find('div.post').html();
               var contentsQuotesRE = /(.*?)(<div class="quoteheader"><div class="topslice_quote"><a .*?>.*?<\/a><\/div><\/div><blockquote.*?>.*?<\/blockquote><div class="quotefooter"><div class="botslice_quote"><\/div><\/div>)(.*)/;
@@ -135,7 +132,7 @@ exports.getPosts = function(provider, topics, callback) {
 
     },
     function(err, done) { // all topics are done, call return callback
-      console.log('getPosts()', 'done async.each');
+      console.log('getPosts()', 'done async.each:', posts);
       callback(null, posts);
     }
   );

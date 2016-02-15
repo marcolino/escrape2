@@ -100,7 +100,57 @@ exports.getByPhone = function(filter, callback) { // get reviews by phone
     if (err) {
       return callback(err);
     }
-log.warn('/api/controllers/review/getByPhone()', 'reviews:', reviews);
+//log.warn('/api/controllers/review/getByPhone()', 'reviews:', reviews);
+// DEBUG ONLY
+if (reviews.length === 0) {
+  reviews = [
+    {
+      phone: '3336480983',
+      topic: 'this is the first nice small topic',
+      author: {
+        name: 'myself',
+        karma: 'super duper',
+        postsCount: 7,
+      },
+      title: 'my first small post',
+      date: new Date(),
+      contents: 'I am very satisfied...<br>line 2<br>line 3<br>line 4<br>line 5<br>line 6<br>line 7<br>line 8<br>line 9<br>line 10<br>',
+      cost: '200€',
+      beauty: 1.0,
+      performance: 0.8,
+      sympathy: 0.4,
+      cleanliness: 0.2,
+      site: {
+        quality: 0.6,
+        cleanliness: 0.2,
+        reachability: 0,
+      },
+    },
+    {
+      phone: '3334567890',
+      topic: 'this is the second nice small topic',
+      author: {
+        name: 'my other self',
+        karma: 'beginner',
+        postsCount: 2,
+      },
+      title: 'my second small post',
+      date: new Date(),
+      contents: 'I am very dissatisfied...',
+      cost: '150€',
+      beauty: 0.1,
+      performance: 0.6,
+      sympathy: 0.2,
+      cleanliness: 0.3,
+      site: {
+        quality: 0.5,
+        cleanliness: 0.1,
+        reachability: 0.9,
+      },
+    },
+  ];
+}
+
     callback(null, reviews);
   });
 };

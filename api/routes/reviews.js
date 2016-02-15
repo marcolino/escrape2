@@ -28,7 +28,6 @@ function getAll(req, res) { // get all reviews
 }
 
 function getByPhone(req, res) { // get reviews by phone
-console.error('req.params.phone:', req.params.phone);
   var filter = { phone: req.params.phone };
   review.getByPhone(filter, function(err, reviews) {
     if (err) {
