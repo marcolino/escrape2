@@ -4,15 +4,23 @@ var mongoose = require('mongoose')
 // review schema
 var reviewSchema = new mongoose.Schema({
   phone: String,
-  url: String,
-  topic: String,
+  topic: {
+    providerKey: String,
+    section: String,
+    url: String,
+    title: String,
+    author: {
+      name: String,
+      url: String,
+    },
+    dateOfCreation: Date,
+  },
   content: String,
   author: {
     name: String,
     karma: String,
     postsCount: Number
   },
-  title: String,
   date: Date,
   contents: String,
   beauty: Number,

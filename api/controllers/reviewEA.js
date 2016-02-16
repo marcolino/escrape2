@@ -50,7 +50,7 @@ exports.getTopics = function(provider, phone, callback) {
         topic.author = {};
         topic.author.name = 'EA topic author';
         topic.author.url = 'EA author url';
-        topic.dateOfCreation = 'EA date of creation';
+        topic.dateOfCreation = new Date(); // TODO: ???
         topics.push(topic);
         console.log('getTopics()', provider.key, 'found', topics.length, 'topics');
       }
@@ -74,10 +74,13 @@ exports.getPosts = function(provider, topics, callback) {
         function(callbackWhilst) {
           console.log('getPosts()', provider.key, 'parsing topic');
           var $ = cheerio.load(topic.body);
+console.log('TOPIC::::::::::::', topic);
           $('div[class="span2"]').each(function(i, element) { // post elements
             var post = {};
             post.phone = topic.phone;
-            post.topic = topic.title;
+            topic.phone = null;
+            post.topic = topic;
+            topic.body = null;
             var postHtml = $(element).html().replace(/\r?\n|\r/g, '\t'); // change all newlines to space to have a one line string
             var postRE = new RegExp(
               '\\s*<img.*?>\\s*' +

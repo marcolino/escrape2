@@ -73,7 +73,8 @@ log.info('getPosts:', provider.key);
             $('table[border-color="#cccccc"]').each(function(i, element) { // post elements
               var post = {};
               post.phone = topic.phone;
-              post.topic = topic.title;
+              post.topic = topic;
+              post.body = null;
               var postHtml = $(element).html();
         
               post.author = {};

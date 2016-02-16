@@ -105,8 +105,8 @@ exports.getByPhone = function(filter, callback) { // get reviews by phone
 if (reviews.length === 0) {
   reviews = [
     {
+      phone: '3336480983',
       topic: {
-        phone: '3336480983',
         providerKey: 'SGI',
         body: null,
         counter: 1,
@@ -139,8 +139,8 @@ if (reviews.length === 0) {
       },
     },
     {
+      phone: '3334567890',
       topic: {
-        phone: '3334567890',
         providerKey: 'TOE',
         body: null,
         counter: 2,
