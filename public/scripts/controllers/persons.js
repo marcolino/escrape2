@@ -2,6 +2,11 @@
 
 angular.module('PersonCtrl', []).controller('PersonController', function($rootScope, $scope, $location, $routeParams, $window, Person, Filter, Review) {
 
+$scope.rating = 3;
+$scope.ratingFunction = function(rating) {
+  console.log('reachFunction():', rating);
+};
+
   $scope.sections = {
     'data': {
       visible: true,
@@ -21,7 +26,8 @@ angular.module('PersonCtrl', []).controller('PersonController', function($rootSc
     'reviews': {
       name: 'Reviews',
       active: true,
-      data: [ 'reviews data 1' ],
+      posts: [],
+      topics: [],
     },
     'photostracks': {
       name: 'Photos Tracks',
@@ -79,9 +85,27 @@ var t = console.time('loadReviews'); // TODO: development only
 console.timeEnd('loadReviews');
 console.info('reviews data:', response);
 
-      $scope.panels.reviews.topics = [ { id: response[0].topic }, { id: response[1].topic }, ]; // TODO: ...
+      $scope.panels.reviews.posts = response;
 
-      $scope.panels.reviews.data = response;
+      // extract topics from reviews (posts)
+      $scope.panels.reviews.topics = {};
+      for (var p = 0; p < response.length; p++) {
+        var topicKey = (
+          response[p].topic.section + '-' +
+          response[p].topic.title + '-' +
+          response[p].topic.dateOfCreation + '-' +
+          response[p].topic.author.name).replace(/[^0-9a-zA-Z-]+/g, '-');
+        //topicKey = topicKey.replace(/[^0-9a-zA-Z-]+/g, '-');
+        response[p].topicKey = topicKey;
+        if (!(topicKey in $scope.panels.reviews.topics)) { // new topic key
+          $scope.panels.reviews.topics[topicKey] = response[p].topic;
+          $scope.panels.reviews.topics[topicKey].postsCount = 1;
+        } else { // topic key already present, just increment posts count
+          $scope.panels.reviews.topics[topicKey].postsCount++;
+        }
+      }
+console.warn('$scope.panels.reviews.topics:', $scope.panels.reviews.topics);
+      //$scope.panels.reviews.topics = [ { id: response[0].topic }, { id: response[1].topic }, ]; // TODO: ...
     });
   };
 

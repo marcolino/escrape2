@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('Directives', [])
+angular.module('AuthDirectives', [])
 
   .directive('existsUsername', function($http) {  
     return {

@@ -121,6 +121,7 @@ log.info('getPosts:', provider.key);
             } else {
               topic.url = null;
             }
+            topic.body = null; // body is not needed in response object
             callbackWhilst();
           });
         },

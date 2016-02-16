@@ -172,16 +172,16 @@ exports.getPosts = function(provider, topics, callback) {
               post.performance = parse5Stars(match[6]);
               post.sympathy = parse5Stars(match[7]);
               post.cleanliness = parse5Stars(match[8]);
-              post.site = {};
-              post.site.quality = match[9];
-              post.site.cleanliness = match[10];
-              post.site.reachability = match[11];
+              post.location = {};
+              post.location.quality = match[9];
+              post.location.cleanliness = match[10];
+              post.location.reachability = match[11];
               postsBody.push(post);
             }
           });
       
-          // no pagination on this provider
-          topic.url = null;
+          topic.url = null; // no pagination on this provider
+          topic.body = null; // body is not needed in response object
           callbackWhilst();
         },
         function(err, done) {
