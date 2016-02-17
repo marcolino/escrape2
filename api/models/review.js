@@ -44,7 +44,7 @@ var reviewSchema = new mongoose.Schema({
 });
 reviewSchema.index({ 'key': 1 }, { unique: true });
 reviewSchema.index({ 'phone': 1 }, { unique: false });
-reviewSchema.index({ 'topic.url': 1 }, { unique: true });
-reviewSchema.index({ 'topic.pageLast.url': 1 }, { unique: true });
+reviewSchema.index({ 'topic.url': 1 }, { unique: false });
+reviewSchema.index({ 'topic.pageLast.url': 1 }, { unique: false });
 
 module.exports = mongoose.model('Review', reviewSchema);

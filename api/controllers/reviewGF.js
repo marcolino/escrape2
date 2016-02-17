@@ -12,7 +12,7 @@ var mongoose = require('mongoose') // mongo abstraction
 var local = {};
 var log = config.log;
 
-const UNKNOWN_ENTITY = ''; // &#xfffd;';
+var UNKNOWN_ENTITY = ''; // &#xfffd;';
 
 exports.getTopics = function(provider, phone, callback) {
   var url = provider.url + provider.pathSearch;
@@ -79,7 +79,7 @@ log.info('GF getPosts:', provider.key);
           }
           var topicFound = results[0];
           log.debug('getPosts()', provider.key, 'scraping EXISTING topic:', topicFound.title);
-          topic.url = topicFound.pageLast.url // set url as the last page url of found topic
+          topic.url = topicFound.pageLast.url; // set url as the last page url of found topic
           topic.etag = topicFound.pageLast.etag; // set etag to last page etag of found topic
 
         } else { // topic is new
@@ -103,7 +103,7 @@ log.info('GF getPosts:', provider.key);
             request(
               options,
               function(err, response, body) {
-                if (err || response.statusCode !== 200 || response.statusCode !== 304) {
+                if (err || (response.statusCode !== 200 && response.statusCode !== 304)) {
                   return callback(new Error('error on response' + (response ? ' (' + response.statusCode + ')' : '') + ':' + err + ' : ' + body), null);
                 }
                 if (response.statusCode === 304) {
@@ -118,7 +118,7 @@ log.info('GF getPosts:', provider.key);
                   var post = {};
                   post.phone = topic.phone;
                   post.topic = {};
-                  post.topic.providerKey = topic.provider.key;
+                  post.topic.providerKey = topic.providerKey;
                   post.topic.section = topic.section;
                   post.topic.url = topic.url;
                   post.topic.title = topic.title;

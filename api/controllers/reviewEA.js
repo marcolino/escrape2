@@ -12,7 +12,7 @@ var mongoose = require('mongoose') // mongo abstraction
 var local = {};
 var log = config.log;
 
-const UNKNOWN_ENTITY = ''; // &#xfffd;';
+var UNKNOWN_ENTITY = ''; // &#xfffd;';
 
 exports.getTopics = function(provider, phone, callback) {
   var url = provider.url + provider.pathSearch;
@@ -84,7 +84,7 @@ log.info('EA getPosts:', provider.key);
           }
           var topicFound = results[0];
           log.debug('getPosts()', provider.key, 'scraping EXISTING topic:', topicFound.title);
-          topic.url = topicFound.pageLast.url // set url as the last page url of found topic
+          topic.url = topicFound.pageLast.url; // set url as the last page url of found topic
           topic.etag = topicFound.pageLast.etag; // set etag to last page etag of found topic
 
         } else { // topic is new
@@ -104,10 +104,10 @@ log.info('EA getPosts:', provider.key);
               var post = {};
               post.phone = topic.phone;
               post.topic = {};
-              post.topic.providerKey = topic.provider.key;
+              post.topic.providerKey = topic.providerKey;
               post.topic.section = topic.section;
               post.topic.url = topic.url;
-              post.title = topic.title;
+              post.topic.title = topic.title;
               post.topic.author = {};
               post.topic.author.name = topic.author.name;
               post.topic.author.url = topic.author.url;
@@ -188,8 +188,14 @@ log.info('EA getPosts:', provider.key);
               var match = postRE.exec(postHtml);
               post.title = match && match[1] ? parseTitle(match[1]) : UNKNOWN_ENTITY;
               post.date = match && match[2] ? parseDate(match[2]) : UNKNOWN_ENTITY; // post date format is dd/mm/yyyy
+//log.debug('postsBody.length: *************', postsBody.length);
+              // set topic date as the date of the first post
+              post.topic = {};
               if (postsBody.length === 0) {
-                post.topic.date = post.date; // set topic date as the date of the first post
+                post.topic.date = post.date;
+//log.debug('post.topic.date: *************', post.topic.date);
+              } else {
+                post.topic.date = postsBody[0].topic.date;
               }
               post.contents = match && match[3] ? parseContents(match[3]) : UNKNOWN_ENTITY;
               post.cost = match && match[4] ? parseCost(match[4]) : UNKNOWN_ENTITY;
@@ -202,8 +208,9 @@ log.info('EA getPosts:', provider.key);
               post.location.cleanliness = match && match[10] ? match[10] : UNKNOWN_ENTITY;
               post.location.reachability = match && match[11] ? match[11] : UNKNOWN_ENTITY;
               postsBody.push(post);
-            })
+            });
         
+            topic.url = null; // no continuation pages for this provider
             callbackWhilst();
           },
           function(err, done) {
@@ -220,7 +227,10 @@ log.info('EA getPosts:', provider.key);
         return callback(new Error('...'));
       }
       // merge posts headers and posts bodyes
+log.debug('EA POSTS HEAD (CHECK!):', postsHead);
+log.debug('EA POSTS BODY (CHECK!):', postsBody);
       var postsWithoutKeys = mergeArraysOfObjects(postsHead, postsBody);
+log.debug('EA postsWithoutKeys (CHECK!):', postsWithoutKeys);
       // create keys for posts
       var posts = postsWithoutKeys.map(function(post) {
         post.key = crypto.createHash('md5').update(
@@ -228,30 +238,35 @@ log.info('EA getPosts:', provider.key);
         ).digest('hex');
         return post;
       });
+log.debug('EA POSTS SUMMMMMMMMMMM (CHECK!):', posts);
       callback(null, posts);
     }
   );
 };
 
 function mergeArraysOfObjects(a1, a2) {
-  var a = [];
-  var i, prop;
-  for (i in a1) {
-    a[i] = {};
-    for (prop in a1[i]) {
-      if (!a[i].hasOwnProperty(prop)) {
-        a[i][prop] = a1[i][prop];
-      }
-    }
-  }
-  for (i in a2) {
-    for (prop in a2[i]) {
-      if (!a[i].hasOwnProperty(prop)) {
-        a[i][prop] = a2[i][prop];
-      }
-    }
+  var a = [];  
+  for (var i = 0; i < a1.length; i++) {
+    a[i] = mergeObjects(a1[i], a2[i]);
   }
   return a;
+}
+
+function mergeObjects(obj1, obj2) {
+  for (var p in obj2) {
+    try {
+      // property in destination object set; update its value
+      if (obj2[p].constructor == Object) {
+        obj1[p] = mergeObjects(obj1[p], obj2[p]);
+      } else {
+        obj1[p] = obj2[p];
+      }
+    } catch(e) {
+      // property in destination object not set; create it and set its value
+      obj1[p] = obj2[p];
+    }
+  }
+  return obj1;
 }
 
 function parseAuthorName(authorName) {

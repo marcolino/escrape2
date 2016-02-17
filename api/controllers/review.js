@@ -78,7 +78,9 @@ exports.sync = function(phone, callback) {
         }
         //console.log('FINAL POSTS:', posts);
         log.info('sync\'d phone', phone, 'posts');
-        callback(null, posts);
+        if (callback) { // this method can be called asynchronously, without a callback
+          callback(null, posts);
+        }
       }
     );
   });
