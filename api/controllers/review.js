@@ -78,21 +78,38 @@ exports.sync = function(phone, callback) {
         }
         //console.log('FINAL POSTS:', posts);
         log.info('sync\'d phone', phone, 'posts');
-        //callback(null, posts);
+        callback(null, posts);
       }
     );
   });
 };
 
 exports.save = function(posts, callback) {
-log.info('saving review posts:', posts);
-  Review.create(posts, function(err, docs) {
-    if (err) {
-      return callback('could not create reviews: ' + err);
+log.info('saving review posts...');
+config.time = process.hrtime(); // TODO: development only
+  async.each(
+    posts,
+    function(post, callbackInner) {
+      Review.update(
+        { key: post.key }, 
+        { $setOnInsert: post }, // posts do no change with time
+        { upsert: true },
+        function(err, numAffected) {
+          if (err) {
+            return callback(new Error('could not update reviews: ' + err));
+          }
+          callbackInner();
+        }
+      );
+    },
+    function(err) {
+      if (err) {
+        return callback(new Error('could not save reviews: ' + err));
+      }
+log.debug('' + posts.length, 'posts saved in', process.hrtime(config.time)[0] + (process.hrtime(config.time)[1] / 1000000000), 'seconds');
+      callback(); // success
     }
-    log.debug('saved', docs.length, 'posts in reviews');
-    callback();
-  });
+  );
 };
 
 exports.getByPhone = function(filter, callback) { // get reviews by phone
@@ -105,13 +122,16 @@ exports.getByPhone = function(filter, callback) { // get reviews by phone
 if (reviews.length === 0) {
   reviews = [
     {
+      key: 'abc',
       phone: '3336480983',
       topic: {
-        providerKey: 'SGI',
-        body: null,
-        counter: 1,
+        providerKey: 'EA',
         section: 'EA topic section A',
         url: 'http://topic.1.url/',
+        pageLast: {
+          url: 'http://topic.1.url/',
+          etag: '"etag 1"',
+        },
         title: 'this is the first nice small topic',
         author: {
           name: 'EA topic author one',
@@ -139,13 +159,16 @@ if (reviews.length === 0) {
       },
     },
     {
+      key: 'def',
       phone: '3334567890',
       topic: {
-        providerKey: 'TOE',
-        body: null,
-        counter: 2,
+        providerKey: 'EA',
         section: 'EA topic section B',
         url: 'http://topic.2.url/',
+        pageLast: {
+          url: 'http://topic.2.url/',
+          etag: '"etag 2"',
+        },
         title: 'this is the second nice small topic',
         author: {
           name: 'EA topic author two',
@@ -180,3 +203,88 @@ if (reviews.length === 0) {
 };
 
 module.exports = exports;
+
+
+
+/*
+////////////////////////////////////////////////////////////////////////////////////
+// test reviwews save()
+////////////////////////////////////////////////////////////////////////////////////
+  var reviews = [
+    {
+      key: 'abc',
+      phone: '3336480983',
+      topic: {
+        providerKey: 'EA',
+        section: 'EA topic section A',
+        url: 'http://topic.1.url/',
+        title: 'this is the first nice small topic',
+        author: {
+          name: 'EA topic author one',
+          url: 'EA topic author url one',
+        },
+        dateOfCreation: 'EA topic one date of creation',
+      },
+      author: {
+        name: 'myself',
+        karma: 'super duper',
+        postsCount: 7,
+      },
+      title: 'my first small post',
+      date: new Date(),
+      contents: 'I am very satisfied...<br>line 2<br>line 3<br>line 4<br>line 5<br>line 6<br>line 7<br>line 8<br>line 9<br>line 10<br>line 11<br>line 12<br>',
+      cost: '200€',
+      beauty: 1.0,
+      performance: 0.8,
+      sympathy: 0.4,
+      cleanliness: 0.2,
+      location: {
+        quality: 0.6,
+        cleanliness: 0.2,
+        reachability: 0,
+      },
+    },
+    {
+      key: 'def',
+      phone: '3334567890',
+      topic: {
+        providerKey: 'EA',
+        section: 'EA topic section B',
+        url: 'http://topic.2.url/',
+        title: 'this is the second nice small topic',
+        author: {
+          name: 'EA topic author two',
+          url: 'EA topic author url two',
+        },
+        dateOfCreation: 'EA topic two date of creation',
+      },
+      author: {
+        name: 'my other self',
+        karma: 'beginner',
+        postsCount: 2,
+      },
+      title: 'my second small post',
+      date: new Date(),
+      contents: 'I am very dissatisfied...',
+      cost: '150€',
+      beauty: 0.1,
+      performance: 0.6,
+      sympathy: 0.2,
+      cleanliness: 0.3,
+      site: {
+        quality: 0.5,
+        cleanliness: 0.1,
+        reachability: 0.9,
+      },
+    },
+  ];
+
+var db = require('../models/db'); // database wiring
+exports.save(reviews, function(err) {
+  if (err) {
+    return log.error('save error:', err);
+  }
+  log.info('save ok');
+});
+////////////////////////////////////////////////////////////////////////////////////
+*/

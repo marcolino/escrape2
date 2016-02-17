@@ -3,24 +3,29 @@ var mongoose = require('mongoose')
 
 // review schema
 var reviewSchema = new mongoose.Schema({
+  key: String,
   phone: String,
   topic: {
     providerKey: String,
     section: String,
     url: String,
+    pageLast: {
+      url: String,
+      etag: String,
+    },
     title: String,
     author: {
       name: String,
       url: String,
     },
-    dateOfCreation: Date,
+    date: Date,
   },
-  content: String,
   author: {
     name: String,
     karma: String,
     postsCount: Number
   },
+  title: String,
   date: Date,
   contents: String,
   beauty: Number,
@@ -37,6 +42,9 @@ var reviewSchema = new mongoose.Schema({
   autoIndex: config.env === 'development',
   collection: 'reviews'
 });
-reviewSchema.index({ key: 1 }, { unique: true });
+reviewSchema.index({ 'key': 1 }, { unique: true });
+reviewSchema.index({ 'phone': 1 }, { unique: false });
+reviewSchema.index({ 'topic.url': 1 }, { unique: true });
+reviewSchema.index({ 'topic.pageLast.url': 1 }, { unique: true });
 
 module.exports = mongoose.model('Review', reviewSchema);
