@@ -14,7 +14,7 @@ $scope.ratingFunction = function(rating) {
     'slider': {
       visible: true,
     },
-    'reviewstracks': {
+    'footprints': {
       visible: true,
     },
     'carousel': {
@@ -178,7 +178,7 @@ console.log('$rootScope.user:', $rootScope.user);
   $scope.carouselOpen = function(index) {
     $scope.sections.data.visible = false;
     $scope.sections.slider.visible = false;
-    $scope.sections.reviewstracks.visible = false;
+    $scope.sections.footprints.visible = false;
     $scope.sections.carousel.visible = true;
     for (var i = 0; i < $scope.person.images.length; i++) {
       $scope.person.images[i].active = (i === index);
@@ -188,7 +188,7 @@ console.log('$rootScope.user:', $rootScope.user);
   $scope.carouselClose = function() {
     $scope.sections.data.visible = true;
     $scope.sections.slider.visible = true;
-    $scope.sections.reviewstracks.visible = true;
+    $scope.sections.footprints.visible = true;
     $scope.sections.carousel.visible = false;
     for (var i = 0; i < $scope.person.images.length; i++) {
       $scope.person.images[i].active = false;

@@ -28,16 +28,23 @@
     </div>
   </div>
 
-<!-- TODO: reviewstracks => footprints -->
-  <div id="section-reviewstracks" ng-show="sections['reviewstracks'].visible">
-    <div id="accordion-reviewstracks" class="panel-group">
+  <div id="section-footprints" ng-show="sections['footprints'].visible">
+    <div id="accordion-footprints" class="panel-group">
       <div class="panel panel-default">
         <div class="panel-heading">
           <h4 class="panel-title" style="text-align:left">
-            <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion-reviewstracks" data-target="#collapse-reviewstracks">Reviews and Tracks</a>
+            <div class="accordion-toggle" data-toggle="collapse" _data-parent="#accordion-footprints" data-target="#collapse-footprints">
+              <a data-toggle="collapse" _data-parent="#accordion-footprints" data-target="#collapse-footprints">
+                Footprints of this person
+              </a>
+              &emsp;~&emsp;
+              <a data-toggle="collapse" _data-parent="#accordion-footprints" data-target="#collapse-footprints">
+                My overall opinion: <span class="star-rating" star-rating rating-value="rating" data-max="5" on-rating-selected="ratingFunction(rating)"></span>
+              </a>
+            </div>
           </h4>
         </div>
-        <div id="collapse-reviewstracks" class="panel-collapse collapse in">
+        <div id="collapse-footprints" class="panel-collapse collapse in">
           <div class="panel-body">
   
             <div id="accordion-{{ panelKey }}" class="panel-group" data-ng-repeat="(panelKey, panel) in panels">

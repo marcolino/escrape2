@@ -3,7 +3,7 @@ var google = require('google');
 google.resultsPerPage = 50;
 var nextCounter = 0;
 
-var search = 'donna';
+var search = '3296690616';
 
 var tot = 0;
 google(search, function(err, next, links) {

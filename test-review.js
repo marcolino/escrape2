@@ -1,5 +1,6 @@
-var review = require('./api/controllers/review');
+var review = require('./api/controllers/review'); // review controller object
 var db = require('./api/models/db'); // database wiring
+//var reviews_sample_data = require('./api/controllers/reviews_SAMPLE_DATA');
 
 //var phone = '3888350421'; // SANDRA (4) (96+9+15=120)
 //var phone = '3240810872'; // ANE MARIE (1) (18=18)
