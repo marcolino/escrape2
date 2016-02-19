@@ -16,13 +16,17 @@ var log = config.log;
 var GF = Object.create(reviewProviderPrototype);
 GF.key = 'GF';
 GF.active = true;
-GF.url = 'http://google.com';
-GF.pathSearch = '/search/...';
+GF.url = 'http://gnoccaforum.com';
+GF.pathSearch = '/escort/search2';
 GF.tags = {};
 
 GF.getTopics = function(phone, callback) {
-  log.info('getTopics()', this.key, 'requesting topics from url:', this.url, 'phone:', phone);
   var url = this.url + this.pathSearch;
+  log.info('getTopics()', this.key, 'requesting topics from url:', url, 'phone:', phone);
+
+  if (!this.active) {
+    return callback();
+  }
 
   // TODO: we currently search only on the first page of topics, but should we search also next pages ?
 
@@ -38,7 +42,7 @@ GF.getTopics = function(phone, callback) {
       if (err || response.statusCode !== 200) {
         return callback(new Error('provider ' + that.key + ': error on response' + (response ? ' (' + response.statusCode + ')' : '') + ':' + err + ': ' + body), null);
       }
-      //console.log(body);
+      log.error(body);
       var $ = cheerio.load(body);
       var topics = [];
       $('div[class~="topic_details"]').each(function (i, element) { // topics loop
@@ -59,7 +63,7 @@ GF.getTopics = function(phone, callback) {
         topic.date = parseDate($(element).find('em').text().trim());
         topics.push(topic);
       });
-      console.log('getTopics()', this.key, 'found', topics.length, 'topics');
+      console.log('8888888888888888888888 getTopics()', that.key, 'found', topics.length, 'topics');
       callback(null, topics);
     }
   );
@@ -69,12 +73,17 @@ GF.getPosts = function(topics, callback) {
   log.info('getPosts:', this.key);
   var posts = [];
 
+  if (!this.active) {
+    return callback();
+  }
+
+  var that = this;
   async.each(
     topics,
     function(topic, callbackTopics) {
 
       // check if topic is new or exists already
-      log.info('getPosts()', this.key, 'check if topic exists already in DB:', topic.title);
+      log.info('getPosts()', that.key, 'check if topic exists already in DB:', topic.title);
       Review.find({ 'topic.pageLast.url': topic.pageLast.url }, function(err, results) {
         if (err) {
           return callback(err);
@@ -83,16 +92,16 @@ GF.getPosts = function(topics, callback) {
 
           // TODO: remove this test at production (?)
           if (results.length > 1) { // safety check, this should not happen!
-            return callback(new Error('more than one review post found for provider', this.key, 'with topic.pageLast.url value', topic.pageLast.url));
+            return callback(new Error('more than one review post found for provider', that.key, 'with topic.pageLast.url value', topic.pageLast.url));
           }
           var topicFound = results[0];
-          log.debug('getPosts()', this.key, 'scraping EXISTING topic:', topicFound.title);
+          log.debug('getPosts()', that.key, 'scraping EXISTING topic:', topicFound.title);
           topic.url = topicFound.pageLast.url; // set url as the last page url of found topic
           topic.etag = topicFound.pageLast.etag; // set etag to last page etag of found topic
 
         } else { // topic is new
 
-          log.debug('getPosts()', this.key, 'scraping NEW topic:', topic.title);
+          log.debug('getPosts()', that.key, 'scraping NEW topic:', topic.title);
           topic.url = topic.url.replace(/\/msg\d+\/.*/, ''); // transform specific post url to topic base url
           topic.etag = null; // don't set etag
 
@@ -101,7 +110,7 @@ GF.getPosts = function(topics, callback) {
         async.whilst(
           function() { return topic.url !== null; },
           function(callbackWhilst) {
-            log.info('getPosts()', this.key, 'requesting url', topic.url);
+            log.info('getPosts()', that.key, 'requesting url', topic.url);
             var options = {
               url: topic.url,
             };
@@ -115,11 +124,11 @@ GF.getPosts = function(topics, callback) {
                   return callback(new Error('error on response' + (response ? ' (' + response.statusCode + ')' : '') + ':' + err + ' : ' + body), null);
                 }
                 if (response.statusCode === 304) {
-                  log.info('getPosts()', this.key, 'TOPIC PAGE DID NOT CHANGE (304 status code returned): SKIPPING');
+                  log.info('getPosts()', that.key, 'TOPIC PAGE DID NOT CHANGE (304 status code returned): SKIPPING');
                   topic.url = null;
                   return callbackWhilst();
                 } else {
-                  log.info('getPosts()', this.key, 'TOPIC PAGE DID CHANGE (!304,', response.statusCode, ', status code returned): ELABORATING');
+                  log.info('getPosts()', that.key, 'TOPIC PAGE DID CHANGE (!304,', response.statusCode, ', status code returned): ELABORATING');
                 }
                 var $ = cheerio.load(body);
                 $('table[border-color="#cccccc"]').each(function(i, element) { // post elements
@@ -131,8 +140,8 @@ GF.getPosts = function(topics, callback) {
                   post.topic.url = topic.url;
                   post.topic.title = topic.title;
                   post.topic.author = {};
-                  post.topic.author.name = topic.author.name ? topic.author.name : this.UNKNOWN_ENTITY;
-                  post.topic.author.url = topic.author.url ? topic.author.url : this.UNKNOWN_ENTITY;
+                  post.topic.author.name = topic.author.name ? topic.author.name : that.UNKNOWN_ENTITY;
+                  post.topic.author.url = topic.author.url ? topic.author.url : that.UNKNOWN_ENTITY;
     
                   var postHtml = $(element).html();
             
@@ -145,15 +154,18 @@ GF.getPosts = function(topics, callback) {
             
                   var authorKarmaRE = /Karma:\s*(.*?)\s*<br>/; // post author karma regex
                   post.author.karma = authorKarmaRE.exec(authorHtml);
-                  post.author.karma = post.author.karma && post.author.karma.length >= 1 ? post.author.karma[1] : this.UNKNOWN_ENTITY;
+                  post.author.karma = post.author.karma && post.author.karma.length >= 1 ? post.author.karma[1] : that.UNKNOWN_ENTITY;
     
                   var authorPostsRE = /Posts:\s*(.*?)\s*<br>/; // post author posts count regex
                   post.author.postsCount = authorPostsRE.exec(authorHtml);
-                  post.author.postsCount = post.author.postsCount && post.author.postsCount.length >= 1 ? post.author.postsCount[1] : this.UNKNOWN_ENTITY;
-    
+                  post.author.postsCount = post.author.postsCount && post.author.postsCount.length >= 1 ? post.author.postsCount[1] : that.UNKNOWN_ENTITY;
+  if (typeof post.author.postsCount === 'undefined') {
+    log.error('POSTSCOUNT UNDEFINED', post);
+    log.warn('that.UNKNOWN_ENTITY:', that.UNKNOWN_ENTITY);
+  }
                   var dateRE = /&#xAB;\s*<b>(?:.*?)\s*on\:<\/b>\s*(.*?)\s*&#xBB;/; // post date regex
                   post.date = dateRE.exec(postHtml);
-                  post.date = post.date && post.date.length >= 1 ? parseDate(post.date[1]) : this.UNKNOWN_ENTITY;
+                  post.date = post.date && post.date.length >= 1 ? parseDate(post.date[1]) : that.UNKNOWN_ENTITY;
     
                   // remove quotes of previous post from post
                   var contents = $(element).find('div.post').html();
@@ -193,6 +205,7 @@ GF.getPosts = function(topics, callback) {
         ).digest('hex');
         return post;
       });
+      log.debug('GF POSTS SUMMMMMMMMMMM (CHECK!):', postsWithKeys);
       callback(null, postsWithKeys);
     }
   );

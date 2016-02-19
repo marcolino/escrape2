@@ -6,8 +6,6 @@ var mongoose = require('mongoose') // mongo abstraction
   , async = require('async') // to call many async functions in a loop
   , provider = require('../controllers/provider') // controller of provider
   , Review = require('../models/review') // model of reviews
-  , reviewGF = require('./review-GF') // GF review provider class
-  , reviewEA = require('./review-EA') // EA review provider class
   , config = require('../config') // global configuration
 ;
 var local = {};
@@ -19,6 +17,7 @@ var reviewProviderPrototype = {
   url: undefined,
   pathSearch: undefined,
   tags: undefined,
+
   UNKNOWN_ENTITY: '', // unknown entity symbol (could also be &#xfffd;)
 
   /**
@@ -38,8 +37,8 @@ var reviewProviderPrototype = {
   sync: function(phone, callback) {
     console.log('sync()', 'syncyng reviews from all review providers for phone value', phone);
     var reviewProviders = {
-      gf: reviewGF,
-      ea: reviewEA,
+      gf: require('./review-GF'),
+      ea: require('./review-EA'),
     };
   
     async.each(
@@ -60,7 +59,7 @@ var reviewProviderPrototype = {
             }
   
             // save results to database
-            exports.save(results, function(err, doc) {
+            reviewProviderPrototype.save(results, function(err, doc) {
               if (err) {
                 return callbackInner(err);
               }
@@ -96,7 +95,7 @@ var reviewProviderPrototype = {
           { upsert: true },
           function(err, numAffected) {
             if (err) {
-              return callback(new Error('could not update reviews: ' + err));
+              return callbackInner(new Error('could not update reviews: ' + err));
             }
             callbackInner();
           }

@@ -16,17 +16,22 @@ var log = config.log;
 var EA = Object.create(reviewProviderPrototype);
 EA.key = 'EA';
 EA.active = true;
-EA.url = 'http://apple.com';
-EA.pathSearch = '/search/?num=';
+EA.url = 'http://www.escort-advisor.com';
+EA.pathSearch = '/ea/Numbers/';
 EA.tags = {
   noNumber: 'Numero non trovato',
   noReview: 'Nessuna recensione presente per quest',
 };
 
 EA.getTopics = function(phone, callback) {
-  log.info('getTopics()', this.key, 'requesting topics from url:', this.url, 'phone:', phone);
+log.info('EA this:', this);
   var url = this.url + this.pathSearch;
+  log.info('getTopics()', this.key, 'requesting topics from url:', url, 'phone:', phone);
   // TODO: we currently search only on the first page of topics, but should we search also next pages? (no)
+
+  if (!this.active) {
+    return callback();
+  }
 
   var that = this;
   request(
@@ -41,6 +46,7 @@ EA.getTopics = function(phone, callback) {
       if (err || response.statusCode !== 200) {
         return callback(new Error('provider ' + that.key + ': error on response' + (response ? ' (' + response.statusCode + ')' : '') + ': ' + err + ' : ' + body), null);
       }
+      //console.log(body);
       var topics = [];
       if (!(
         body.match(new RegExp(that.tags.noNumber, 'g')) ||
@@ -73,6 +79,10 @@ EA.getPosts = function(topics, callback) {
   var postsHead = [];
   var postsBody = [];
   var posts = [];
+
+  if (!this.active) {
+    return callback();
+  }
 
   var that = this;
   async.each(

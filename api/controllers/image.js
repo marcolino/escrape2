@@ -341,7 +341,7 @@ local.saveImageToDB = function(image, images, callback) {
           },
           function(err, doc, raw) { // result callback
             if (err) {
-              log.warn('can\'t save image', doc.basename, ':', err);
+              log.warn('can\'t save image', image.basename, ':', err);
             } else {
               if (raw.lastErrorObject.updatedExisting) {
                 //log.info('image', doc.personKey, doc.basename, 'updated'.cyan);
