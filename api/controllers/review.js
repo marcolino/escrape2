@@ -17,8 +17,9 @@ var reviewProviderPrototype = {
   url: undefined,
   pathSearch: undefined,
   tags: undefined,
+  locale: undefined,
 
-  UNKNOWN_ENTITY: '', // unknown entity symbol (could also be &#xfffd;)
+  UNKNOWN_ENTITY: '', // unknown entity symbol
 
   /**
    @abstract
@@ -57,6 +58,7 @@ var reviewProviderPrototype = {
               log.debug('no posts found on provider', rP.key, 'for phone', phone);
               return callbackInner();
             }
+            log.debug('saving', results.length, 'posts found on provider', rP.key, 'for phone', phone);
   
             // save results to database
             reviewProviderPrototype.save(results, function(err, doc) {
@@ -110,21 +112,32 @@ var reviewProviderPrototype = {
     );
   },
 
-  getByPhone: function(phone, callback) { // get reviews by phone
+  getPostsByPhone: function(phone, callback) { // get review posts by phone
     Review.find({ phone: phone }).lean().exec(function(err, reviews) {
       if (err) {
         return callback(err);
       }
-      //// DEBUG ONLY /////////////////////////////////////////////
-      //if (reviews.length === 0) {
-      //  reviews = require('../../.old/reviews_SAMPLE_DATA');
-      //}
-      ///////////////////////////////////////////////////////////
-
       callback(null, reviews);
     });
   },
 
+  getTopicsByPhone: function(phone, callback) { // get review topics by phone
+    Review.find({ phone: phone }).lean().distinct('topic.key').exec(function(err, reviews) {
+      if (err) {
+        return callback(err);
+      }
+      callback(null, reviews);
+    });
+  },
+
+  getPostsByTopic: function(topicKey, callback) { // get review posts by topic
+    Review.find({ 'topic.key': topicKey }).lean().exec(function(err, reviews) {
+      if (err) {
+        return callback(err);
+      }
+      callback(null, reviews);
+    });
+  },
 };
 
 module.exports = reviewProviderPrototype;
