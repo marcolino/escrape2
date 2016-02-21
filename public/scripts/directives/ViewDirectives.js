@@ -27,7 +27,6 @@ angular.module('ViewDirectives', [])
           }
         };
         scope.toggle = function(index) {
-console.log('scope.readonly:', scope.readonly);
           if (!scope.readonly) {
             scope.ratingValue = index + 1;
             scope.onRatingSelected({

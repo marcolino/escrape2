@@ -15,18 +15,19 @@ var log = config.log;
 // EA reviewProvider initialization
 var EA = Object.create(reviewProviderPrototype);
 EA.key = 'EA';
-EA.active = true;
+EA.active = false;
 EA.url = 'http://www.escort-advisor.com';
 EA.pathSearch = '/ea/Numbers/';
 EA.tags = {
   noNumber: 'Numero non trovato',
   noReview: 'Nessuna recensione presente per quest',
 };
+EA.locale = 'it';
 
 EA.getTopics = function(phone, callback) {
-log.info('EA this:', this);
+//sinfo('EA this:', this, '.');
   var url = this.url + this.pathSearch;
-  log.info('getTopics()', this.key, 'requesting topics from url:', url, 'phone:', phone);
+//log.info('getTopics()', this.key, 'requesting topics from url:', url, 'phone:', phone);
   // TODO: we currently search only on the first page of topics, but should we search also next pages? (no)
 
   if (!this.active) {
@@ -66,22 +67,27 @@ log.info('EA this:', this);
         topic.author.name = that.key;
         topic.author.url = that.url;
         topic.date = null; // will be set to the date of first post
+
+        topic.key = crypto.createHash('md5').update(
+          topic.phone + '|' + topic.providerKey + '|' + topic.author.name + '|' + topic.date
+        ).digest('hex');
+//log.warn('topic.key:', topic.key);
         topics.push(topic);
       }
-      console.log('getTopics()', that.key, 'found', topics.length, 'topics');
+//log.debug('getTopics()', that.key, 'found', topics.length, 'topics');
       callback(null, topics);
     }
   );
 };
 
 EA.getPosts = function(topics, callback) {
-  log.info(this.key, 'getPosts()', this.key, 'requesting posts from url:', this.url);
+//log.info(this.key, 'getPosts()', this.key, 'requesting posts from url:', this.url);
   var postsHead = [];
   var postsBody = [];
   var posts = [];
 
   if (!this.active) {
-    return callback();
+    return callback(null, posts);
   }
 
   var that = this;
@@ -91,25 +97,26 @@ EA.getPosts = function(topics, callback) {
       log.info('getPosts()', that.key, 'scraping topic:', topic.title);
 
       // check if topic is new or exists already
-      log.info('getPosts()', that.key, 'check if topic exists already in DB:', topic.title);
-      Review.find({ 'topic.pageLast.url': topic.pageLast.url }, function(err, results) {
+      Review.find({ 'topic.key': topic.key }).lean().exec(function(err, results) {
         if (err) {
           return callback(err);
         }
         if (results.length > 0) { // topic is already present in DB
+//log.debug('getPosts()', that.key, 'topic exists already in DB:', topic.title);
 
           // TODO: remove that test at production (?)
           if (results.length > 1) { // safety check, that should not happen!
             return callback(new Error('more than one review post found for provider', that.key, 'with topic.pageLast.url value', topic.pageLast.url));
           }
           var topicFound = results[0];
-          log.debug('getPosts()', that.key, 'scraping EXISTING topic:', topicFound.title);
+//log.debug('getPosts()', that.key, 'scraping EXISTING topic:', topicFound.title);
           topic.url = topicFound.pageLast.url; // set url as the last page url of found topic
           topic.etag = topicFound.pageLast.etag; // set etag to last page etag of found topic
 
         } else { // topic is new
+//log.debug('getPosts()', that.key, 'topic is new');
 
-          log.debug('getPosts()', that.key, 'scraping NEW topic:', topic.title);
+//log.debug('getPosts()', that.key, 'scraping NEW topic:', topic.title);
           topic.url = topic.url; // keep topic url unchanged
           topic.etag = null; // don't set etag
 
@@ -118,12 +125,13 @@ EA.getPosts = function(topics, callback) {
         async.whilst(
           function() { return topic.url !== null; },
           function(callbackWhilst) {
-            log.info('getPosts()', that.key, 'parsing topic');
+//log.info('getPosts()', that.key, 'parsing topic');
             var $ = cheerio.load(topic.body);
             $('div[class="span2"]').each(function(i, element) { // post elements
               var post = {};
               post.phone = topic.phone;
               post.topic = {};
+              post.topic.key = topic.key;
               post.topic.providerKey = topic.providerKey;
               post.topic.section = topic.section;
               post.topic.url = topic.url;
@@ -248,10 +256,10 @@ EA.getPosts = function(topics, callback) {
         return callback(new Error('...'));
       }
       // merge posts headers and posts bodyes
-log.debug('EA POSTS HEAD (CHECK!):', postsHead);
-log.debug('EA POSTS BODY (CHECK!):', postsBody);
+//log.debug('EA POSTS HEAD (CHECK!):', postsHead);
+//log.debug('EA POSTS BODY (CHECK!):', postsBody);
       var postsWithoutKeys = mergeArraysOfObjects(postsHead, postsBody);
-log.debug('EA postsWithoutKeys (CHECK!):', postsWithoutKeys);
+//log.debug('EA postsWithoutKeys (CHECK!):', postsWithoutKeys);
       // create keys for posts
       var posts = postsWithoutKeys.map(function(post) {
         post.key = crypto.createHash('md5').update(
@@ -259,7 +267,7 @@ log.debug('EA postsWithoutKeys (CHECK!):', postsWithoutKeys);
         ).digest('hex');
         return post;
       });
-log.debug('EA POSTS SUMMMMMMMMMMM (CHECK!):', posts);
+//log.debug('EA POSTS SUMMMMMMMMMMM (CHECK!):', posts);
       callback(null, posts);
     }
   );

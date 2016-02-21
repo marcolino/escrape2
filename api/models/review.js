@@ -6,12 +6,13 @@ var reviewSchema = new mongoose.Schema({
   key: String,
   phone: String,
   topic: {
+    key: String,
     providerKey: String,
     section: String,
     url: String,
     pageLast: {
       url: String,
-      etag: String,
+      lastModified: String,
     },
     title: String,
     author: {
@@ -44,6 +45,7 @@ var reviewSchema = new mongoose.Schema({
 });
 reviewSchema.index({ 'key': 1 }, { unique: true });
 reviewSchema.index({ 'phone': 1 }, { unique: false });
+reviewSchema.index({ 'topic.key': 1 }, { unique: true });
 reviewSchema.index({ 'topic.url': 1 }, { unique: false });
 reviewSchema.index({ 'topic.pageLast.url': 1 }, { unique: false });
 

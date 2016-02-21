@@ -15,7 +15,9 @@ router.route('/sync/:phone').
   })
 ;
 router.get('/', getAll);
-router.get('/getByPhone/:phone', getByPhone);
+router.get('/getPostsByPhone/:phone', getPostsByPhone);
+router.get('/getTopicsByPhone/:phone', getTopicsByPhone);
+router.get('/getPostsByTopic/:topic', getPostsByTopic);
 
 function getAll(req, res) { // get all reviews
   var filter = {};
@@ -27,11 +29,31 @@ function getAll(req, res) { // get all reviews
   });
 }
 
-function getByPhone(req, res) { // get reviews by phone
+function getPostsByPhone(req, res) { // get review posts by phone
   var phone = req.params.phone;
-  review.getByPhone(phone, function(err, reviews) {
+  review.getPostsByPhone(phone, function(err, reviews) {
     if (err) {
-      return res.status(500).json(err); // TODO: test this...
+      return res.status(500).json(err);
+    }
+    res.json(reviews);
+  });
+}
+
+function getTopicsByPhone(req, res) { // get review topics by phone
+  var phone = req.params.phone;
+  review.getTopicsByPhone(phone, function(err, reviews) {
+    if (err) {
+      return res.status(500).json(err);
+    }
+    res.json(reviews);
+  });
+}
+
+function getPostsByTopic(req, res) { // get review posts by topic
+  var topic = req.params.topic;
+  review.getPostsByTopic(topic, function(err, reviews) {
+    if (err) {
+      return res.status(500).json(err);
     }
     res.json(reviews);
   });

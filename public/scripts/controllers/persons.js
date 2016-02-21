@@ -72,16 +72,16 @@ console.timeEnd('loadPerson');
       $scope.personDateOfFirstSync = $scope.showPersonDateOfFirstSync($scope.person);
       $scope.personPhone = $scope.showPersonPhone($scope.person);
 
-      $scope.loadReviews($scope.person.phone);
+      $scope.loadReviewPosts($scope.person.phone);
     });
   };
 
-  $scope.loadReviews = function(phone) {
+  $scope.loadReviewPosts = function(phone) {
     if (!phone) {
       return;
     }
 var t = console.time('loadReviews'); // TODO: development only
-    Review.getByPhone(phone, function(response) {
+    Review.getPostsByPhone(phone, function(response) {
 console.timeEnd('loadReviews');
 console.info('reviews data:', response);
 
