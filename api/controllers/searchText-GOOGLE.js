@@ -1,6 +1,6 @@
 'use strict';
 
-var google = require('google') // get text search results from Google
+var google = require('google'); // get text search results from Google
 
 // Google searchTextProvider initialization
 var Google = Object.create({});
