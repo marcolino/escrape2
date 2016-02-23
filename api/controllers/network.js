@@ -43,13 +43,13 @@ exports.fetch = function(resource, callback) {
     options,
     function(err, response, contents) {
       var requestEtag;
+log.warn('network.fetch status code:', response.statusCode);
       if (!err && (response.statusCode === 200 || response.statusCode === 304)) {
         var result = {};
         result.etag = response.headers.etag;
         result.url = response.request.uri.href;
         if (response.statusCode === 304) { // unchanged
           result.isChanged = false;
-
           if (config.env === 'development') { // TODO: just to be safe, should not need this test on production
             if (requestEtag && (result.etag !== response.request.headers['If-None-Match'])) {
               log.warn(
@@ -298,23 +298,72 @@ exports.requestSmart = function(resource, error, success) {
   );
 };
 
-// TODO: use this to check for url change by eTag - before fetch() - since this should be very fast...
+
 exports.checkUrlChanged = function(url, etag, callback) {
-  var http = require('http');
   var options = {
-    method: 'GET',
     url: url,
+    method: 'HEAD',
     headers: {
-      'If-None-Match': etag, 
+      'If-None-Match': etag,
     }
   };
-  var t = process.hrtime();
+  request(options, function (error, response, body) {
+    if (error) {
+      return console.error('check failed:', error);
+    }
+    console.log('resp statuscode:', response.statusCode);
+    if (response.headers.etag) {
+      console.log('resp etag:', response.headers.etag);
+    }
+    return callback(response.statusCode < 300);
+  });
+};
+
+// TODO: use this to check for url change by eTag - before fetch() - since this should be very fast...
+exports.OLDDDDDcheckUrlChanged = function(url, etag, callback) {
+log.debug('checkUrlChanged():', url, etag);
+  var http = require('http');
+  var options = {
+    //method: 'GET',
+    method: 'HEAD',
+    url: url,
+    //headers: {
+    //  'If-None-Match': etag,
+    //}
+  };
+
+/*
+  //var t = process.hrtime();
+console.log('request started');
   var req = http.request(options, function(res) {
-    console.log(res.headers);
-    console.log(res);
-    console.log('checkUrlChanged() - HEAD http get:', process.hrtime(t)[0] + (process.hrtime(t)[1] / 1000000000), 'seconds');
+console.log('request returned:', res);
+    //console.log(res);
+    //console.log('checkUrlChanged() - HEAD http get:', process.hrtime(t)[0] + (process.hrtime(t)[1] / 1000000000), 'seconds');
     req.end();
-    //callback(res.statusCode < 300);
+    return callback(res.statusCode < 300);
+  });
+*/
+  var req = http.get(options, function(res) {
+    console.log('STATUS: ', res.statusCode);
+    console.log('HEADERS: ', res.headers);
+
+    // Buffer the body entirely for processing as a whole.
+    var bodyChunks = [];
+    res.on('data', function(chunk) {
+      // You can process streamed parts here...
+      //bodyChunks.push(chunk);
+log.info('data');
+    }).on('end', function() {
+      //var body = Buffer.concat(bodyChunks);
+      //console.log('BODY: ' + body);
+      // ...and/or process the entire body here.
+log.info('end');
+      return callback(res.statusCode < 300);
+    });
+  });
+  req.on('error', function(e) {
+    console.log('ERROR: ' + e.message);
+    return callback(true); // on error, return with 'changed' flag, to force a real download
   });
 };
 

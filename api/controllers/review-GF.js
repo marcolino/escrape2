@@ -55,9 +55,11 @@ GF.getTopics = function(phone, callback) {
         topic.section = $(element).find('a').eq(0).text();
         topic.url = $(element).find('a').eq(1).attr('href');
         topic.title = $(element).find('a').eq(1).text();
+        /*
         topic.author = {};
         topic.author.name = $(element).find('a').eq(2).text();
         topic.author.url = $(element).find('a').eq(2).attr('href');
+        */
         topic.date = parseDate($(element).find('em').text().trim(), that.locale);
 
         topic.key = crypto.createHash('md5').update(
@@ -153,10 +155,11 @@ GF.getPosts = function(topics, callback) {
 //console.warn('response.headers:', response.headers['last-modified']);
                   post.topic.pageLast.lastModified = response.headers['last-modified'];
                   post.topic.title = topic.title;
+                  /*
                   post.topic.author = {};
                   post.topic.author.name = topic.author.name ? topic.author.name : that.UNKNOWN_ENTITY;
                   post.topic.author.url = topic.author.url ? topic.author.url : that.UNKNOWN_ENTITY;
-    
+                  */
                   var postHtml = $(element).html();
             
                   post.title = $(element).find('a[title^="TITLE..."]').text(); // post title (TODO!!!)

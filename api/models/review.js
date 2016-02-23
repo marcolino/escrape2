@@ -15,10 +15,12 @@ var reviewSchema = new mongoose.Schema({
       lastModified: String,
     },
     title: String,
+/*
     author: {
       name: String,
       url: String,
     },
+*/
     date: Date,
   },
   author: {
