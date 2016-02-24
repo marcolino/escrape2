@@ -2,10 +2,10 @@
 
 angular.module('PersonCtrl', []).controller('PersonController', function($rootScope, $scope, $location, $routeParams, $window, Person, Filter, Review) {
 
-$scope.rating = 3;
-$scope.ratingFunction = function(rating) {
-  console.log('reachFunction():', rating);
-};
+  $scope.rating = 3;
+  $scope.ratingFunction = function(rating) {
+    console.log('reachFunction():', rating);
+  };
 
   $scope.sections = {
     'data': {
@@ -28,16 +28,20 @@ $scope.ratingFunction = function(rating) {
       active: true,
       posts: [],
       topics: [],
+      loaded: false,
     },
     'photostracks': {
       name: 'Photos Tracks',
       active: false,
       data: [ ],
+      loaded: false,
     },
     'phonetracks': {
+      rating: 77,
       name: 'Phone Tracks',
       active: false,
-      data: [ ],
+      results: [ ],
+      loaded: false,
     },
   };
 
@@ -73,6 +77,7 @@ console.timeEnd('loadPerson');
       $scope.personPhone = $scope.showPersonPhone($scope.person);
 
       $scope.loadReviewPosts($scope.person.phone);
+      $scope.loadPhonetracksResults($scope.person.phone);
     });
   };
 
@@ -82,8 +87,7 @@ console.timeEnd('loadPerson');
     }
 var t = console.time('loadReviews'); // TODO: development only
     Review.getPostsByPhone(phone, function(response) {
-console.timeEnd('loadReviews');
-console.info('reviews data:', response);
+      //console.info('reviews data:', response);
 
       $scope.panels.reviews.posts = response;
 
@@ -104,9 +108,20 @@ console.info('reviews data:', response);
           $scope.panels.reviews.topics[topicKey].postsCount++;
         }
       }
-console.warn('$scope.panels.reviews.topics:', $scope.panels.reviews.topics);
-      //$scope.panels.reviews.topics = [ { id: response[0].topic }, { id: response[1].topic }, ]; // TODO: ...
     });
+  };
+
+  $scope.loadPhonetracksResults = function(phone) {
+    /*
+    if (!phone) {
+      return;
+    }
+    */
+    /*
+    Review.getPhonetracksPhone(phone, function(response) {
+      console.log('loadPhonetracksResults() - phone:', phone);
+    });
+    */
   };
 
   $scope.listAliasGroups = function() { // debug only method
