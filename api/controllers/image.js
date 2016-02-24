@@ -154,15 +154,19 @@ exports.syncPersonsImages = function(persons, callback) {
       { personKey: person.key, url: imageUrl.href }
       , images
     );
+/*
 log.info('person key:', person.key);
 log.info('imageUrl href:', imageUrl.href);
 log.info('images count:', images.length);
 log.info('personImages count:', personImages.length);
+*/
 var personImages2 = local.grep(
   { personKey: person.key }
     , images
   );
+/*
 log.info('personImages 2 count:', personImages2.length);
+*/
     // assert for at most one result (TODO: only while developing)
     // TODO: commented this test since showcase image can have a cropped duplicate, which do not seem similar to Jimp.signature
     //if (personImages.length > 1) { throw new Error('more than one image found for person key ' + person.toObject().key, ' and url ' + imageUrl); }
@@ -188,35 +192,14 @@ log.info('personImages 2 count:', personImages2.length);
       image.personKey = person.key;
     }
     image.type = 'image';
-log.info('image etag:', image.etag);
 
-    if (!image.isNew) { // quickly check if image is changed
-      if (config.profile) var t = process.hrtime(); // TODO: PROFILE ONLY
-log.info('image is OLD, calling checkUrlChanged');
-      network.checkUrlChanged(image.url, image.etag, function(changed) {
-if (config.profile) log.debug('network.checkUrlChanged:', process.hrtime(t)[0] + (process.hrtime(t)[1] / 1000000000), 'seconds');
-        if (!changed) {
-          log.info(' *** image is OLD');
-          return callback(null, image);
-        } else {
-          log.info(' *** image is NEW');
-          fetch(image, callback);
-        }
-      });
-    } else {
-      log.info(' *** image is NEW');
-      fetch(image, callback);
-    }
-
-function fetch(image, callback) { // quickly check if image is changed
-
-var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
+//var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
     network.fetch(image, function(err, img) { // fetch image resource
       if (err) {
         log.warn('network fetch error:', err);
         return callback(err, image);
       }
-if (config.profile) log.debug('network.fetch:', process.hrtime(t)[0] + (process.hrtime(t)[1] / 1000000000), 'seconds');
+//if (config.profile) log.debug('network.fetch:', process.hrtime(t)[0] + (process.hrtime(t)[1] / 1000000000), 'seconds');
 
 /*
 // img.url could have been redirected to https...
@@ -229,7 +212,7 @@ if (image.url !== img.url) log.error('SOURCE IMAGE URL AFTER FETCH CHANGES! imag
       image.size = img.contents ? img.contents.length : null;
       image.etag = img.etag;
       image.isChanged = img.isChanged;
-log.info('image is changed:', image.isChanged);
+//log.info('image is changed:', image.isChanged);
 
 /*
 // TODO: DEBUG ONLY!
@@ -246,7 +229,6 @@ image.url += crypto.randomBytes(3).toString('ascii');
 
       return callback(err, image);
     });
-}
 
   }
 

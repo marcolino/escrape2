@@ -43,7 +43,7 @@ exports.fetch = function(resource, callback) {
     options,
     function(err, response, contents) {
       var requestEtag;
-log.warn('network.fetch status code:', response.statusCode);
+//log.warn('network.fetch status code:', response.statusCode);
       if (!err && (response.statusCode === 200 || response.statusCode === 304)) {
         var result = {};
         result.etag = response.headers.etag;
@@ -299,6 +299,7 @@ exports.requestSmart = function(resource, error, success) {
 };
 
 
+/*
 exports.checkUrlChanged = function(url, etag, callback) {
   var options = {
     url: url,
@@ -332,17 +333,6 @@ log.debug('checkUrlChanged():', url, etag);
     //}
   };
 
-/*
-  //var t = process.hrtime();
-console.log('request started');
-  var req = http.request(options, function(res) {
-console.log('request returned:', res);
-    //console.log(res);
-    //console.log('checkUrlChanged() - HEAD http get:', process.hrtime(t)[0] + (process.hrtime(t)[1] / 1000000000), 'seconds');
-    req.end();
-    return callback(res.statusCode < 300);
-  });
-*/
   var req = http.get(options, function(res) {
     console.log('STATUS: ', res.statusCode);
     console.log('HEADERS: ', res.headers);
@@ -366,7 +356,7 @@ log.info('end');
     return callback(true); // on error, return with 'changed' flag, to force a real download
   });
 };
-
+*/
 
   /**
    * request-retry strategies
