@@ -344,7 +344,7 @@ if (person.key === 'FORBES/Shakira') {
                         log.warn(err);
                       } else {
                         //persons.push(person);
-                        persons.push(doc);
+                        persons.push(doc); // push this person document to persons array
                         retrievedPersonsCount++;
                       }
                       callbackInner(); // this person is done

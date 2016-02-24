@@ -196,7 +196,7 @@ log.info('personImages 2 count:', personImages2.length);
 //var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
     network.fetch(image, function(err, img) { // fetch image resource
       if (err) {
-        log.warn('network fetch error:', err);
+        log.warn('network fetch error:', err.message);
         return callback(err, image);
       }
 //if (config.profile) log.debug('network.fetch:', process.hrtime(t)[0] + (process.hrtime(t)[1] / 1000000000), 'seconds');
