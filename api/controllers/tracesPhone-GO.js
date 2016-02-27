@@ -7,7 +7,7 @@ var Google = Object.create({});
 Google.key = 'Google';
 Google.active = true;
 
-Google.getResults = function(phone, callback) {
+Google.getPhoneTraces = function(phone, callback) {
   var search = phone;
   var nextCounter = 0;
   var maxPages = 1; // avoid too many requests
@@ -39,9 +39,9 @@ Google.getResults = function(phone, callback) {
 };
 
 // test
-Google.getResults('3292534721', function(err, results) {
+Google.getPhoneTraces('3292534721', function(err, results) {
   if (err) {
     return console.error(err);
   }
-  console.log(results.length, 'results found:', results);
+  console.log(results.length, 'phone traces found:', results);
 });

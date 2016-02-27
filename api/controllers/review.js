@@ -4,7 +4,7 @@ var mongoose = require('mongoose') // mongo abstraction
   , request = require('request') // to place http requests
   , cheerio = require('cheerio') // to parse fetched DOM data
   , async = require('async') // to call many async functions in a loop
-  , provider = require('../controllers/provider') // controller of provider
+  //, provider = require('../controllers/provider') // controller of provider
   , Review = require('../models/review') // model of reviews
   , config = require('../config') // global configuration
 ;
