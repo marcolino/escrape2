@@ -142,7 +142,7 @@ var apiUrls = [ // list all possible api servers addresses during development
   'http://test.server.local:3000', // (client == server)
   'http://192.168.1.4:3000',       // (@Torino @home, client != server)
   'http://192.168.10.30:3000',     // (@Torino @office, client != server) // TODO: ???
-  'http://192.168.1.90:3000',      // (@Portovenere, client != server)
+  'http://192.168.1.15:3000',      // (@Portovenere, client != server)
 ];
 /*
 var apiUrls = [ // list all possible api servers addresses during development

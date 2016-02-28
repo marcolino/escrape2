@@ -4,14 +4,14 @@ var mongoose = require('mongoose')
 // phone traces schema
 var tracesPhone = new mongoose.Schema({
   phone: { type: String, required: true },
-  url: String,
-  img: String,
+  link: String,
   title: String,
-  body: String,
+  description: String,
 },
 {
   autoIndex: config.env === 'development',
+  collection: 'tracesPhones'
 });
-tracesPhone.index({ phone: 1 }, { unique: true });
+tracesPhone.index({ phone: 1 }, { unique: false });
 
 module.exports = mongoose.model('TracesPhone', tracesPhone);

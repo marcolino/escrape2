@@ -32,7 +32,7 @@ var tracesPhoneProviderPrototype = {
       tracesPhoneProviders,
       function(tPP, callbackInner) {
         console.log('sync()', 'provider:', tPP.key);
-        tPP.getPhoneTraces(phone, function(err, results) {
+        tPP.getTraces(phone, function(err, results) {
           if (err) {
             return callbackInner(err);
           }
@@ -40,13 +40,13 @@ var tracesPhoneProviderPrototype = {
             log.debug('no phone traces found on provider', tPP.key, 'for phone', phone);
             return callbackInner();
           }
-          log.debug('saving', results.length, 'phone traces found on provider', tPP.key, 'for phone', phone);
   
           // save results to database
           tracesPhoneProviderPrototype.save(results, function(err, doc) {
             if (err) {
               return callbackInner(err);
             }
+            log.debug('saved', results.length, 'phone traces found on provider', tPP.key, 'for phone', phone);
             callbackInner(); // this person is done
           });
   
@@ -68,7 +68,6 @@ var tracesPhoneProviderPrototype = {
   },
 
   save: function(traces, callback) {
-    log.info('saving phone traces...');
     async.each(
       traces,
       function(trace, callbackInner) {
@@ -93,11 +92,22 @@ var tracesPhoneProviderPrototype = {
     );
   },
 
-  getPhoneTracesByPhone: function(phone, callback) { // get tracesPhone phone traces by phone
+  getAll: function(callback) { // get all phone traces by phone
+    TracesPhone.find().lean().exec(function(err, traces) {
+      if (err) {
+        return callback(err);
+      }
+      callback(null, traces);
+    });
+  },
+
+  getTracesByPhone: function(phone, callback) { // get phone traces by phone
+log.info('ctrl getTracesByPhone phone:', phone);
     TracesPhone.find({ phone: phone }).lean().exec(function(err, traces) {
       if (err) {
         return callback(err);
       }
+log.info('ctrl getTracesByPhone traces:', traces);
       callback(null, traces);
     });
   },

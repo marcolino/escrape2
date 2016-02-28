@@ -3,11 +3,11 @@
 var google = require('google'); // get text search results from Google
 
 // Google searchTextProvider initialization
-var Google = Object.create({});
-Google.key = 'Google';
-Google.active = true;
+var GO = Object.create({});
+GO.key = 'Google';
+GO.active = true;
 
-Google.getPhoneTraces = function(phone, callback) {
+GO.getTraces = function(phone, callback) {
   var search = phone;
   var nextCounter = 0;
   var maxPages = 1; // avoid too many requests
@@ -38,10 +38,14 @@ Google.getPhoneTraces = function(phone, callback) {
   });
 };
 
+module.exports = GO;
+
+/*
 // test
-Google.getPhoneTraces('3292534721', function(err, results) {
+GO.getTraces('3292534721', function(err, results) {
   if (err) {
     return console.error(err);
   }
   console.log(results.length, 'phone traces found:', results);
 });
+*/

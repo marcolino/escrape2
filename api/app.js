@@ -64,6 +64,7 @@ app.use('/api/persons', require('./routes/persons'));
 app.use('/api/providers', require('./routes/providers'));
 app.use('/api/places', require('./routes/places'));
 app.use('/api/reviews', require('./routes/reviews'));
+app.use('/api/tracesPhone', require('./routes/tracesPhone'));
 
 // public routes
 app.use(express.static(staticPathPublic));
