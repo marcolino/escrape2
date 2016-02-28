@@ -32,7 +32,8 @@ var app = angular.module('escrape2', [
   'UserService',
   'FilterService',
   'PersonService',
-  'ReviewService'
+  'ReviewService',
+  'TracesPhoneService'
 ]);
 
 app.config(function($httpProvider, $routeProvider, $locationProvider) {

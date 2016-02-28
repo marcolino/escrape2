@@ -52,7 +52,7 @@
               <div class="panel panel-default">
                 <div class="panel-heading">
                   <h4 class="panel-title" style="text-align:left">
-                    <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion-{{ panelKey }}" data-target="#collapse-{{ panelKey }}">{{ panel.name }} &emsp; <span class="label label-success label-as-badge">{{ panel.posts.length }}</span></a>
+                    <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion-{{ panelKey }}" data-target="#collapse-{{ panelKey }}">{{ panel.name }} &emsp; <span class="label label-success label-as-badge">{{ (panelKey === 'reviews') ? panel.posts.length : panel.traces.length }}</span></a>
                   </h4>
                 </div>
                 <div id="collapse-{{ panelKey }}" class="panel-collapse collapse" ng-class="{ in: panel.active }">
@@ -196,14 +196,33 @@
                       </div>
                     </div> <!-- /panel 'reviews' -->
 
-                    <div ng-if="panelKey === 'phonetracks'">
+                    <div ng-if="panelKey === 'phonetraces'">
+                      <!--
                       <div class="text-center" ng-hide="panel.loaded">
                         <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>
                       </div>
-                      <div data-ng-repeat="result in panel.results">
-                        <pre>{{result}}</pre>
+                      -->
+                      <div data-ng-repeat="trace in panel.traces">
+
+                        <div class="row">
+                          <div class="col-xs-12">
+                            <a ng-href="{{trace.link}}" ng-bind-html="trace.title" target="_blank" class="underline-on-hover" style="font-size: 1.1em; color: #6ac;"></a>
+                          </div>
+                        </div>
+                        <div class="row">
+                          <div class="col-xs-12">
+                            <div ng-bind-html="trace.description"></div>
+                          </div>
+                        </div>
+                        <div class="row">
+                          <div class="col-xs-12">
+                            &nbsp; <!-- spacer -->
+                          </div>
+                        </div>
+
+                        <!-- <pre>{{trace}}</pre> -->
                       </div>
-                    </div> <!-- /panel 'phonetracks' -->
+                    </div> <!-- /panel 'phonePTraces' -->
 
                     <!--<pre>{{ panel.data }}</pre>-->
                   </div>

@@ -13,5 +13,6 @@ var tracesPhone = new mongoose.Schema({
   collection: 'tracesPhones'
 });
 tracesPhone.index({ phone: 1 }, { unique: false });
+tracesPhone.index({ link: 1 }, { unique: true });
 
 module.exports = mongoose.model('TracesPhone', tracesPhone);

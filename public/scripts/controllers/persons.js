@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('PersonCtrl', []).controller('PersonController', function($rootScope, $scope, $location, $routeParams, $window, Person, Filter, Review) {
+angular.module('PersonCtrl', []).controller('PersonController', function($rootScope, $scope, $location, $routeParams, $window, Person, Filter, Review, TracesPhone) {
 
   $scope.rating = 3;
   $scope.ratingFunction = function(rating) {
@@ -25,22 +25,22 @@ angular.module('PersonCtrl', []).controller('PersonController', function($rootSc
   $scope.panels = {
     'reviews': {
       name: 'Reviews',
-      active: true,
+      active: false,
       posts: [],
       topics: [],
       loaded: false,
     },
-    'photostracks': {
-      name: 'Photos Tracks',
+    'photostraces': {
+      name: 'Photos Traces',
       active: false,
-      data: [ ],
+      traces: [ ],
       loaded: false,
     },
-    'phonetracks': {
+    'phonetraces': {
       rating: 77,
-      name: 'Phone Tracks',
+      name: 'Phone Traces',
       active: false,
-      results: [ ],
+      traces: [ ],
       loaded: false,
     },
   };
@@ -77,7 +77,7 @@ console.timeEnd('loadPerson');
       $scope.personPhone = $scope.showPersonPhone($scope.person);
 
       $scope.loadReviewPosts($scope.person.phone);
-      $scope.loadPhonetracksResults($scope.person.phone);
+      $scope.loadPhoneTracesResults($scope.person.phone);
     });
   };
 
@@ -111,17 +111,14 @@ var t = console.time('loadReviews'); // TODO: development only
     });
   };
 
-  $scope.loadPhonetracksResults = function(phone) {
-    /*
+  $scope.loadPhoneTracesResults = function(phone) {
     if (!phone) {
       return;
     }
-    */
-    /*
-    Review.getPhonetracksPhone(phone, function(response) {
-      console.log('loadPhonetracksResults() - phone:', phone);
+    TracesPhone.getTracesByPhone(phone, function(response) {
+      //console.log('loadPhoneTracesResults() - response:', response);
+      $scope.panels.phonetraces.traces = response;
     });
-    */
   };
 
   $scope.listAliasGroups = function() { // debug only method

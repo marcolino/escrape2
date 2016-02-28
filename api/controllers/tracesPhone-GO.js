@@ -23,6 +23,10 @@ GO.getTraces = function(phone, callback) {
       return callback(err);
     }
 
+    // add phone property to each of links objects
+    for(var i = 0, len = links.length; i < len; i++) {
+       links[i].phone = phone;
+    }
    	results = results.concat(links); 
   
     if (nextCounter < maxPages - 1) {

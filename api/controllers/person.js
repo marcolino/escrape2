@@ -10,6 +10,7 @@ var mongoose = require('mongoose') // mongo abstraction
   , network = require('../controllers/network') // network handling
   , image = require('../controllers/image') // network handling
   , provider = require('../controllers/provider') // provider's controller
+  , tracesPhone = require('../controllers/tracesPhone') // trace phone's controller
   , Person = require('../models/person') // model of person
   , UserToPerson = require('../models/userToPerson') // model of user-to-person
   , Image = require('../models/image') // model of image
@@ -338,6 +339,17 @@ if (person.key === 'FORBES/Shakira') {
                     person.isPresent = true; // set person as present, waiting for setActivityStatus()
                     //person.alias = null; // person.alias will be set in batch mode at the end of the loop
 
+
+                    // sync phone traces for this person (aynchronously)
+                    if (person.phoneIsAvailable) {
+                      tracesPhone.sync(person.phone, function(err) {
+                        if (err) {
+                          return log.warn('can\'t sync person', person.key, 'phone', person.phone, 'traces:', err);
+                        }
+                        return log.info('sync\'d person', person.key, 'phone', person.phone, 'traces');
+                      });
+                    }
+
                     // save this person to database
                     exports.upsert(person, function(err, doc) {
                       if (err) {
@@ -407,6 +419,7 @@ if (person.key === 'FORBES/Shakira') {
             });
 
           });
+
         });
       }
     );

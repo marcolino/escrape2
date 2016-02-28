@@ -23,7 +23,7 @@ var tracesPhoneProviderPrototype = {
   },
 
   sync: function(phone, callback) {
-    console.log('sync()', 'syncyng tracesPhones from all tracesPhone providers for phone value', phone);
+    //console.log('sync()', 'syncyng tracesPhones from all tracesPhone providers for phone value', phone);
     var tracesPhoneProviders = {
       go: require('./tracesPhone-GO'),
     };
@@ -31,7 +31,7 @@ var tracesPhoneProviderPrototype = {
     async.each(
       tracesPhoneProviders,
       function(tPP, callbackInner) {
-        console.log('sync()', 'provider:', tPP.key);
+        //console.log('sync()', 'provider:', tPP.key);
         tPP.getTraces(phone, function(err, results) {
           if (err) {
             return callbackInner(err);
@@ -46,7 +46,7 @@ var tracesPhoneProviderPrototype = {
             if (err) {
               return callbackInner(err);
             }
-            log.debug('saved', results.length, 'phone traces found on provider', tPP.key, 'for phone', phone);
+            //log.debug('saved', results.length, 'phone traces found on provider', tPP.key, 'for phone', phone);
             callbackInner(); // this person is done
           });
   
@@ -55,9 +55,9 @@ var tracesPhoneProviderPrototype = {
       function(err) { // 3rd param is the function to call when everything's done (outer callback)
         if (err) {
           if (callback) { // this method can be called asynchronously, without a callback
-            return callback(new Error('can\'t sync phone traces for phone ' + phone + ': ' + err));
+            return callback(err);
           } else {
-            return log.error('can\'t sync phone traces for phone', phone, ':', err);
+            return log.error(err);
           }
         }
         if (callback) { // this method can be called asynchronously, without a callback
@@ -72,7 +72,10 @@ var tracesPhoneProviderPrototype = {
       traces,
       function(trace, callbackInner) {
         TracesPhone.update(
-          { key: trace.key }, 
+          {
+            phone: trace.phone,
+            link: trace.link
+          }, 
           { $setOnInsert: trace }, // newer phone traces should be better than older ones
           { upsert: true },
           function(err, numAffected) {
@@ -102,12 +105,10 @@ var tracesPhoneProviderPrototype = {
   },
 
   getTracesByPhone: function(phone, callback) { // get phone traces by phone
-log.info('ctrl getTracesByPhone phone:', phone);
     TracesPhone.find({ phone: phone }).lean().exec(function(err, traces) {
       if (err) {
         return callback(err);
       }
-log.info('ctrl getTracesByPhone traces:', traces);
       callback(null, traces);
     });
   },
