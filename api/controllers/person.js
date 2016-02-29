@@ -339,17 +339,6 @@ if (person.key === 'FORBES/Shakira') {
                     person.isPresent = true; // set person as present, waiting for setActivityStatus()
                     //person.alias = null; // person.alias will be set in batch mode at the end of the loop
 
-
-                    // sync phone traces for this person (aynchronously)
-                    if (person.phoneIsAvailable) {
-                      tracesPhone.sync(person.phone, function(err) {
-                        if (err) {
-                          return log.warn('can\'t sync person', person.key, 'phone', person.phone, 'traces:', err);
-                        }
-                        return log.info('sync\'d person', person.key, 'phone', person.phone, 'traces');
-                      });
-                    }
-
                     // save this person to database
                     exports.upsert(person, function(err, doc) {
                       if (err) {
@@ -383,6 +372,10 @@ if (person.key === 'FORBES/Shakira') {
 //return log.debug('TERMINATING');
         log.info('' + retrievedProvidersCount, '/', totalProvidersCount, 'providers retrieved');
         log.info('' + retrievedPersonsCount, '/', totalPersonsCount, 'persons retrieved');
+
+        // sync phone traces for all persons (aynchronously)
+        log.info('persons phone traces sync started (async)');
+        local.syncTraces(persons);
 
         // set activity status
         log.info('persons activity status setting started');
@@ -424,6 +417,21 @@ if (person.key === 'FORBES/Shakira') {
       }
     );
   });
+};
+
+local.syncTraces = function(persons) {
+/*
+  tracesPhone.getAll(function(err, traces) {
+    if (person.phoneIsAvailable) {
+      tracesPhone.sync(person.phone, function(err) {
+        if (err) {
+          return log.warn('can\'t sync person', person.key, 'phone', person.phone, 'traces:', err);
+        }
+        return log.info('sync\'d person', person.key, 'phone', person.phone, 'traces');
+      });
+    }
+  });
+*/
 };
 
 exports.upsert = function(person, callback) {
