@@ -7,6 +7,7 @@ var tracesPhone = new mongoose.Schema({
   link: String,
   title: String,
   description: String,
+  dateOfFirstSync: { type: Date, default: Date.now },
 },
 {
   autoIndex: config.env === 'development',

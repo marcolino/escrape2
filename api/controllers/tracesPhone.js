@@ -96,7 +96,7 @@ var tracesPhoneProviderPrototype = {
   },
 
   getAll: function(callback) { // get all phone traces by phone
-    TracesPhone.find().lean().exec(function(err, traces) {
+    TracesPhone.find().sort({ dateOfFirstSync: -1 }).lean().exec(function(err, traces) {
       if (err) {
         return callback(err);
       }
