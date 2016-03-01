@@ -82,6 +82,7 @@ var tracesPhoneProviderPrototype = {
             if (err) {
               return callbackInner(new Error('could not update phone traces: ' + err));
             }
+            log.info('saved phonetrace for phone', trace.phone);
             callbackInner();
           }
         );

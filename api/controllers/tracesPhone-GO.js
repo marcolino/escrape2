@@ -9,12 +9,12 @@ GO.active = true;
 
 GO.getTraces = function(phone, callback) {
   var search = phone;
-  var nextCounter = 0;
-  var maxPages = 1; // avoid too many requests
-  var maxResultsPerPage = 50; // the maximum results per page for google is 50
+  var pagesCounter = 0;
+  var pagesMax = 1; // avoid too many requests
+  var resultsPerPageMax = 50; // the maximum results per page for google is 50
   var results = [];
 
-  google.resultsPerPage = maxResultsPerPage;
+  google.resultsPerPage = resultsPerPageMax;
   google(search, function(err, next, links) {
     if (err) { // TODO: 503 => CAPTCHA
       if (err.toString().match(/Error on response \(503\)/g)) {
@@ -30,16 +30,16 @@ GO.getTraces = function(phone, callback) {
     }
    	results = results.concat(links); 
   
-    if (nextCounter < maxPages - 1) {
-      nextCounter++;
+    if (pagesCounter < pagesMax - 1) {
+      pagesCounter++;
       if (next) { // next page
         next();
-      } else { // done
-        return callback(null, results);
+      } else {
+        // done //return callback(null, results);
       }
-    } else { // maximum number of pages reached, break up
-      return callback(null, results);
     }
+    // maximum number of pages reached, break up
+    return callback(null, results);
   });
 };
 
