@@ -420,15 +420,42 @@ if (person.key === 'FORBES/Shakira') {
 };
 
 local.syncTraces = function(persons) {
+/* tracesPhone model:
+  var tracesPhone = new mongoose.Schema({
+  phone: { type: String, required: true },
+  link: String,
+  title: String,
+  description: String,
+  dateOfLastSync: { type: Date, default: Date.now },
+},
+*/
 /*
+
   tracesPhone.getAll(function(err, traces) {
-    if (person.phoneIsAvailable) {
-      tracesPhone.sync(person.phone, function(err) {
-        if (err) {
-          return log.warn('can\'t sync person', person.key, 'phone', person.phone, 'traces:', err);
+      // TODO: get date of first sync for traces for every phone, and 
+      //       start syncying from phones with no date of first sync
+      async.each(
+        persons,
+        function(person, callback) {
+          if (!person.phoneIsAvailable) {
+            return callback(); // person with no available phone: skip it
+          }
+          tracesPhone.sync(person.phone, function(err, numAffectedTraces) {
+            if (err) {
+              log.warn('can\'t sync person', person.key, 'phone', person.phone, 'traces:', err);
+              callback(err);
+            }
+            log.info('sync\'d', numAffectedTraces, 'person', person.key, 'phone', person.phone, 'traces');
+            callback();
+          });
+        },
+        function(err) {
+          if (err) {
+            log.error('can\'t sync traces:', err);
+          }
+          log.info('all traces sync\'d:');
         }
-        return log.info('sync\'d person', person.key, 'phone', person.phone, 'traces');
-      });
+      );
     }
   });
 */

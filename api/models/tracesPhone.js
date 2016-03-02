@@ -7,13 +7,13 @@ var tracesPhone = new mongoose.Schema({
   link: String,
   title: String,
   description: String,
-  dateOfFirstSync: { type: Date, default: Date.now },
+  dateOfLastSync: { type: Date, default: Date.now },
 },
 {
   autoIndex: config.env === 'development',
   collection: 'tracesPhones'
 });
-tracesPhone.index({ phone: 1 }, { unique: false });
 tracesPhone.index({ link: 1 }, { unique: true });
+tracesPhone.index({ phone: 1 }, { unique: false });
 
 module.exports = mongoose.model('TracesPhone', tracesPhone);

@@ -28,6 +28,7 @@ var tracesPhoneProviderPrototype = {
       go: require('./tracesPhone-GO'),
     };
   
+    var numAffectedTraces = 0;
     async.each(
       tracesPhoneProviders,
       function(tPP, callbackInner) {
@@ -42,17 +43,18 @@ var tracesPhoneProviderPrototype = {
           }
   
           // save results to database
-          tracesPhoneProviderPrototype.save(results, function(err, doc) {
+          tracesPhoneProviderPrototype.save(results, function(err, numAffected) {
             if (err) {
               return callbackInner(err);
             }
-            //log.debug('saved', results.length, 'phone traces found on provider', tPP.key, 'for phone', phone);
-            callbackInner(); // this person is done
+            //log.debug('sync\'d, results.length, 'phone traces found on provider', tPP.key, 'for phone', phone);
+            numAffectedTraces += numAffected;
+            callbackInner(); // traces for this phone are done
           });
   
         });
       },
-      function(err) { // 3rd param is the function to call when everything's done (outer callback)
+      function(err) { // 3rd param is the function to call when everything's done (inner callback)
         if (err) {
           if (callback) { // this method can be called asynchronously, without a callback
             return callback(err);
@@ -61,7 +63,7 @@ var tracesPhoneProviderPrototype = {
           }
         }
         if (callback) { // this method can be called asynchronously, without a callback
-          callback();
+          callback(numAffectedTraces);
         }
       }
     );
@@ -74,7 +76,8 @@ var tracesPhoneProviderPrototype = {
         TracesPhone.update(
           {
             phone: trace.phone,
-            link: trace.link
+            link: trace.link,
+            dateOfLastSync = trace.dateOfLastSync,
           }, 
           { $setOnInsert: trace }, // newer phone traces should be better than older ones
           { upsert: true },
@@ -82,8 +85,8 @@ var tracesPhoneProviderPrototype = {
             if (err) {
               return callbackInner(new Error('could not update phone traces: ' + err));
             }
-            log.info('saved phonetrace for phone', trace.phone);
-            callbackInner();
+            //log.info('saved phonetrace for phone', trace.phone);
+            callbackInner(null, numAffected);
           }
         );
       },
@@ -97,7 +100,7 @@ var tracesPhoneProviderPrototype = {
   },
 
   getAll: function(callback) { // get all phone traces by phone
-    TracesPhone.find().sort({ dateOfFirstSync: -1 }).lean().exec(function(err, traces) {
+    TracesPhone.find().sort({ dateOfLastSync: -1 }).lean().exec(function(err, traces) {
       if (err) {
         return callback(err);
       }

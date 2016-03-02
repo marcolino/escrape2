@@ -71,7 +71,7 @@ exports.sync = function(phone, callback) {
           });
         });
       },
-      function(err) { // 3rd param is the function to call when everything's done (outer callback)
+      function(err) { // 3rd param is the function to call when everything's done (inner callback)
         if (err) {
           //return callback(err);
           return log.warn('can\'t sync phone', phone, 'posts:', err);

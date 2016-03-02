@@ -26,7 +26,7 @@ GO.getTraces = function(phone, callback) {
     // add phone and date of last sync properties to each of links objects
     for(var i = 0, len = links.length; i < len; i++) {
       links[i].phone = phone;
-      links[i].dateOfFirstSync = new Date();
+      links[i].dateOfLastSync = new Date();
     }
    	results = results.concat(links); 
   
