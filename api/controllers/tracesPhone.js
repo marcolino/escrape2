@@ -77,7 +77,7 @@ var tracesPhoneProviderPrototype = {
           {
             phone: trace.phone,
             link: trace.link,
-            dateOfLastSync = trace.dateOfLastSync,
+            dateOfLastSync: trace.dateOfLastSync,
           }, 
           { $setOnInsert: trace }, // newer phone traces should be better than older ones
           { upsert: true },
