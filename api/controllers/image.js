@@ -99,7 +99,7 @@ exports.syncPersonsImages = function(persons, callback) {
         // TODO: try this!
         // do not download images if a person did not change and whenImageChangesUrlChangesToo
         if (!person.isChanged && person.whenImageChangesUrlChangesToo) {
-          log.debug('person', person.key, person.name, 'did not change, skipping');
+          //log.debug('images for person', person.key, person.name, 'did not change, skipping');
           return callbackPerson();
         }
 

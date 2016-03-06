@@ -23,7 +23,7 @@ var tracesPhoneProviderPrototype = {
   },
 
   sync: function(phone, callback) {
-    //console.log('sync()', 'syncyng tracesPhones from all tracesPhone providers for phone value', phone);
+    //log.debug('sync()', 'syncyng tracesPhones from all tracesPhone providers for phone value', phone);
     var tracesPhoneProviders = {
       go: require('./tracesPhone-GO'),
     };
@@ -32,7 +32,7 @@ var tracesPhoneProviderPrototype = {
     async.each(
       tracesPhoneProviders,
       function(tPP, callbackInner) {
-        //console.log('sync()', 'provider:', tPP.key);
+        //log.debug('sync()', 'provider:', tPP.key);
         tPP.getTraces(phone, function(err, results) {
           if (err) {
             return callbackInner(err);
@@ -63,48 +63,87 @@ var tracesPhoneProviderPrototype = {
           }
         }
         if (callback) { // this method can be called asynchronously, without a callback
-          callback(numAffectedTraces);
+          callback(null, numAffectedTraces);
         }
       }
     );
   },
 
   save: function(traces, callback) {
+    var result = {
+      inserted: 0,
+      updated: 0,
+    };
     async.each(
       traces,
       function(trace, callbackInner) {
-        TracesPhone.update(
-          {
+        TracesPhone.findOneAndUpdate(
+          { // query
             phone: trace.phone,
             link: trace.link,
-            dateOfLastSync: trace.dateOfLastSync,
-          }, 
-          { $setOnInsert: trace }, // newer phone traces should be better than older ones
-          { upsert: true },
-          function(err, numAffected) {
+          },
+          trace, // object to save
+          { // options
+            new: true, // return the modified document rather than the original
+            upsert: true, // creates the object if it doesn't exist
+            passRawResult: true // pass back mongo row result
+          },
+          function(err, doc, raw) { // result callback
             if (err) {
-              return callbackInner(new Error('could not update phone traces: ' + err));
+              //log.debug('can\'t save trace', trace.phone, trace.link, ':', err);
+            } else {
+              if (raw.lastErrorObject.updatedExisting) {
+                log.debug('trace', doc.phone, doc.link, 'updated');
+                result.updated++;
+              } else {
+                log.debug('trace', doc.phone, doc.link, 'added');
+                result.inserted++;
+              }
             }
-            //log.info('saved phonetrace for phone', trace.phone);
-            callbackInner(null, numAffected);
+            callbackInner(err); // finish image save
           }
         );
       },
       function(err) {
         if (err) {
-          return callback(new Error('could not save phone traces: ' + err));
+          return callback('could not save phone traces:' + err.toString());
         }
-        callback(); // success
+        callback(null, result); // success
       }
     );
   },
 
   getAll: function(callback) { // get all phone traces by phone
-    TracesPhone.find().sort({ dateOfLastSync: -1 }).lean().exec(function(err, traces) {
+    TracesPhone.find().lean().exec(function(err, traces) {
       if (err) {
         return callback(err);
       }
       callback(null, traces);
+    });
+  },
+
+  getAllPhones: function(callback) { // get all phone traces by phone (ordered by the most recently sync date)
+    TracesPhone.find({}, { phone: 1, dateOfLastSync: 1 }).lean().exec(function(err, traces) {
+      if (err) {
+        return callback(err);
+      }
+      // extract one element per phone, keeping the one with the most recently sync date
+      var unique = {};
+      for (var i in traces) {
+        var trace = traces[i];
+        if (!(trace.phone in unique)) { // unique does not yet contain trace.phone, insert it
+          unique[trace.phone] = trace.dateOfLastSync;
+        } else { // unique does already contain trace.phone
+          if (unique[trace.phone] > trace.dateOfLastSync) { // update it if it's date of last sync is more recent
+            //log.debug('THIS SHALL HAPPEN WHEN TRACES WILL BE MORE THAN ONE PER PHONE...:', unique[trace.phone], '>', trace.dateOfLastSync); 
+            unique[trace.phone] = trace.dateOfLastSync;
+          }
+        }
+      }
+      // extract one element per phone, and sort by dateOfLastSync reversed
+
+//log.debug('unique:', unique);
+      callback(null, unique);
     });
   },
 
@@ -120,3 +159,23 @@ var tracesPhoneProviderPrototype = {
 };
 
 module.exports = tracesPhoneProviderPrototype;
+
+/*
+// test
+var traces = [
+  {
+    phone: '3331234568',
+    link: 'http://www.example.com/',
+    title: 'title 1',
+    description: 'descrption 1',
+    dateOfLastSync: new Date(),
+  }
+];
+var db = require('../models/db') // database wiring
+tracesPhoneProviderPrototype.save(traces, function(err, result) {
+  if (err) {
+    return log.error('err:', err);
+  }
+  console.info('saved traces:', result);
+});
+*/

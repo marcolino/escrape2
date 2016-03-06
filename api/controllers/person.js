@@ -253,8 +253,8 @@ exports.sync = function() { // sync persons
                 person.key = provider.key + '/' + element.key; // person key is the sum of provider key and element key
                 person.whenImageChangesUrlChangesToo = provider.whenImageChangesUrlChangesToo; // to spped-up images sync, when possible
 //log.debug('SET PERSON whenImageChangesUrlChangesToo');
-// SANDRA UNGHERESE
-//if (person.key !== 'SGI/adv5710') return callbackInner(); // TODO: DEBUG ONLY - sync only one person
+// INA
+//if (person.key !== 'TOE/4940') return callbackInner(); // TODO: DEBUG ONLY - sync only one person
 
                 resource = {
                   url: person.url,
@@ -420,45 +420,42 @@ if (person.key === 'FORBES/Shakira') {
 };
 
 local.syncTraces = function(persons) {
-/* tracesPhone model:
-  var tracesPhone = new mongoose.Schema({
-  phone: { type: String, required: true },
-  link: String,
-  title: String,
-  description: String,
-  dateOfLastSync: { type: Date, default: Date.now },
-},
-*/
-/*
+  tracesPhone.getAllPhones(function(err, traces) {
+    // build personPhones array (with all persons phones and traces date of last sync
+    var personPhones = persons.filter(function(person) { // filter out persons with not available phone
+      return person.phoneIsAvailable && person.phone;
+    }).map(function(person) { // build personPhones array with person key, phone, and trace date of last sync
+      var personPhone = {};
+      personPhone.key = person.key;
+      personPhone.phone = person.phone;
+      person.dateOfLastSync = traces[person.phone];
+      return personPhone;
+    });
 
-  tracesPhone.getAll(function(err, traces) {
-      // TODO: get date of first sync for traces for every phone, and 
-      //       start syncying from phones with no date of first sync
-      async.each(
-        persons,
-        function(person, callback) {
-          if (!person.phoneIsAvailable) {
-            return callback(); // person with no available phone: skip it
-          }
-          tracesPhone.sync(person.phone, function(err, numAffectedTraces) {
-            if (err) {
-              log.warn('can\'t sync person', person.key, 'phone', person.phone, 'traces:', err);
-              callback(err);
-            }
-            log.info('sync\'d', numAffectedTraces, 'person', person.key, 'phone', person.phone, 'traces');
-            callback();
-          });
-        },
-        function(err) {
+    personPhones.sort(function(a, b) { // sort personPhones array to have newest traces before
+      return !a.dateOfLastSync ? 1 : !b.dateOfLastSync ? -1 : b.dateOfLastSync - a.dateOfLastSync;
+    });
+
+    async.eachSeries(
+      personPhones,
+      function(person, callback) {
+        tracesPhone.sync(person.phone, function(err, numAffectedTraces) {
           if (err) {
-            log.error('can\'t sync traces:', err);
+            return callback(err);
           }
-          log.info('all traces sync\'d:');
+          log.info('sync\'d', numAffectedTraces, 'person', person.key, 'phone', person.phone, 'traces');
+          callback();
+        });
+      },
+      function(err) {
+        if (err) {
+          log.warn('can\'t sync traces:', err);
         }
-      );
-    }
+        log.info('all traces sync finished');
+      }
+    );
   });
-*/
+
 };
 
 exports.upsert = function(person, callback) {

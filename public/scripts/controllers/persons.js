@@ -253,6 +253,14 @@ console.log('$rootScope.user:', $rootScope.user);
       return phone;
     }
   };
+
+  $scope.domain = function(uri) {
+    var a = document.createElement('a');
+    a.href = uri;
+    var domain = a.hostname;
+    domain = domain.replace(/^www\./i, '');
+    return domain;
+  };
 });
 
 Date.daysBetween = function(date1, date2) {

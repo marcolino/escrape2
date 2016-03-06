@@ -13,7 +13,8 @@ var tracesPhone = new mongoose.Schema({
   autoIndex: config.env === 'development',
   collection: 'tracesPhones'
 });
-tracesPhone.index({ link: 1 }, { unique: true });
+tracesPhone.index({ link: 1 }, { unique: false });
 tracesPhone.index({ phone: 1 }, { unique: false });
+tracesPhone.index({ link: 1, phone: 1 }, { unique: true }); // the compound index link + phone is unique
 
 module.exports = mongoose.model('TracesPhone', tracesPhone);

@@ -28,12 +28,12 @@ function getAll(req, res) { // get all phone traces
 
 function getTracesByPhone(req, res) { // get phone traces by phone
   var phone = req.params.phone;
-console.log('getTracesByPhone:', phone);
+//console.log('getTracesByPhone:', phone);
   tracesPhone.getTracesByPhone(phone, function(err, traces) {
     if (err) {
       return res.status(500).json(err);
     }
-console.log('getTracesByPhone traces:', traces);
+//console.log('getTracesByPhone traces:', traces);
     res.json(traces);
   });
 }
