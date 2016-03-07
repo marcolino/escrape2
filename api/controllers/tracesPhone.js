@@ -67,7 +67,8 @@ var tracesPhoneProviderPrototype = {
           }
         }
         if (callback) { // this method can be called asynchronously, without a callback
-          callback(null, results.inserted + '.' + results.upddated);
+log.warn('tracesPhone.sync results:', results.inserted + '.' + results.updated);
+          callback(null, results.inserted + '.' + results.updated);
         }
       }
     );
