@@ -28,7 +28,10 @@ var tracesPhoneProviderPrototype = {
       go: require('./tracesPhone-GO'),
     };
   
-    var numAffectedTraces = 0;
+    var results = {
+      inserted: 0,
+      updated: 0,
+    };
     async.each(
       tracesPhoneProviders,
       function(tPP, callbackInner) {
@@ -43,12 +46,13 @@ var tracesPhoneProviderPrototype = {
           }
   
           // save results to database
-          tracesPhoneProviderPrototype.save(results, function(err, numAffected) {
+          tracesPhoneProviderPrototype.save(results, function(err, result) {
             if (err) {
               return callbackInner(err);
             }
             //log.debug('sync\'d, results.length, 'phone traces found on provider', tPP.key, 'for phone', phone);
-            numAffectedTraces += numAffected;
+            results.inserted += result.inserted;
+            results.updated += result.updated;
             callbackInner(); // traces for this phone are done
           });
   
@@ -63,7 +67,7 @@ var tracesPhoneProviderPrototype = {
           }
         }
         if (callback) { // this method can be called asynchronously, without a callback
-          callback(null, numAffectedTraces);
+          callback(null, results.inserted + '.' + results.upddated);
         }
       }
     );

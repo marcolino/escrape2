@@ -1,10 +1,59 @@
 <div ng-init="loadPerson()">
 
-  <div id="section-data" class="panel" ng-show="sections['data'].visible"> <!-- person's data -->
-    <button type="button" class="btn btn-primary">{{ personName }}</button>
-    <button type="button" class="btn btn-error">{{ personKey }}</button>
-    <button type="button" class="btn btn-info">{{ personDateOfFirstSync }}</button>
-    <button type="button" class="btn btn-success">{{ personPhone }}</button>
+  <div id="section-data" class="panel panel-default" ng-show="sections['data'].visible"> <!-- person's data -->
+
+    <div class="panel-heading">
+      <h3 class="panel-title" style="text-align:left">Info</h3>
+    </div>
+
+    <div class="panel-body" style="font-size: 1.5em; line-height: 1.7em;">
+      <div class="row">
+        <div class="col-xs-3" style="text-align:right;">
+          <span class="label label-default">Name</span>
+        </div>
+        <div class="col-xs-9">
+          <span class="label label-success">{{ personName }}</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-xs-3" style="text-align:right;">
+          <span class="label label-default">Key</span>
+        </div>
+        <div class="col-xs-9">
+          <span class="label label-success">{{ personKey }}</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-xs-3" style="text-align:right;">
+          <span class="label label-default">Date of arrival</span>
+        </div>
+        <div class="col-xs-9">
+          <span class="label label-success">{{ personDateOfFirstSync }}</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-xs-3" style="text-align:right;">
+          <span class="label label-default">Phone</span>
+        </div>
+        <div class="col-xs-9">
+          <span class="label label-success">{{ personPhone }}</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-xs-3" style="text-align:right;">
+          <span class="label label-default">Description</span>
+        </div>
+        <div class="col-xs-9">
+          <!--<span class="label label-success">{{ personName }}</span>-->
+          <textarea class="form-control" rows="3" style="color: white; background: green; margin-top: 5px; width:80%" ng-bind-html="personDescription"></textarea>
+        </div>
+      </div>
+
+    </div>
   </div>
 
 <style>
@@ -206,7 +255,7 @@
 
                         <div class="row">
                           <div class="col-xs-12">
-                            <a ng-href="{{trace.link}}" ng-bind-html="domain(trace.link)" target="_blank" class="underline_on_hover" style="font-size: 1.3em; color: #ade;"></a>
+                            <a ng-href="{{trace.link}}" ng-bind-html="hostname(trace.link)" target="_blank" class="underline_on_hover" style="font-size: 1.3em; color: #ade;"></a>
                             &emsp;
                             <a ng-href="{{trace.link}}" ng-bind-html="trace.title" target="_blank" class="underline-on-hover" style="font-size: 1.1em; color: #6ac;"></a>
                           </div>

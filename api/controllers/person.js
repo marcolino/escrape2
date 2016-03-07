@@ -23,11 +23,12 @@ exports.getAll = function(filter, options, callback) { // get all persons
   //log.debug('filter:', filter.name);
 config.time = process.hrtime(); // TODO: development only
   var match = {};
-  match.isPresent = true; // do not show persons who are not present
-  match.showcaseBasename = { '$exists': true }; // do not show persons with no showcase basename (yet)
-  match.category = { '$ne': 'centro-massaggi' }; // exclude specific categories
-  // TODO: generalize for all filter properties...
-  if (filter.name) { match.name = filter.name; }
+  var matches = [];
+  matches.push({ isPresent: true }); // do not show persons who are not present
+  matches.push({ showcaseBasename: { '$exists': true }}); // do not show persons with no showcase basename (yet)
+  matches.push({ category: { '$ne': 'centro-massaggi' }}); // exclude specific categories
+  matches.push(filter);
+  match = { $and: matches };
 
   // aggregate on alias field to get just the first document with the same alias
   var pipeline = [
@@ -428,7 +429,7 @@ local.syncTraces = function(persons) {
       var personPhone = {};
       personPhone.key = person.key;
       personPhone.phone = person.phone;
-      person.dateOfLastSync = traces[person.phone];
+      personPhone.dateOfLastSync = traces[person.phone];
       return personPhone;
     });
 

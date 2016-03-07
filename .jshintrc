@@ -5,6 +5,7 @@
   "laxcomma": true,
   "globals": {
     "$": true,
-    "angular": true
+    "angular": true,
+    "document": true
   }
 }

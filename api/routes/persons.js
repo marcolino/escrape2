@@ -26,12 +26,17 @@ router.route('/getAll/search/:search').get(function(req, res) { getAll(req, res)
 
 var getAll = function(req, res) {
   //var filter = { isAliasFor: { $size: 0 } };
-  var filter = {};
   var options = { '$sort': { 'dateOfFirstSync': -1 } }; // or dateOfLastSync for changed images first...
   //var options = { sort: '-' + 'dateOfFirstSync' }; // or dateOfLastSync for changed images first...
+  var filter = {};
   if (req.params.search && req.params.search !== null) {
-    filter.name = new RegExp(req.params.search, 'i');
+    var filters = [];
+    filters.push({ name: RegExp(req.params.search, 'i') }); // search on name
+    filters.push({ description: new RegExp(req.params.search, 'i') });// search on description
+    filters.push({ phone: new RegExp(req.params.search, '') }); // search on phone
+    filter = { $or: filters }; // sum filters with OR
   }
+
   // retrieve all persons from database
   person.getAll(filter, options, function(err, persons) {
     if (err) {

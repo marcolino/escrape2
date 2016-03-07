@@ -75,6 +75,7 @@ console.timeEnd('loadPerson');
       $scope.personKey = $scope.showPersonKey($scope.person);
       $scope.personDateOfFirstSync = $scope.showPersonDateOfFirstSync($scope.person);
       $scope.personPhone = $scope.showPersonPhone($scope.person);
+      $scope.personDescription = $scope.showPersonDescription($scope.person);
 
       $scope.loadReviewPosts($scope.person.phone);
       $scope.loadPhoneTracesResults($scope.person.phone);
@@ -254,13 +255,17 @@ console.log('$rootScope.user:', $rootScope.user);
     }
   };
 
-  $scope.domain = function(uri) {
+  $scope.showPersonDescription = function(person) {
+    var description = person.description;
+    return description;
+  };
+
+  $scope.hostname = function(uri) {
     var a = document.createElement('a');
     a.href = uri;
-    var domain = a.hostname;
-    domain = domain.replace(/^www\./i, '');
-    return domain;
+    return a.hostname.replace(/^www\./i, '');
   };
+  
 });
 
 Date.daysBetween = function(date1, date2) {
