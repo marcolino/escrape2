@@ -429,13 +429,16 @@ local.syncTraces = function(persons) {
       var personPhone = {};
       personPhone.key = person.key;
       personPhone.phone = person.phone;
-      personPhone.dateOfLastSync = traces[person.phone];
+      personPhone.dateOfLastSync = person.dateOfLastSync;
+      personPhone.tracesDateOfLastSync = traces[person.phone];
       return personPhone;
     });
 
     personPhones.sort(function(a, b) { // sort personPhones array to have newest traces before
-      return !a.dateOfLastSync ? 1 : !b.dateOfLastSync ? -1 : b.dateOfLastSync - a.dateOfLastSync;
+      return !a.tracesDateOfLastSync ? -1 : !b.tracesDateOfLastSync ? 1 : a.tracesDateOfLastSync - b.tracesDateOfLastSync;
     });
+    
+    //log.debug('personPhones after sort:', personPhones);
 
     async.eachSeries(
       personPhones,
@@ -456,7 +459,6 @@ local.syncTraces = function(persons) {
       }
     );
   });
-
 };
 
 exports.upsert = function(person, callback) {

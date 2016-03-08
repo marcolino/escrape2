@@ -4,6 +4,8 @@ var mongoose = require('mongoose') // mongo abstraction
   , request = require('request') // to place http requests
   , cheerio = require('cheerio') // to parse fetched DOM data
   , async = require('async') // to call many async functions in a loop
+  , url = require('url') // parse urls
+  , provider = require('../controllers/provider') // provider's controller
   , TracesPhone = require('../models/tracesPhone') // model of tracesPhone
   , config = require('../config') // global configuration
 ;
@@ -28,50 +30,60 @@ var tracesPhoneProviderPrototype = {
       go: require('./tracesPhone-GO'),
     };
   
-    var results = {
-      inserted: 0,
-      updated: 0,
-    };
-    async.each(
-      tracesPhoneProviders,
-      function(tPP, callbackInner) {
-        //log.debug('sync()', 'provider:', tPP.key);
-        tPP.getTraces(phone, function(err, results) {
-          if (err) {
-            return callbackInner(err);
-          }
-          if (results.length === 0) {
-            log.debug('no phone traces found on provider', tPP.key, 'for phone', phone);
-            return callbackInner();
-          }
-  
-          // save results to database
-          tracesPhoneProviderPrototype.save(results, function(err, result) {
+    // filter results based on hostnames blacklist
+    tracesPhoneProviderPrototype.blacklist(function(blacklist) {
+log.warn('blacklist:', blacklist);
+      var results = {
+        inserted: 0,
+        updated: 0,
+      };
+      async.each(
+        tracesPhoneProviders,
+        function(tPP, callbackInner) {
+          //log.debug('sync()', 'provider:', tPP.key);
+          tPP.getTraces(phone, function(err, results) {
             if (err) {
               return callbackInner(err);
             }
-            //log.debug('sync\'d, results.length, 'phone traces found on provider', tPP.key, 'for phone', phone);
-            results.inserted += result.inserted;
-            results.updated += result.updated;
-            callbackInner(); // traces for this phone are done
-          });
+            if (results.length === 0) {
+              log.debug('no phone traces found on provider', tPP.key, 'for phone', phone);
+              return callbackInner();
+            }
   
-        });
-      },
-      function(err) { // 3rd param is the function to call when everything's done (inner callback)
-        if (err) {
+log.warn('results before blacklist filter:', results);
+            results.filter(function(result) { // filter out results in blacklist
+              return blacklist.indexOf(url.parse(result.link).hostname) <= -1;
+            });
+log.warn('results after blacklist filter:', results);
+  
+            // save results to database
+            tracesPhoneProviderPrototype.save(results, function(err, result) {
+              if (err) {
+                return callbackInner(err);
+              }
+              //log.debug('sync\'d, results.length, 'phone traces found on provider', tPP.key, 'for phone', phone);
+              results.inserted += result.inserted;
+              results.updated += result.updated;
+              callbackInner(); // traces for this phone are done
+            });
+    
+          });
+        },
+        function(err) { // 3rd param is the function to call when everything's done (inner callback)
+          if (err) {
+            if (callback) { // this method can be called asynchronously, without a callback
+              return callback(err);
+            } else {
+              return log.error(err);
+            }
+          }
           if (callback) { // this method can be called asynchronously, without a callback
-            return callback(err);
-          } else {
-            return log.error(err);
+            log.info('tracesPhone.sync results:', results.inserted + '.' + results.updated);
+            callback(null, results.inserted + '.' + results.updated);
           }
         }
-        if (callback) { // this method can be called asynchronously, without a callback
-log.warn('tracesPhone.sync results:', results.inserted + '.' + results.updated);
-          callback(null, results.inserted + '.' + results.updated);
-        }
-      }
-    );
+      );
+    });
   },
 
   save: function(traces, callback) {
@@ -101,7 +113,7 @@ log.warn('tracesPhone.sync results:', results.inserted + '.' + results.updated);
                 log.debug('trace', doc.phone, doc.link, 'updated');
                 result.updated++;
               } else {
-                log.debug('trace', doc.phone, doc.link, 'added');
+                log.debug('trace', doc.phone, doc.link, 'inserted');
                 result.inserted++;
               }
             }
@@ -113,6 +125,7 @@ log.warn('tracesPhone.sync results:', results.inserted + '.' + results.updated);
         if (err) {
           return callback('could not save phone traces:' + err.toString());
         }
+        log.info('traces save finished; result:', result);
         callback(null, result); // success
       }
     );
@@ -161,8 +174,36 @@ log.warn('tracesPhone.sync results:', results.inserted + '.' + results.updated);
     });
   },
 
-};
+  blacklist: function(callback) { // get hostnames known not to contain useful data
+    var blacklist = [
+      'chechiamarepertelefono.besaba.com',
+      'fitnessworldclub.net',
+      'iptrace.in',
+      'ip.haoxiana.com',
+      'itnumber.com',
+      'lericetteditonia.com',
+      'mightynumbers.com',
+      'numberinquiry.com', 
+      'okcaller.com',
+      'sync.me',
+      'televideoconference.org',
+      'us.who-called.info',
+      'whycall.eu',
+      'ws.114chm.com',
+    ];
+    provider.getAll({}, function(err, providers) {
+      if (err) {
+        return log.error('blacklist: can\'t get providers');
+      }
+      providers.forEach(function(p) {
+        blacklist.push(url.parse(p.url).hostname);
+      });
+      callback(blacklist);
+    });
+  },
 
+};
+  
 module.exports = tracesPhoneProviderPrototype;
 
 /*
