@@ -17,8 +17,8 @@ GO.getTraces = function(phone, callback) {
   google.resultsPerPage = resultsPerPageMax;
   google(search, function(err, next, links) {
     if (err) { // TODO: 503 => CAPTCHA
-      if (err.toString().match(/Error on response \(503\)/g)) {
-        return callback('error 503 from google, please retry later');
+      if (err.toString().match(/Error on response \(503\)/g)) { // google: after a 503 error, we must wait one day for next request
+        return callback('error 503 from google, please retry tomorrow');
       }
       return callback(err);
     }

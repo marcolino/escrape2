@@ -434,20 +434,23 @@ local.syncTraces = function(persons) {
       return personPhone;
     });
 
-    personPhones.sort(function(a, b) { // sort personPhones array to have newest traces before
-      return !a.tracesDateOfLastSync ? -1 : !b.tracesDateOfLastSync ? 1 : a.tracesDateOfLastSync - b.tracesDateOfLastSync;
+    personPhones.sort(function(a, b) { // sort personPhones array to have traces never sync'd on top
+      return (typeof a.tracesDateOfLastSync === 'undefined' && typeof b.tracesDateOfLastSync === 'undefined') ? b.dateOfLastSync - a.dateOfLastSync :
+             (typeof a.tracesDateOfLastSync !== 'undefined') ?  1 :
+             (typeof b.tracesDateOfLastSync !== 'undefined') ? -1 :
+             a.tracesDateOfLastSync - b.tracesDateOfLastSync
+      ;
     });
-    
     //log.debug('personPhones after sort:', personPhones);
 
     async.eachSeries(
       personPhones,
       function(person, callback) {
-        tracesPhone.sync(person.phone, function(err, numAffectedTraces) {
+        tracesPhone.sync(person.phone, function(err, results) {
           if (err) {
             return callback(err);
           }
-          log.info('sync\'d', numAffectedTraces, 'person', person.key, 'phone', person.phone, 'traces');
+          log.info('sync\'d person', person.key, 'phone', person.phone, 'traces:', results.inserted, 'inserted,', results.updated, 'updated');
           callback();
         });
       },

@@ -21,61 +21,6 @@ exports.getByIdPerson = function(idPerson, callback) {
   });
 };
 
-exports.syncPersonsImagesCheck = function(persons, callback) {
-  Image.find().lean().exec(function(err, images) { // lean gets plain objects
-    if (err) {
-      return callback(err);
-    }
-    log.debug('all images array length:', images.length);
-    async.eachSeries(
-      persons,
-      function(person, callbackPerson) {
-        async.eachSeries( // TODO: we have to serialize images sync, otherwise findSimilarSignatureImage will not find same person images (RIGHT?)
-          person.imageUrls,
-          function(imageUrl, callbackImage) {
-            var personImages = local.grep(
-              { personKey: person.key, url: imageUrl.href }
-              , images
-            );
-            var image = {};
-            if (personImages.length >= 1) { // existing image url
-              var personImage = personImages[0];
-              image.url = personImage.url;
-              image.isNew = false;
-              image.isShowcase = personImage.isShowcase;
-              image.dateOfFirstSync = personImage.dateOfFirstSync;
-              image.etag = personImage.etag;
-              image.personKey = personImage.personKey;
-            } else { // new image url
-              log.info('image of person', person.key, imageUrl.href, 'is new, skipping for this check');
-            }
-            image.type = 'image';
-
-            var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
-            network.fetch(image, function(err, img) { // fetch image resource
-              if (err) {
-                log.warn('network fetch error:', err);
-                return callback(err, image);
-              }
-              if (config.profile) log.debug('fetch image for person key', person.key + ':', process.hrtime(t)[0] + (process.hrtime(t)[1] / 1000000000), 'seconds');
-              callbackImage(err);
-            });
-          },
-          function(err) {
-            callbackPerson(err);
-          }
-        );
-      },
-      function(err) {
-        if (err) {
-          return callback(err);
-        }
-        callback(null, persons);
-      }
-    );
-  });
-};
-
 exports.syncPersonsImages = function(persons, callback) {
   //log.error(persons);
   //return callback(null, persons);
@@ -85,7 +30,7 @@ exports.syncPersonsImages = function(persons, callback) {
     if (err) {
       return callback(err);
     }
-    log.debug('all images array length:', images.length);
+    log.info('all images array length:', images.length);
     async.eachSeries( // TODO: should we better serialize person images sync? (YES, otherwise too many ECONNRESET or EAI_AGAIN in request()...)
       persons,
       function(person, callbackPerson) {
@@ -724,6 +669,63 @@ local.grep = function(what, where) {
     return match;
   });
 };
+
+/*
+exports.syncPersonsImagesCheck = function(persons, callback) {
+  Image.find().lean().exec(function(err, images) { // lean gets plain objects
+    if (err) {
+      return callback(err);
+    }
+    log.info('all images array length:', images.length);
+    async.eachSeries(
+      persons,
+      function(person, callbackPerson) {
+        async.eachSeries( // TODO: we have to serialize images sync, otherwise findSimilarSignatureImage will not find same person images (RIGHT?)
+          person.imageUrls,
+          function(imageUrl, callbackImage) {
+            var personImages = local.grep(
+              { personKey: person.key, url: imageUrl.href }
+              , images
+            );
+            var image = {};
+            if (personImages.length >= 1) { // existing image url
+              var personImage = personImages[0];
+              image.url = personImage.url;
+              image.isNew = false;
+              image.isShowcase = personImage.isShowcase;
+              image.dateOfFirstSync = personImage.dateOfFirstSync;
+              image.etag = personImage.etag;
+              image.personKey = personImage.personKey;
+            } else { // new image url
+              log.info('image of person', person.key, imageUrl.href, 'is new, skipping for this check');
+            }
+            image.type = 'image';
+
+            var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
+            network.fetch(image, function(err, img) { // fetch image resource
+              if (err) {
+                log.warn('network fetch error:', err);
+                return callback(err, image);
+              }
+              if (config.profile) log.debug('fetch image for person key', person.key + ':', process.hrtime(t)[0] + (process.hrtime(t)[1] / 1000000000), 'seconds');
+              callbackImage(err);
+            });
+          },
+          function(err) {
+            callbackPerson(err);
+          }
+        );
+      },
+      function(err) {
+        if (err) {
+          return callback(err);
+        }
+        callback(null, persons);
+      }
+    );
+  });
+};
+*/
 
 module.exports = exports;
 

@@ -32,7 +32,6 @@ var tracesPhoneProviderPrototype = {
   
     // filter results based on hostnames blacklist
     tracesPhoneProviderPrototype.blacklist(function(blacklist) {
-log.warn('blacklist:', blacklist);
       var results = {
         inserted: 0,
         updated: 0,
@@ -41,7 +40,7 @@ log.warn('blacklist:', blacklist);
         tracesPhoneProviders,
         function(tPP, callbackInner) {
           //log.debug('sync()', 'provider:', tPP.key);
-          tPP.getTraces(phone, function(err, results) {
+          tPP.getTraces(phone, function(err, traces) {
             if (err) {
               return callbackInner(err);
             }
@@ -49,15 +48,23 @@ log.warn('blacklist:', blacklist);
               log.debug('no phone traces found on provider', tPP.key, 'for phone', phone);
               return callbackInner();
             }
-  
-log.warn('results before blacklist filter:', results);
-            results.filter(function(result) { // filter out results in blacklist
-              return blacklist.indexOf(url.parse(result.link).hostname) <= -1;
+
+var tracesLB = traces.length;  
+            traces = traces.filter(function(result) { // filter out results in blacklist or with suspect description
+              //return blacklist.indexOf(url.parse(result.link).hostname) <= -1;
+              if (blacklist.indexOf(url.parse(result.link).hostname) > -1) { // result link in blacklist: filter it out
+                return false;
+              }
+              if (/(\d{8,11}([^\d]+|$)){3,}/.test(result.description)) { // suspect description (list of phone numbers): filter it out
+                return false;
+              }
+              return true;
             });
-log.warn('results after blacklist filter:', results);
+var tracesLA = traces.length;
+log.error('blacklist filtered', (tracesLB - tracesLA), 'traces');
   
             // save results to database
-            tracesPhoneProviderPrototype.save(results, function(err, result) {
+            tracesPhoneProviderPrototype.save(traces, function(err, result) {
               if (err) {
                 return callbackInner(err);
               }
@@ -78,8 +85,8 @@ log.warn('results after blacklist filter:', results);
             }
           }
           if (callback) { // this method can be called asynchronously, without a callback
-            log.info('tracesPhone.sync results:', results.inserted + '.' + results.updated);
-            callback(null, results.inserted + '.' + results.updated);
+            log.info('tracesPhone.sync - inserted:', results.inserted + ', updated:', results.updated);
+            callback(null, results);
           }
         }
       );
@@ -110,10 +117,10 @@ log.warn('results after blacklist filter:', results);
               //log.debug('can\'t save trace', trace.phone, trace.link, ':', err);
             } else {
               if (raw.lastErrorObject.updatedExisting) {
-                log.debug('trace', doc.phone, doc.link, 'updated');
+                //log.debug('trace', doc.phone, doc.link, 'updated');
                 result.updated++;
               } else {
-                log.debug('trace', doc.phone, doc.link, 'inserted');
+                //log.debug('trace', doc.phone, doc.link, 'inserted');
                 result.inserted++;
               }
             }
@@ -177,19 +184,19 @@ log.warn('results after blacklist filter:', results);
   blacklist: function(callback) { // get hostnames known not to contain useful data
     var blacklist = [
       'chechiamarepertelefono.besaba.com',
-      'fitnessworldclub.net',
       'iptrace.in',
       'ip.haoxiana.com',
       'itnumber.com',
-      'lericetteditonia.com',
-      'mightynumbers.com',
       'numberinquiry.com', 
       'okcaller.com',
       'sync.me',
-      'televideoconference.org',
       'us.who-called.info',
-      'whycall.eu',
       'ws.114chm.com',
+      'www.fitnessworldclub.net',
+      'www.lericetteditonia.com',
+      'www.mightynumbers.com',
+      'www.televideoconference.org',
+      'www.whycall.eu',
     ];
     provider.getAll({}, function(err, providers) {
       if (err) {
