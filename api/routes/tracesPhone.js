@@ -16,6 +16,7 @@ router.route('/sync/:phone').
 ;
 router.get('/', getAll);
 router.get('/getTracesByPhone/:phone', getTracesByPhone);
+router.get('/blacklistFilterApply', blacklistFilterApply);
 
 function getAll(req, res) { // get all phone traces
   tracesPhone.getAll(function(err, traces) {
@@ -35,6 +36,16 @@ function getTracesByPhone(req, res) { // get phone traces by phone
     }
 //console.log('getTracesByPhone traces:', traces);
     res.json(traces);
+  });
+}
+
+function blacklistFilterApply(req, res) { // apply blacklist filter to saved traces (useful when blacklist is updated and some traces altready saved)
+  tracesPhone.blacklistFilterApply(function(err, count) {
+    if (err) {
+      return res.status(500).json(err);
+    }
+    //console.log('blacklistFilterApply count of traces filtered:', count);
+    res.json(count);
   });
 }
 

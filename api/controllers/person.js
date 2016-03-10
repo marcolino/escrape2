@@ -450,7 +450,7 @@ local.syncTraces = function(persons) {
           if (err) {
             return callback(err);
           }
-          log.info('sync\'d person', person.key, 'phone', person.phone, 'traces:', results.inserted, 'inserted,', results.updated, 'updated');
+          //log.info('sync\'d person', person.key, 'phone', person.phone, 'traces:', results.inserted, 'inserted,', results.updated, 'updated');
           callback();
         });
       },
