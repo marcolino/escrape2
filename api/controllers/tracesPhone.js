@@ -253,20 +253,33 @@ log.debug('sync(' + phone + '), blacklist filtered', (tracesBeforeLength - trace
       }
       var tracesBefore = traces;
       var tracesCountBefore = traces.length;
+log.debug('blacklistFilterApply count of traces before:', tracesCountBefore);
       tracesPhoneProviderPrototype.blacklistFilter(traces, function(traces) {
         var tracesAfter = traces;
         var tracesCountAfter = traces.length;
+log.debug('blacklistFilterApply count of traces after:', tracesCountAfter);
 log.debug('blacklistFilterApply count of filtered out traces is', (tracesCountBefore - tracesCountAfter));
 
-/* TODO...
         // get the traces filtered out
-        var tracesToBeRemoved = tracesBefore - tracesAfter;
+        ///////////////////////var tracesToBeRemoved = tracesBefore - tracesAfter;
+/* TO BE TESTED !!! */
+        var tracesToBeRemoved = tracesBefore.filter(function(traceBefore) {
+          return tracesAfter.filter(function(traceAfter) {
+            return traceAfter.link === traceBefore.link;
+          }).length === 0;
+        });
+//console.log('tracesToBeRemoved:', tracesToBeRemoved);
+console.log('tracesToBeRemoved: should be', (tracesCountBefore - tracesCountAfter), 'and really are', tracesToBeRemoved.length);
+callback(tracesToBeRemoved.length);
+
+/* TODO...
 
         // drop all TracesPhone documents and reinsert the documents after filter
         TracesPhone.remove(tracesToBeRemoved, function(err) {
           if (!err) {
             return log.error('can\t reset phone traces on db:', err);
           }
+          callback(tracesToBeRemoved.length);
         });
 */
 
