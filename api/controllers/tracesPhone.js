@@ -49,10 +49,10 @@ var tracesPhoneProviderPrototype = {
               return callbackInner();
             }
 
-var tracesBeforeLength = traces.length;
-            /*tracesPhoneProviderPrototype*/this.blacklistFilter(traces, function(traces) {
-var tracesAfterLength = traces.length;
-log.debug('sync(' + phone + '), blacklist filtered', (tracesBeforeLength - tracesAfterLength), 'traces');
+//var tracesBeforeLength = traces.length;
+            /*tracesPhoneProviderPrototype*/tracesPhoneProviderPrototype.blacklistFilter(traces, false, function(traces) {
+//var tracesToBeRemovedLength = traces.length;
+//log.debug('sync(' + phone + '), blacklist filtered out', (tracesBeforeLength - tracesToBeRemovedLength), 'traces');
 
 /*
             // filter out results in blacklist or with suspect description
@@ -69,7 +69,7 @@ log.debug('sync(' + phone + '), blacklist filtered', (tracesBeforeLength - trace
 */
 
               // save results to database
-              /*tracesPhoneProviderPrototype*/this.save(traces, function(err, result) {
+              tracesPhoneProviderPrototype.save(traces, function(err, result) {
                 if (err) {
                   return callbackInner(err);
                 }
@@ -137,7 +137,7 @@ log.debug('sync(' + phone + '), blacklist filtered', (tracesBeforeLength - trace
         if (err) {
           return callback('could not save phone traces:' + err.toString());
         }
-        log.info('traces save finished; inserted:', result.inserted, ', updated:', result.updasted);
+        log.info('traces save finished; inserted:', result.inserted, ', updated:', result.updased);
         callback(null, result); // success
       }
     );
@@ -186,15 +186,22 @@ log.debug('sync(' + phone + '), blacklist filtered', (tracesBeforeLength - trace
     });
   },
 
-  blacklistFilter: function(traces, callback) { // get hostnames known not to contain useful data
+  blacklistFilter: function(traces, mode, callback) { // get hostnames known to contain or not (depending on mode) useful data
     var blacklist = [
+      'archiwumallegro.pl',
       'chechiamarepertelefono.besaba.com',
+      'grfx.cstv.com',
       'ip.haoxiana.com',
       'md5.bubble.ro',
+      'numberinquiry.com',
       'numbers-book.com',
+      'okcaller.com',
+      'tieba.baidu.com',
       'us.who-called.info',
       'ws.114chm.com',
       'www.fitnessworldclub.net',
+      'www.flickr.com',
+      'www.interpark.com',
       'www.iptrace.in',
       'www.itnumber.com',
       'www.lericetteditonia.com',
@@ -205,6 +212,7 @@ log.debug('sync(' + phone + '), blacklist filtered', (tracesBeforeLength - trace
       'www.sync.me',
       'www.telnumero.be',
       'www.televideoconference.org',
+      'www.whothecaller.net',
       'www.whycall.eu',
     ];
     if (!this.providers) { // gtting providers from DB
@@ -231,15 +239,16 @@ log.debug('sync(' + phone + '), blacklist filtered', (tracesBeforeLength - trace
     function filter(traces) { // filter out results in blacklist or with suspect description
       traces = traces.filter(function(trace) {
         if (trace.link === null) {
-          return false;
+          return mode;
         }
         if (blacklist.indexOf(url.parse(trace.link).hostname) > -1) { // trace link in blacklist: filter it out
-          return false;
+          return mode;
         }
         if (/(\d{8,12}([^\d]+|$)){3,}/.test(trace.description)) { // suspect description (list of phone numbers): filter it out
-          return false;
+          return mode;
+
         }
-        return true;
+        return !mode;
       });
       callback(traces);
     }
@@ -251,48 +260,26 @@ log.debug('sync(' + phone + '), blacklist filtered', (tracesBeforeLength - trace
       if (err) {
         return log.error('cant\'t find phone traces:', err);
       }
+//traces.splice(506);
+//traces.map(function(trace) { log.info(trace.link); });
+//log.info(traces);
+
       var tracesBefore = traces;
       var tracesCountBefore = traces.length;
-log.debug('blacklistFilterApply count of traces before:', tracesCountBefore);
-      tracesPhoneProviderPrototype.blacklistFilter(traces, function(traces) {
-        var tracesAfter = traces;
-        var tracesCountAfter = traces.length;
-log.debug('blacklistFilterApply count of traces after:', tracesCountAfter);
-log.debug('blacklistFilterApply count of filtered out traces is', (tracesCountBefore - tracesCountAfter));
-
-        // get the traces filtered out
-        ///////////////////////var tracesToBeRemoved = tracesBefore - tracesAfter;
-/* TO BE TESTED !!! */
-        var tracesToBeRemoved = tracesBefore.filter(function(traceBefore) {
-          return tracesAfter.filter(function(traceAfter) {
-            return traceAfter.link === traceBefore.link;
-          }).length === 0;
+      tracesPhoneProviderPrototype.blacklistFilter(traces, true, function(traces) {
+        // estract ids array from traces to be removed array
+        var idsTracesToBeRemoved = traces.map(function(trace) {
+          return trace._id;
         });
-//console.log('tracesToBeRemoved:', tracesToBeRemoved);
-console.log('tracesToBeRemoved: should be', (tracesCountBefore - tracesCountAfter), 'and really are', tracesToBeRemoved.length);
-callback(tracesToBeRemoved.length);
-
-/* TODO...
 
         // drop all TracesPhone documents and reinsert the documents after filter
-        TracesPhone.remove(tracesToBeRemoved, function(err) {
-          if (!err) {
-            return log.error('can\t reset phone traces on db:', err);
+        TracesPhone.remove({ _id: { $in: idsTracesToBeRemoved } }, function(err, response) {
+          if (err) {
+            return log.error('can\'t remove blacklisted phone traces on db:', err);
           }
-          callback(tracesToBeRemoved.length);
+          log.info('removed', response.result.n, 'traces from db');
+          callback(null, response.result.n);
         });
-*/
-
-/* OOOOOOOOOOOOOOOLLLLLLLLLLLLLLLLLDDDDDDDDDDDDD
-        // drop all TracesPhone documents and reinsert the documents after filter
-        TracesPhone.remove({}, function(err) {
-          if (!err) {
-            return log.error('can\t reset phone traces on db:', err);
-          }
-          TracesPhone.insert(traces, function(err) {
-          });
-        });
-*/
 
       });
     });
@@ -329,9 +316,9 @@ var traces = [
     dateOfLastSync: new Date(),
   }
 ];
-tracesPhoneProviderPrototype.blacklistFilter(traces, function(traces) {
+tracesPhoneProviderPrototype.blacklistFilter(traces, false, function(traces) {
   console.log('traces after blacklist A:', traces);
-  tracesPhoneProviderPrototype.blacklistFilter(traces, function(traces) {
+  tracesPhoneProviderPrototype.blacklistFilter(traces, false function(traces) {
     console.log('traces after blacklist B:', traces);
   });
 });

@@ -140,22 +140,16 @@ app.run(function($rootScope, $window, $location, Authentication) {
 //                   development we can have different alternative server urls
 ///////////////////////////////////////////////////////////////////////////////
 var apiUrls = [ // list all possible api servers addresses during development
-  'http://test.server.local:3000', // (client == server)
-  'http://192.168.1.4:3000',       // (@Torino @home, client != server)
+  //'http://test.server.local:3000', // (client == server)
+  'http://192.168.1.5:3000',       // (@Torino @home, client != server)
   'http://192.168.10.30:3000',     // (@Torino @office, client != server) // TODO: ???
   'http://192.168.1.15:3000',      // (@Portovenere, client != server)
 ];
-/*
-var apiUrls = [ // list all possible api servers addresses during development
-  'https://test.server.local:8443', // (client == server)
-  'https://192.168.1.4:8443', // (@Torino, client != server)
-  'https://192.168.1.90:8443', // (@Portovenere, client != server)
-];
-*/
 
 for (var i = 0, len = apiUrls.length; i < len; i++) {
   ping(apiUrls[i]);
 }
+
 function ping(url) {
   $.ajax({
     url: url,
