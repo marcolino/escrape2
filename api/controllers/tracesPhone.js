@@ -137,7 +137,7 @@ var tracesPhoneProviderPrototype = {
         if (err) {
           return callback('could not save phone traces:' + err.toString());
         }
-        log.info('traces save finished; inserted:', result.inserted, ', updated:', result.updased);
+        log.info('traces save finished; inserted:', result.inserted, ', updated:', result.updated);
         callback(null, result); // success
       }
     );
@@ -188,7 +188,10 @@ var tracesPhoneProviderPrototype = {
 
   blacklistFilter: function(traces, mode, callback) { // get hostnames known to contain or not (depending on mode) useful data
     var blacklist = [
+      '347-6426.mycaller.net',
+      '3xx.online',
       'archiwumallegro.pl',
+      'bs9.eu',
       'chechiamarepertelefono.besaba.com',
       'grfx.cstv.com',
       'ip.haoxiana.com',
@@ -199,6 +202,9 @@ var tracesPhoneProviderPrototype = {
       'tieba.baidu.com',
       'us.who-called.info',
       'ws.114chm.com',
+      'www.chistachiamando.it',
+      'www.calledphone.com',
+      'www.check-caller.com',
       'www.fitnessworldclub.net',
       'www.flickr.com',
       'www.interpark.com',
@@ -212,6 +218,7 @@ var tracesPhoneProviderPrototype = {
       'www.sync.me',
       'www.telnumero.be',
       'www.televideoconference.org',
+      'www.usaphonenumberslookup.com',
       'www.whothecaller.net',
       'www.whycall.eu',
     ];

@@ -77,12 +77,13 @@ console.timeEnd('loadPerson');
       $scope.personPhone = $scope.showPersonPhone($scope.person);
       $scope.personDescription = $scope.showPersonDescription($scope.person);
 
-      $scope.loadReviewPosts($scope.person.phone);
-      $scope.loadPhoneTracesResults($scope.person.phone);
+      $scope.loadReviewPosts($scope.person);
+      $scope.loadPhoneTraces($scope.person);
     });
   };
 
-  $scope.loadReviewPosts = function(phone) {
+  $scope.loadReviewPosts = function(person) {
+    var phone = person.phone;
     if (!phone) {
       return;
     }
@@ -112,14 +113,38 @@ var t = console.time('loadReviews'); // TODO: development only
     });
   };
 
-  $scope.loadPhoneTracesResults = function(phone) {
+  $scope.loadPhoneTraces = function(person) {
+    var phone = person.phone;
     if (!phone) {
       return;
     }
     TracesPhone.getTracesByPhone(phone, function(response) {
       //console.log('loadPhoneTracesResults() - response:', response);
-      $scope.panels.phonetraces.traces = response;
+
+      var traces = $scope.hightlightPhoneTraces(person, response);
+      $scope.panels.phonetraces.traces = traces;
     });
+  };
+
+  // highlight person name in phone traces title and description fields
+  $scope.hightlightPhoneTraces = function(person, traces) {
+    var i, e, tracesLen, searchLen;
+    for (i = 0, tracesLen = traces.length; i < tracesLen; i++) {
+      //var RE = new RegExp('\b' + '(' + person.name + ')' + '\b', 'mig');
+      var RE = new RegExp('(' + person.name + ')', 'mig');
+      var searchFields = [ 'title', 'description' ];
+      for (e = 0, searchLen = searchFields.length; e < searchLen; e++) {
+        traces[i][searchFields[e]] = highlight(traces[i][searchFields[e]], RE);
+      }
+    }
+    return traces;
+
+    function highlight(value, re) {
+      value = value.replace(re, function(match, capture) {
+        return '<span class="hightlight">&nbsp;' + match + '&nbsp;</span>';
+      });
+      return value;
+    }
   };
 
   $scope.listAliasGroups = function() { // debug only method

@@ -135,3 +135,23 @@ a:hover, a:visited, a:link, a:active {
 .underline-on-hover:hover {
   text-decoration: underline !important;
 }
+
+.hightlight {
+  background-color: #f3f315;
+  color: #000000;
+  opacity: 0.75;
+}
+
+.row-no-padding {
+  [class*="col-"] {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+}
+
+.row-small-padding {
+  [class*="col-"] {
+    padding-left: 0.2em !important;
+    padding-right: 0.2em !important;
+  }
+}

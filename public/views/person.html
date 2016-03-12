@@ -1,74 +1,129 @@
-<div ng-init="loadPerson()">
-
-  <div id="section-data" class="panel panel-default" ng-show="sections['data'].visible"> <!-- person's data -->
-
-    <div class="panel-heading">
-      <h3 class="panel-title" style="text-align:left">Info</h3>
-    </div>
-
-    <div class="panel-body" style="font-size: 1.5em; line-height: 1.7em;">
-      <div class="row">
-        <div class="col-xs-3" style="text-align:right;">
-          <span class="label label-default">Name</span>
-        </div>
-        <div class="col-xs-9">
-          <span class="label label-success">{{ personName }}</span>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-xs-3" style="text-align:right;">
-          <span class="label label-default">Key</span>
-        </div>
-        <div class="col-xs-9">
-          <span class="label label-success">{{ personKey }}</span>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-xs-3" style="text-align:right;">
-          <span class="label label-default">Date of arrival</span>
-        </div>
-        <div class="col-xs-9">
-          <span class="label label-success">{{ personDateOfFirstSync }}</span>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-xs-3" style="text-align:right;">
-          <span class="label label-default">Phone</span>
-        </div>
-        <div class="col-xs-9">
-          <span class="label label-success">{{ personPhone }}</span>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-xs-3" style="text-align:right;">
-          <span class="label label-default">Description</span>
-        </div>
-        <div class="col-xs-9">
-          <!--<span class="label label-success">{{ personName }}</span>-->
-          <textarea class="form-control" rows="3" style="color: white; background: green; margin-top: 5px; width:80%" ng-bind-html="personDescription"></textarea>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
 <style>
 .panel-heading .accordion-toggle:after {
   /* symbol for "opened" panels */
   font-family: 'Glyphicons Halflings';
   content: "\e114";
   float: right;
-  color: grey;
+  color: #bbb;
 }
 .panel-heading .accordion-toggle.collapsed:after {
   /* symbol for "collapsed" panels */
   content: "\e080"; /* adjust as needed, taken from bootstrap.css */
 }
+.btn-panel {
+  height: 1.7em;
+  padding: 0 10px 0 10px;
+} 
+.panel-info {
+  line-height: 1.8em;
+}
+.panel-info-label {
+  font-weight: normal;
+}
+.panel-info-textarea {
+  font-size: 0.8em;
+  font-weight: normal;
+  border: none;
+  position: relative;
+  top: -1px;
+}
+.panel-info-button {
+  height: 2.2em;
+  padding: 0 10px 0 10px;
+  position: relative;
+  top: 1px;
+} 
 </style>
+<script>
+function stopPropagation(event) { // don't propogate the event to the document
+  if (event.stopPropagation) {
+      event.stopPropagation(); // W3C model
+  } else {
+      event.cancelBubble = true; // IE model
+  }
+}
+</script>
+<div ng-init="loadPerson()">
+
+  <div class="panel-group" ng-show="sections['data'].visible"> <!-- person's data -->
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h4 class="panel-title" style="text-align:left">
+          <div class="accordion-toggle" data-toggle="collapse" data-target="#collapse-info">
+            <a data-toggle="collapse" data-target="#collapse-info">
+              <span>
+                Info
+                &emsp;
+                <input type="button" class="btn btn-default btn-sm btn-panel" onclick="stopPropagation(event);" ng-value="person.name" />
+                &emsp;
+                <a data-ng-href="tel:{{ person.phone }}">
+                  <!--<button class="btn btn-success btn-sm" type="button" _style="width: 3.2em;"><span class="glyphicon glyphicon-earphone"></span></button>-->
+                  <input type="button" class="btn btn-success btn-sm btn-panel" onclick="stopPropagation(event);" ng-value="person.phone" />
+                </a>
+              </span><!-- about {{ personName }} &emsp;~&emsp; {{ personPhone }} -->
+            </a>
+          </div>
+        </h4>
+      </div>
+
+      <div id="collapse-info" class="panel-collapse collapse in">
+
+        <div class="panel-body" class="panel-info" style="font-size: 1.2em; line-height: 1.7em;">
+          <div class="row row-small-padding">
+            <div class="col-xs-3" style="text-align:right;">
+              <span class="label label-default panel-info-label">Name</span>
+            </div>
+            <div class="col-xs-9">
+              <span class="label label-success panel-info-label">{{ personName }}</span>
+            </div>
+          </div>
+
+          <div class="row row-small-padding">
+            <div class="col-xs-3" style="text-align:right;">
+              <span class="label label-default panel-info-label">Key</span>
+            </div>
+            <div class="col-xs-9">
+              <span class="label label-success panel-info-label">{{ personKey }}</span>
+            </div>
+          </div>
+
+          <div class="row row-small-padding">
+            <div class="col-xs-3" style="text-align:right;">
+              <span class="label label-default panel-info-label">Date of arrival</span>
+            </div>
+            <div class="col-xs-9">
+              <span class="label label-success panel-info-label">{{ personDateOfFirstSync }}</span>
+            </div>
+          </div>
+
+          <div class="row row-small-padding">
+            <div class="col-xs-3" style="text-align:right;">
+              <span class="label label-default panel-info-label">Phone</span>
+            </div>
+            <div class="col-xs-9">
+              <span class="label label-success panel-info-label">{{ personPhone }}</span>
+                <a data-ng-href="tel:{{ person.phone }}">
+                  <button class="btn btn-success btn-sm panel-info-button" type="button"><span class="glyphicon glyphicon-earphone"></span></button>
+                </a>
+            </div>
+          </div>
+
+          <div class="row row-small-padding">
+            <div class="col-xs-3" style="text-align:right;">
+              <span class="label label-default panel-info-label">Description</span>
+            </div>
+            <div class="col-xs-9">
+              <!--<span class="label label-success">{{ personName }}</span>-->
+              <textarea class="form-control panel-info-textarea" rows="4" style="color: white; background: #5cb85c; margin-top: 5px; width:80%" ng-bind-html="personDescription"></textarea>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <div id="section-slider" class="panel" ng-show="sections['slider'].visible"> <!-- person's thumbnail images slider -->
     <div class="slider">
       <span data-ng-repeat="image in person.images">
@@ -82,13 +137,13 @@
       <div class="panel panel-default">
         <div class="panel-heading">
           <h4 class="panel-title" style="text-align:left">
-            <div class="accordion-toggle" data-toggle="collapse" _data-parent="#accordion-footprints" data-target="#collapse-footprints">
-              <a data-toggle="collapse" _data-parent="#accordion-footprints" data-target="#collapse-footprints">
-                Footprints of this person
+            <div class="accordion-toggle" data-toggle="collapse" data-target="#collapse-footprints">
+              <a data-toggle="collapse" data-target="#collapse-footprints">
+                Footprints
               </a>
-              &emsp;~&emsp;
-              <a data-toggle="collapse" _data-parent="#accordion-footprints" data-target="#collapse-footprints">
-                My overall opinion: <span class="star-rating" star-rating rating-value="rating" data-max="5" on-rating-selected="ratingFunction(rating)"></span>
+              &emsp;&emsp;&emsp;
+              <a data-toggle="collapse" data-target="#collapse-footprints">
+                <span class="star-rating" star-rating rating-value="rating" data-max="5" on-rating-selected="ratingFunction(rating)"></span>
               </a>
             </div>
           </h4>
