@@ -210,7 +210,12 @@ console.log('$rootScope.user:', $rootScope.user);
 
   // open person's page
   $scope.personOpen = function(person) {
-    $location.url('/person' + '/' + '?id=' + person._id);
+    var openInSameTab = false; // if opening in same tab, when going back, position is not retained... :-(
+    if (openInSameTab) {
+      $location.url('/person' + '/' + '?id=' + person._id); // in same tab
+    } else {
+      $window.open('/person' + '/' + '?id=' + person._id); // in new tab
+    }
   };
 
   $scope.carouselOpen = function(index) {
