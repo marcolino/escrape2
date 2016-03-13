@@ -35,6 +35,7 @@ var tracesPhoneProviderPrototype = {
       inserted: 0,
       updated: 0,
     };
+    
     async.each(
       tracesPhoneProviders,
       function(tPP, callbackInner) {

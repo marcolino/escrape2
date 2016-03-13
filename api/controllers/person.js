@@ -10,6 +10,7 @@ var mongoose = require('mongoose') // mongo abstraction
   , network = require('../controllers/network') // network handling
   , image = require('../controllers/image') // network handling
   , provider = require('../controllers/provider') // provider's controller
+  , review = require('../controllers/review') // reviews controller
   , tracesPhone = require('../controllers/tracesPhone') // trace phone's controller
   , Person = require('../models/person') // model of person
   , UserToPerson = require('../models/userToPerson') // model of user-to-person
@@ -352,6 +353,14 @@ if (person.key === 'FORBES/Shakira') {
                       callbackInner(); // this person is done
                     });
 
+                    // sync phone reviews for this person
+                    log.info('persons phone reviews sync started');
+                    local.syncReviews(person, function(err, results) {
+                      if (err) {
+                        return log.warn(err);
+                      }
+                      log.debug('persons phone reviews sync done:', results.inserted, 'inserted,', results.updated, 'updated');
+                    });
                   }
                 );
               },
@@ -417,6 +426,16 @@ if (person.key === 'FORBES/Shakira') {
         });
       }
     );
+  });
+};
+
+local.syncReviews = function(person, callback) {
+  review.sync(person.phone, function(err, results) {
+    if (err) {
+      return callback(err);
+    }
+    //log.info('sync\'d person', person.key, 'phone', person.phone, 'reviews:', results.inserted, 'inserted,', results.updated, 'updated');
+    callback(null, results);
   });
 };
 

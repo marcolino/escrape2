@@ -40,13 +40,13 @@ angular.module('ReviewService', []).factory('Review', [ '$rootScope', '$http', f
     getPostsByTopic: function(topicKey, callback) { // call to get review posts by topic
       $http({
         method: 'GET',
-        url: $rootScope.config.api.url + $rootScope.config.api.path + '/reviews/getPosgtsByTopic' + '/' + topicKey,
+        url: $rootScope.config.api.url + $rootScope.config.api.path + '/reviews/getPostsByTopic' + '/' + topicKey,
       })
       .success(function(response) {
         if (response.error) {
           return console.warn('error getting review posts by topic:', response.error);
         }
-        console.info('review posts by topic (' + response.length + '):', response);
+        console.info('review posts by topic count:' + response.length + ', response:', response);
         callback(response);
       })
       .error(function(err) {

@@ -41,21 +41,21 @@ function getPostsByPhone(req, res) { // get review posts by phone
 
 function getTopicsByPhone(req, res) { // get review topics by phone
   var phone = req.params.phone;
-  review.getTopicsByPhone(phone, function(err, reviews) {
+  review.getTopicsByPhone(phone, function(err, topics) {
     if (err) {
       return res.status(500).json(err);
     }
-    res.json(reviews);
+    res.json(topics);
   });
 }
 
 function getPostsByTopic(req, res) { // get review posts by topic
   var topic = req.params.topic;
-  review.getPostsByTopic(topic, function(err, reviews) {
+  review.getPostsByTopic(topic, function(err, posts) {
     if (err) {
       return res.status(500).json(err);
     }
-    res.json(reviews);
+    res.json(posts);
   });
 }
 

@@ -37,6 +37,10 @@ var reviewProviderPrototype = {
 
   sync: function(phone, callback) {
     console.log('sync()', 'syncyng reviews from all review providers for phone value', phone);
+    var results = {
+      inserted: 0,
+      updated: 0,
+    };    
     var reviewProviders = {
       gf: require('./review-GF'),
       ea: require('./review-EA'),
@@ -61,10 +65,12 @@ var reviewProviderPrototype = {
             log.debug('saving', results.length, 'posts found on provider', rP.key, 'for phone', phone);
   
             // save results to database
-            reviewProviderPrototype.save(results, function(err, doc) {
+            reviewProviderPrototype.save(results, function(err, result) {
               if (err) {
                 return callbackInner(err);
               }
+              results.inserted += result.inserted;
+              results.updated += result.updated;
               callbackInner(); // this person is done
             });
   
@@ -80,7 +86,7 @@ var reviewProviderPrototype = {
           }
         }
         if (callback) { // this method can be called asynchronously, without a callback
-          callback();
+          callback(null, results);
         }
       }
     );
@@ -88,9 +94,14 @@ var reviewProviderPrototype = {
 
   save: function(posts, callback) {
     log.info('saving review posts...');
+    var result = {
+      inserted: 0,
+      updated: 0,
+    };
     async.each(
       posts,
       function(post, callbackInner) {
+        /*
         Review.update(
           { key: post.key }, 
           { $setOnInsert: post }, // posts do no change with time
@@ -102,40 +113,76 @@ var reviewProviderPrototype = {
             callbackInner();
           }
         );
+        */
+        Review.findOneAndUpdate(
+          { key: post.key }, // query
+          post, // object to save
+          { // options
+            new: true, // return the modified document rather than the original
+            upsert: true, // creates the object if it doesn't exist
+            passRawResult: true // pass back mongo row result
+          },
+          function(err, doc, raw) { // result callback
+            if (err) {
+              //log.debug('can\'t save trace', trace.phone, trace.link, ':', err);
+            } else {
+              if (raw.lastErrorObject.updatedExisting) {
+                //log.debug('trace', doc.phone, doc.link, 'updated');
+                result.updated++;
+              } else {
+                //log.debug('trace', doc.phone, doc.link, 'inserted');
+                result.inserted++;
+              }
+            }
+            callbackInner(err); // finish image save
+          }
+        );
       },
       function(err) {
         if (err) {
           return callback(new Error('could not save reviews: ' + err));
         }
-        callback(); // success
+        log.info('traces save finished; inserted:', result.inserted, ', updated:', result.updated);
+        callback(null, result); // success
       }
     );
   },
 
   getPostsByPhone: function(phone, callback) { // get review posts by phone
-    Review.find({ phone: phone }).lean().exec(function(err, reviews) {
+    Review.find({ phone: phone }).lean().exec(function(err, posts) {
       if (err) {
         return callback(err);
       }
-      callback(null, reviews);
+      callback(null, posts);
     });
   },
 
   getTopicsByPhone: function(phone, callback) { // get review topics by phone
-    Review.find({ phone: phone }).lean().distinct('topic.key').exec(function(err, reviews) {
+    Review.find({ phone: phone }, { topic: 1 }).lean()./*distinct('topic.key').*/exec(function(err, reviews) {
       if (err) {
         return callback(err);
       }
-      callback(null, reviews);
+
+      // keep only unique topics (TODO: do this in query...)
+      var dictionary = {};
+      var topics = [];
+      for (var i in reviews) {
+        if (typeof(dictionary[reviews[i].topic.key]) === 'undefined') {
+          topics.push(reviews[i].topic); // add this new topic review to unique topics
+        }
+        dictionary[reviews[i].topic.key] = true; // create this key in dictionary
+      }
+
+      callback(null, topics);
     });
   },
 
   getPostsByTopic: function(topicKey, callback) { // get review posts by topic
-    Review.find({ 'topic.key': topicKey }).lean().exec(function(err, reviews) {
+    Review.find({ 'topic.key': topicKey }).lean().exec(function(err, posts) {
       if (err) {
         return callback(err);
       }
-      callback(null, reviews);
+      callback(null, posts);
     });
   },
 };

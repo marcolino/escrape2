@@ -26,21 +26,22 @@ angular.module('PersonCtrl', []).controller('PersonController', function($rootSc
     'reviews': {
       name: 'Reviews',
       active: false,
-      posts: [],
       topics: [],
+      items: [],
+      itemsLoaded: [],
       loaded: false,
     },
     'photostraces': {
       name: 'Photos Traces',
       active: false,
-      traces: [ ],
+      items: [],
       loaded: false,
     },
     'phonetraces': {
       rating: 77,
       name: 'Phone Traces',
       active: false,
-      traces: [ ],
+      items: [],
       loaded: false,
     },
   };
@@ -53,6 +54,18 @@ angular.module('PersonCtrl', []).controller('PersonController', function($rootSc
       $scope.loadPersons();
     }
   }, true); // last parameter is for object deep watch
+
+  $scope.panelTopicToggled = function(topicIndex) {
+    console.log('panel topic', topicIndex, 'toggled');
+console.info('$scope.panels.reviews.itemsLoaded[topicIndex]:', $scope.panels.reviews.itemsLoaded[topicIndex]);
+    if (typeof $scope.panels.reviews.itemsLoaded[topicIndex] === 'undefined') {
+console.info('$scope.panels.reviews.itemsLoaded[topicIndex] is undefined, loading topic index', topicIndex, 'posts...');
+//$scope.panels.reviews.items[topicIndex] = 'ok';
+      $scope.loadReviewTopicPosts($scope.panels.reviews.topics[topicIndex].key);
+    } else {
+console.info('$scope.panels.reviews.itemsLoaded[topicIndex] already loaded');      
+    }
+  };
 
   $scope.loadPersons = function() {
 var t = console.time('loadPersons'); // TODO: development only
@@ -77,39 +90,44 @@ console.timeEnd('loadPerson');
       $scope.personPhone = $scope.showPersonPhone($scope.person);
       $scope.personDescription = $scope.showPersonDescription($scope.person);
 
-      $scope.loadReviewPosts($scope.person);
+      $scope.loadReviewTopics($scope.person);
+      //$scope.loadReviewTopicPosts($scope.person);
       $scope.loadPhoneTraces($scope.person);
     });
   };
 
+  $scope.loadReviewTopics = function(person) {
+    var phone = person.phone;
+    if (!phone) {
+      return;
+    }
+    Review.getTopicsByPhone(phone, function(response) {
+console.info('loadReviewTopics() reviews topics:', response);
+      $scope.panels.reviews.topics = response;
+    });
+  };
+
+/*
   $scope.loadReviewPosts = function(person) {
     var phone = person.phone;
     if (!phone) {
       return;
     }
-var t = console.time('loadReviews'); // TODO: development only
     Review.getPostsByPhone(phone, function(response) {
-      //console.info('reviews data:', response);
 
-      $scope.panels.reviews.posts = response;
+console.info('loadReviewPosts() reviews posts:', response);
 
-      // extract topics from reviews (posts)
-      $scope.panels.reviews.topics = {};
-      for (var p = 0; p < response.length; p++) {
-        var topicKey = (
-          response[p].topic.section + '-' +
-          response[p].topic.title + '-' +
-          response[p].topic.dateOfCreation + '-' +
-          response[p].topic.author.name).replace(/[^0-9a-zA-Z-]+/g, '-');
-        //topicKey = topicKey.replace(/[^0-9a-zA-Z-]+/g, '-');
-        response[p].topicKey = topicKey;
-        if (!(topicKey in $scope.panels.reviews.topics)) { // new topic key
-          $scope.panels.reviews.topics[topicKey] = response[p].topic;
-          $scope.panels.reviews.topics[topicKey].postsCount = 1;
-        } else { // topic key already present, just increment posts count
-          $scope.panels.reviews.topics[topicKey].postsCount++;
-        }
-      }
+      $scope.panels.reviews.items = response;
+    });
+  };
+*/
+
+  $scope.loadReviewTopicPosts = function(topicIndex) {
+    Review.getPostsByTopic(topicIndex, function(response) {
+console.info('+++++++++++++++ loadReviewTopicPosts(', topicIndex, ') reviews posts:', response);
+      $scope.panels.reviews.items[topicIndex] = response;
+      $scope.panels.reviews.itemsLoaded[topicIndex] = true;
+console.info('$scope.panels.reviews.itemsLoaded[topicIndex] shoud be true:', typeof $scope.panels.reviews.itemsLoaded[topicIndex]);
     });
   };
 
@@ -122,7 +140,7 @@ var t = console.time('loadReviews'); // TODO: development only
       //console.log('loadPhoneTracesResults() - response:', response);
 
       var traces = $scope.hightlightPhoneTraces(person, response);
-      $scope.panels.phonetraces.traces = traces;
+      $scope.panels.phonetraces.items = traces;
     });
   };
 
