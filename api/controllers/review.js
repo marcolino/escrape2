@@ -166,7 +166,9 @@ var reviewProviderPrototype = {
       // keep only unique topics (TODO: do this in query...)
       var dictionary = {};
       var topics = [];
+console.info('getTopicsByPhone, phone:', phone, ', reviews:', reviews);
       for (var i in reviews) {
+console.info('getTopicsByPhone, phone:', phone, ', review:', i);
         if (typeof(dictionary[reviews[i].topic.key]) === 'undefined') {
           topics.push(reviews[i].topic); // add this new topic review to unique topics
         }

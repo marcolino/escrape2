@@ -31,7 +31,7 @@ angular.module('PersonCtrl', []).controller('PersonController', function($rootSc
       itemsLoaded: [],
       loaded: false,
     },
-    'photostraces': {
+    'phototraces': {
       name: 'Photos Traces',
       active: false,
       items: [],

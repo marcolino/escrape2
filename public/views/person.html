@@ -1,15 +1,46 @@
 <style>
+/*
+.panel-heading {
+  cursor: pointer;
+}
 .panel-heading .accordion-toggle:after {
   font-family: 'Glyphicons Halflings';
   float: right;
   color: #bbb;
-  /* symbol for "opened" panels */
+  /* symbol for "opened" panels * /
   content: "\e113";
 }
 .panel-heading .accordion-toggle.collapsed:after {
-  /* symbol for "collapsed" panels */
-  content: "\e114"; /*"\e080";*/ /* adjust as needed, taken from bootstrap.css */
+  /* symbol for "collapsed" panels * /
+  content: "\e114"; /* adjust as needed, taken from bootstrap.css * /
 }
+*/
+
+/*
+      @import url('//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css');
+      @import url('//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css');
+*/
+
+      .panel-heading {
+        cursor: pointer;
+      }
+      
+      /* CSS Method for adding Font Awesome Chevron Icons */
+      .accordion-toggle:after {
+        /* symbol for "opening" panels */
+        _font-family: "FontAwesome";
+        font-family: 'Glyphicons Halflings';
+        _content: "\f077";
+  content: "\e113";
+        float: right;
+        color: inherit;
+      }
+      .panel-heading.collapsed .accordion-toggle:after {
+        /* symbol for "collapsed" panels */
+        _content: "\f078";
+  content: "\e114"; /* adjust as needed, taken from bootstrap.css */
+      }
+
 .btn-panel {
   height: 1.7em;
   padding: 0 10px 0 10px;
@@ -45,14 +76,12 @@ function stopPropagation(event) { // don't propogate the event to the document
 </script>
 <div ng-init="loadPerson()">
 
-  <div class="panel-group" ng-show="sections['data'].visible"> <!-- person's data -->
+  <div id="accordion-info" class="panel-group" ng-show="sections['data'].visible"> <!-- person's data -->
     <div class="panel panel-default">
-      <div class="panel-heading">
-        <h4 class="panel-title" style="text-align:left">
-          <div class="accordion-toggle" data-toggle="collapse" data-target="#collapse-info">
-            <a>
+      <div class="panel-heading" data-toggle="collapse" data-parent="#accordion-info" data-target="#collapse-info">
+        <h4 class="panel-title accordion-toggle panel-title-left">
               <span>
-                Info
+                Person Info:
                 &emsp;
                 <input type="button" class="btn btn-default btn-sm btn-panel" onclick="stopPropagation(event);" ng-value="person.name" />
                 &emsp;
@@ -60,9 +89,7 @@ function stopPropagation(event) { // don't propogate the event to the document
                   <!--<button class="btn btn-success btn-sm" type="button" _style="width: 3.2em;"><span class="glyphicon glyphicon-earphone"></span></button>-->
                   <input type="button" class="btn btn-success btn-sm btn-panel" onclick="stopPropagation(event);" ng-value="person.phone" />
                 </a>
-              </span><!-- about {{ personName }} &emsp;~&emsp; {{ personPhone }} -->
-            </a>
-          </div>
+              </span>
         </h4>
       </div>
 
@@ -135,17 +162,13 @@ function stopPropagation(event) { // don't propogate the event to the document
   <div id="section-footprints" ng-show="sections['footprints'].visible">
     <div id="accordion-footprints" class="panel-group">
       <div class="panel panel-default">
-        <div class="panel-heading">
-          <h4 class="panel-title" style="text-align:left">
-            <div class="accordion-toggle" data-toggle="collapse" data-target="#collapse-footprints">
-              <a data-toggle="collapse" data-target="#collapse-footprints">
-                Footprints
-              </a>
+        <div class="panel-heading" data-toggle="collapse" data-parent="#accordion-footprints" data-target="#collapse-footprints">
+          <h4 class="panel-title accordion-toggle panel-title-left">
+            <span>
+              Person Footprints:
               &emsp;&emsp;&emsp;
-              <a data-toggle="collapse" data-target="#collapse-footprints">
-                <span class="star-rating" star-rating rating-value="rating" data-max="5" on-rating-selected="ratingFunction(rating)"></span>
-              </a>
-            </div>
+              <span class="star-rating" star-rating rating-value="rating" data-max="5" on-rating-selected="ratingFunction(rating)"></span>
+            </span>
           </h4>
         </div>
         <div id="collapse-footprints" class="panel-collapse collapse" ng-class="{ in: true }">
@@ -153,23 +176,22 @@ function stopPropagation(event) { // don't propogate the event to the document
   
             <div id="accordion-{{ panelKey }}" class="panel-group" data-ng-repeat="(panelKey, panel) in panels">
 
+              <!-- PANEL COLLAPSING OK!!! -->
               <div class="panel panel-default">
-                <div class="panel-heading">
-                  <h4 class="panel-title" style="text-align:left">
-                    <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion-{{ panelKey }}" data-target="#collapse-{{ panelKey }}">
-                      <span class="label label-success label-as-badge">{{ (panelKey === 'reviews') ? panel.topics.length : panel.items.length }}</span> &emsp; {{ panel.name }}
-                    </a>
+                <div class="panel-heading collapsed" data-toggle="collapse" data-parent="#accordion-{{ panelKey }}" data-target="#collapse-{{ panelKey }}">
+                  <h4 class="panel-title accordion-toggle panel-title-left">
+                    <span class="label label-success label-as-badge">{{ (panelKey === 'reviews') ? panel.topics.length : panel.items.length }}</span> &emsp; {{ panel.name }}
                   </h4>
                 </div>
-                <div id="collapse-{{ panelKey }}" class="panel-collapse collapse" ng-class="{ in: false }">
+                <div id="collapse-{{ panelKey }}" class="panel-collapse collapse">
                   <div class="panel-body" style="max-height: 480px; overflow-y: auto; overflow-x: hidden">
 
                     <div ng-if="panelKey === 'reviews'">
                       <div id="accordion-{{ topicIndex }}" class="panel-group" data-ng-repeat="(topicIndex, topic) in panels.reviews.topics">
+
                         <div class="panel panel-default">
-                          <div class="panel-heading">
-                            <h4 class="panel-title" style="text-align:left">
-                              <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion-{{ topicIndex }}" data-target="#collapse-{{ topicIndex }}" ng-click="panelTopicToggled(topicIndex);">
+                          <div class="panel-heading collapsed" data-toggle="collapse" data-parent="#accordion-{{ topicIndex }}" data-target="#collapse-{{ topicIndex }}" ng-click="panelTopicToggled(topicIndex);">
+                            <h4 class="panel-title accordion-toggle panel-title-left">
 
                                 <span class="label label-as-badge">topic</span>
                                 <span class="label label-primary label-as-badge">{{ topic.title }}</span>
@@ -178,19 +200,13 @@ function stopPropagation(event) { // don't propogate the event to the document
                                 <span class="label label-info label-as-badge">{{ topic.section }}</span> &emsp;
 
                                 <span class="label label-success label-as-badge">{{ topic.postsCount }}</span>
-                              </a>
                             </h4>
                           </div>
                           <div id="collapse-{{ topicIndex }}" class="panel-collapse collapse" ng-class="{ in: false }">
                             <div class="panel-body">
                     
-                              <pre>itemsLoaded[topicIndex]: {{panels.reviews.itemsLoaded[0]}}</pre>
-                              <div class="text-center" ng-hide="panels.reviews.itemsLoaded[topicIndex]">
-                                <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate loading"></span>
-                              </div>
-
-                              <!-- ---------------------------------------------------------------------------- -->
                               <pre>{{panel}}</pre>
+
                               <div data-ng-repeat="post in panel.items">
                                 <div ng-if="post.topicIndex === topicIndex">
                                   <div class="row">
@@ -304,22 +320,30 @@ function stopPropagation(event) { // don't propogate the event to the document
                                   <div style="margin: 1.5em; border-top: 1px solid #333;"></div>
                                 </div>
                               </div>
-                              <!-- ---------------------------------------------------------------------------- -->
-  
+                              <div class="text-center" ng-hide="panels.reviews.itemsLoaded[topicIndex]">
+                                <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate loading"></span>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div> <!-- /panel 'reviews' -->
+                    </div> <!-- /panel reviews -->
+
+                    <div ng-if="panelKey === 'phototraces'">
+                      ... phototraces...
+                      <div data-ng-repeat="trace in panel.items">
+                        <div class="row">
+                          <div class="col-xs-12">
+                          </div>
+                        </div>
+                      </div>
+                      <div class="text-center" ng-hide="panel.loaded">
+                        <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate loading"></span>
+                      </div>
+                    </div> <!-- /panel phototraces -->
 
                     <div ng-if="panelKey === 'phonetraces'">
-                      <!--
-                      <div class="text-center" ng-hide="panel.loaded">
-                        <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>
-                      </div>
-                      -->
                       <div data-ng-repeat="trace in panel.items">
-
                         <div class="row">
                           <div class="col-xs-12">
                             <a ng-href="{{trace.link}}" ng-bind-html="hostname(trace.link)" target="_blank" class="underline_on_hover" style="font-size: 1.3em; color: #ade;"></a>
@@ -337,15 +361,16 @@ function stopPropagation(event) { // don't propogate the event to the document
                             &nbsp; <!-- spacer -->
                           </div>
                         </div>
-
-                        <!-- <pre>{{trace}}</pre> -->
                       </div>
-                    </div> <!-- /panel 'phonePTraces' -->
+                      <div class="text-center" ng-hide="panel.loaded">
+                        <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate loading"></span>
+                      </div>
+                    </div> <!-- /panel phonetraces -->
 
-                    <!--<pre>{{ panel.data }}</pre>-->
                   </div>
                 </div>
               </div>
+
             </div>
   
           </div>

@@ -31,49 +31,31 @@ config.time = process.hrtime(); // TODO: development only
   matches.push(filter);
   match = { $and: matches };
 
-  // aggregate on alias field to get just the first document with the same alias
-  var pipeline = [
-    {
-      '$match': match
-    }, {
-      '$group': {
-        '_id': {
-          '$ifNull': [ '$alias', '$_id' ]
-        },
-        'key': { '$first': '$key' },
-        'name': { '$first': '$name' },
-        'url': { '$first': '$url' },
-        'phone': { '$first': '$phone' },
-        'isPresent': { '$first': '$isPresent' },
-        'showcaseBasename': { '$first': '$showcaseBasename' },
-        'dateOfFirstSync': { '$first': '$dateOfFirstSync', },
-        'users': { '$first': '$users', },
-        'id': { '$first': '$_id' }
-      }
-    }, {
-      '$project': {
-        '_id': '$id',
-        'key': true,
-        'name': true,
-        'url': true,
-        'phone': true,
-        'isPresent': true,
-        'showcaseBasename': true,
-        'dateOfFirstSync': true,
-        'users': true,
-        'alias': {
-          '$cond': [
-            { '$eq': [ '$_id', '$id' ] },
-            null,
-            '$_id'
-          ]
-        },
-      },
-    },
-    options
-  ];
+  Person.find(match).lean().exec(function(err, persons) {
 
-  Person.aggregate(pipeline).exec(function(err, persons) {
+function unique(array, property) {
+  var o = {}, i, l = array.length, r = [];
+  for (i = 0; i < l; i += 1) {
+    //o[typeof this[i][property] !== 'undefined' ? this[i][property] : (Math.floor(Math.random() * 9999999999))] = this[i];
+    o[typeof array[i][property] !== 'undefined' ? array[i][property] : i] = array[i];
+  }
+  for (i in o) r.push(o[i]);
+  return r;
+}
+//console.error(persons.length);
+    persons = unique(persons, 'alias');
+
+//console.error(persons.length);
+function compare(a, b) {
+  if (a.dateOfFirstSync < b.dateOfFirstSync)
+    return 1;
+  else if (a.dateOfFirstSync > b.dateOfFirstSync)
+    return -1;
+  else 
+    return 0;
+}
+persons.sort(compare);
+
     if (err) {
       return callback(err);
     }

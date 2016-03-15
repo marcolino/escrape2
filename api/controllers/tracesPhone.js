@@ -172,6 +172,7 @@ var tracesPhoneProviderPrototype = {
   blacklistFilter: function(traces, mode, callback) { // get hostnames known to contain or not (depending on mode) useful data
     // mode: false returns black traces, true returns white traces
     var blacklist = [
+      '.cn',
       '.mycaller.net',
       '.tumblr.com',
       '3xx.online',
