@@ -1,0 +1,60 @@
+#sudo apt-get install libcairo2-dev
+#sudo apt-get install libjpeg-dev
+#sudo apt-get install libgif-dev
+sudo apt-get install node-gyp
+sudo npm install -g gulp
+npm install
+
+# install mongodb (until we don't have an "apt-get install mongodb-server" ...)
+MONGODB_PATH="/usr/local/lib/mongodb"
+MONGODB_URL="https://fastdl.mongodb.org/linux"
+MONGODB_ARCHIVE="mongodb-linux-x86_64-3.2.4.tgz"
+MONGODB_DATA="/data/db"
+cd /tmp
+curl --progress-bar -O "${MONGODB_URL}/${MONGODB_ARCHIVE}"
+tar -zxf "${MONGODB_ARCHIVE}"
+rm -f "${MONGODB_ARCHIVE}"
+mkdir -p "${MONGODB_PATH}"
+cp -R -n `basename "${MONGODB_ARCHIVE}" ".tgz"`/* "${MONGODB_PATH}"/
+export PATH=${MONGODB_PATH}/bin:$PATH
+echo "export PATH=${MONGODB_PATH}/bin:\$PATH" >> /etc/profile
+mkdir -p "${MONGODB_DATA}"
+chown root.root "${MONGODB_DATA}"
+chmod 755 "${MONGODB_DATA}"
+echo "${MONGODB_PATH}/bin/mongod &" >> /etc/rc.local
+
+# install mongodb clients
+sudo apt-get install mongodb-clients
+
+# create logs directory (NO)
+mkdir logs (NO)
+
+TODO: in .gitignore:
+logs =>
+logs/*
+!logs/
+
+c providers/setup
+c persons/sync
+
+# TODO: provide "api/config.prviders.js" (in .gitignore)
+var providers = [
+  {
+    key: 'FORBES',
+    mode: 'fake',
+    type: 'persons',
+    url: 'http://it.wikipedia.org',
+    language: 'it',
+    categories: {
+      overall: {
+        pathList: '/wiki/Lista_delle_persone_pi%C3%B9_potenti_del_mondo_secondo_Forbes#2014.5B2.5D',
+        pathDetails: ''
+      },
+      women: { 
+        pathList: '/wiki/Lista_delle_100_donne_pi%C3%B9_potenti_del_mondo_secondo_Forbes#2015',
+        pathDetails: ''
+      },
+    },
+    whenImageChangesUrlChangesToo: true,
+  },
+];
