@@ -2,6 +2,7 @@
 
 var mongoose = require('mongoose') // mongo abstraction
   , request = require('request') // to place http requests
+  , throttledRequest = require('throttled-request')(request) // to throttle requests
   , cheerio = require('cheerio') // to parse fetched DOM data
   , crypto = require('crypto') // md5
   , async = require('async') // to call many async functions in a loop
@@ -32,8 +33,18 @@ GF.getTopics = function(phone, callback) {
 
   // TODO: we currently search only on the first page of topics, but should we search also next pages ?
 
+  // avoid "Your last search was less than 2 seconds ago." errors
+  if (!this.configured) {
+    throttledRequest.configure({
+      requests: 1,
+      milliseconds: 3 * 1000
+    }); // throttle the requests so no more than 1 is made every 3 seconds
+    this.configured = true;
+  }
+
   var that = this;
-  request(
+ 
+  throttledRequest(
     {
       url: url,
       method: 'POST',
@@ -44,7 +55,6 @@ GF.getTopics = function(phone, callback) {
       if (err || response.statusCode !== 200) {
         return callback(new Error('provider ' + that.key + ': error on response' + (response ? ' (' + response.statusCode + ')' : '') + ':' + err + ': ' + body), null);
       }
-      //log.error(body);
       var $ = cheerio.load(body);
       $('div[class~="topic_details"]').each(function (i, element) { // topics loop
         var topic = {};
@@ -63,12 +73,11 @@ GF.getTopics = function(phone, callback) {
         topic.date = parseDate($(element).find('em').text().trim(), that.locale);
 
         topic.key = crypto.createHash('md5').update(
-          topic.phone + '|' + topic.providerKey + '|' + topic.title + '|' + topic.author.name + '|' + topic.date
+          topic.phone + '|' + topic.providerKey + '|' + topic.title + '|' + topic.date
         ).digest('hex');
 
         topics.push(topic);
       });
-//console.log('getTopics()', that.key, 'found', topics.length, 'topics');
       callback(null, topics);
     }
   );
@@ -131,15 +140,23 @@ GF.getPosts = function(topics, callback) {
             request(
               options,
               function(err, response, body) {
-                if (err || (response.statusCode !== 200 && response.statusCode !== 304)) {
+                if (err) {
                   return callback(new Error('error on response' + (response ? ' (' + response.statusCode + ')' : '') + ':' + err + ' : ' + body), null);
                 }
                 if (response.statusCode === 304) {
-                  log.info('getPosts()', that.key, 'TOPIC PAGE DID NOT CHANGE (304 status code returned): SKIPPING');
-                  topic.pageLast.url = null;
+                  log.info('getPosts()', that.key, 'TOPIC PAGE DID NOT CHANGE: SKIPPING');
+                  topic.nextUrl = null;
                   return callbackWhilst();
-                } else {
-                  //log.info('getPosts()', that.key, 'TOPIC PAGE DID CHANGE (', response.statusCode, ', status code returned): ELABORATING');
+                }
+                if (response.statusCode === 404) {
+                  log.info('getPosts()', that.key, 'TOPIC PAGE NOT FOUND: SKIPPING', 'url:', topic.nextUrl, topic.title);
+                  topic.nextUrl = null;
+                  return callbackWhilst();
+                }
+                if (response.statusCode !== 200) {
+                  log.info('getPosts()', that.key, 'TOPIC PAGE RETURNED STATUS CODE', response.statusCode, ': SKIPPING');
+                  topic.nextUrl = null;
+                  return callbackWhilst();
                 }
                 var $ = cheerio.load(body);
                 $('table[border-color="#cccccc"]').each(function(i, element) { // post elements
@@ -195,8 +212,10 @@ GF.getPosts = function(topics, callback) {
                 var match = nextRE.exec(last);
                 if (match && match[1]) {
 //log.info('GF getPosts()', 'next url:', match[1]);
-                  topic.nextUrl = match[1];
-                  topic.pageLast.url = topic.nextUrl;
+                  var url = match[1];
+                  url = decodeHTMLEntities(url); // decode html entities in url
+                  topic.nextUrl = url;
+                  topic.pageLast.url = url;
                 } else {
 //log.info('GF getPosts()', 'next url:', 'NULL');
                   topic.nextUrl = null;
@@ -218,6 +237,9 @@ GF.getPosts = function(topics, callback) {
     },
     function(err, done) { // all topics are done, call return callback
       //log.info('GF getPosts()', 'done async.each:', posts);
+      if (err) {
+        return callback(err);
+      }
       var postsWithKeys = posts.map(function(post) {
         post.key = crypto.createHash('md5').update(
           post.phone + '|' + post.author.name + '|' + post.date + '|' + post.contents
@@ -229,6 +251,20 @@ GF.getPosts = function(topics, callback) {
     }
   );
 };
+
+function decodeHTMLEntities(text) {
+  var entities = [
+    ['apos', '\''],
+    ['amp', '&'],
+    ['lt', '<'],
+    ['gt', '>']
+  ];
+
+  for (var i = 0, len = entities.length; i < len; ++i) {
+    text = text.replace(new RegExp('&' + entities[i][0] + ';', 'g'), entities[i][1]);
+  }
+  return text;
+}
 
 function parseDate(dateString, locale) { // parse date from custom format to Date()
 //log.error('parseDate(): [' + dateString + '],', locale);
@@ -269,7 +305,7 @@ function parseDate(dateString, locale) { // parse date from custom format to Dat
   var dateStandard = dateStandardRE.exec(dateString);
   if (dateStandard !== null) { // source date is in 'Standard' format
     year = parseInt(dateStandard[1]);
-    month = parseInt(monthLocales[locale][dateStandard[2]]);
+    month = parseInt(monthLocales[locale][dateStandard[2] - 1]);
     day = parseInt(dateStandard[3]);
     hours = parseInt(dateStandard[4]);
     minutes = parseInt(dateStandard[5]);

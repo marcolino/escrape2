@@ -336,12 +336,13 @@ if (person.key === 'FORBES/Shakira') {
                     });
 
                     // sync phone reviews for this person
-                    log.info('persons phone reviews sync started');
                     local.syncReviews(person, function(err, results) {
                       if (err) {
                         return log.warn(err);
                       }
-                      log.debug('persons phone reviews sync done:', results.inserted, 'inserted,', results.updated, 'updated');
+                      if (results.inserted > 0 || results.updated > 0) {
+                        log.debug('persons phone reviews sync done:', results.inserted, 'inserted,', results.updated, 'updated');
+                      }
                     });
                   }
                 );
@@ -1188,7 +1189,7 @@ local.getDetailsDescription = function($, provider) {
   if (provider.key === 'SGI') {
     element = $('td[id="ctl00_content_CellaDescrizione"]');
     if (element) {
-      val = $(element).text();
+      val = $(element).html();
       if (val) {
         val = val
           .replace(/Quando mi contatterai dimmi che mi hai visto su .*$/, '') // remove trailing text
@@ -1202,12 +1203,12 @@ local.getDetailsDescription = function($, provider) {
   if (provider.key === 'TOE') {
     element = $('p[class="annuncio"]');
     if (element) {
-      val = $(element).text();
+      val = $(element).html();
     }
   }
   if (provider.key === 'FORBES') {
     element = $('table[class="sinottico"]').next('p');
-    val = $(element).text();
+    val = $(element).html();
   }
   return val;
 };

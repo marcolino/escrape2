@@ -36,7 +36,6 @@ var reviewProviderPrototype = {
   },
 
   sync: function(phone, callback) {
-    console.log('sync()', 'syncyng reviews from all review providers for phone value', phone);
     var results = {
       inserted: 0,
       updated: 0,
@@ -49,7 +48,6 @@ var reviewProviderPrototype = {
     async.each(
       reviewProviders,
       function(rP, callbackInner) {
-        console.log('sync()', 'provider:', rP.key);
         rP.getTopics(phone, function(err, results) {
           if (err) {
             return callbackInner(err);
@@ -59,10 +57,10 @@ var reviewProviderPrototype = {
               return callbackInner(err);
             }
             if (results.length === 0) {
-              log.debug('no posts found on provider', rP.key, 'for phone', phone);
+              //log.debug('no new posts found on provider', rP.key, 'for phone', phone);
               return callbackInner();
             }
-            log.debug('saving', results.length, 'posts found on provider', rP.key, 'for phone', phone);
+            //log.warn('saving', results.length, 'new posts found on provider', rP.key, 'for phone', phone);
   
             // save results to database
             reviewProviderPrototype.save(results, function(err, result) {
@@ -142,7 +140,7 @@ var reviewProviderPrototype = {
         if (err) {
           return callback(new Error('could not save reviews: ' + err));
         }
-        log.info('traces save finished; inserted:', result.inserted, ', updated:', result.updated);
+        log.info('reviews inserted:', result.inserted + ',', 'updated:', result.updated);
         callback(null, result); // success
       }
     );
@@ -166,9 +164,9 @@ var reviewProviderPrototype = {
       // keep only unique topics (TODO: do this in query...)
       var dictionary = {};
       var topics = [];
-console.info('getTopicsByPhone, phone:', phone, ', reviews:', reviews);
+//log.info('getTopicsByPhone, phone:', phone, ', reviews:', reviews);
       for (var i in reviews) {
-console.info('getTopicsByPhone, phone:', phone, ', review:', i);
+//log.info('getTopicsByPhone, phone:', phone, ', review:', i);
         if (typeof(dictionary[reviews[i].topic.key]) === 'undefined') {
           topics.push(reviews[i].topic); // add this new topic review to unique topics
         }
