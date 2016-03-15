@@ -91,7 +91,6 @@ var reviewProviderPrototype = {
   },
 
   save: function(posts, callback) {
-    log.info('saving review posts...');
     var result = {
       inserted: 0,
       updated: 0,
@@ -140,7 +139,7 @@ var reviewProviderPrototype = {
         if (err) {
           return callback(new Error('could not save reviews: ' + err));
         }
-        log.info('reviews inserted:', result.inserted + ',', 'updated:', result.updated);
+        log.info('reviews inserted:', result.inserted + ',', 'updated:', result.updated, 'for phone', posts[0].phone);
         callback(null, result); // success
       }
     );
