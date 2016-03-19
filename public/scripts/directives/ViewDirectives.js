@@ -45,32 +45,7 @@ angular.module('ViewDirectives', [])
     };
   })
 
-  .directive('html2text', function() {
-    return {
-      restrict: 'A',
-      require: '?ngModel',
-      link: function (scope, element, attrs, ngModel) {
-console.info('ngModel:', ngModel);
-        if (!ngModel) {
-          return;
-        }
-
-        ngModel.$parsers.unshift(function(value) {
-console.info('ngModel value:', value);
-          return value.replace(new RegExp('\n', 'g'), '<br />');
-        });
-
-        ngModel.$formatters.unshift(function(value) {
-console.info('ngModel value:', value);
-          if (value) {
-            return value.replace(new RegExp('<br />', 'g'), '\n');
-          }
-          return undefined;
-        });
-      }
-    };
-  })
-
+/*
   .filter('br2newline', function() {
     return function(text) {
       console.log('TEXT:', text);
@@ -80,5 +55,5 @@ console.info('ngModel value:', value);
         .replace(/</g, '&lt;');
     };
   })
-
+*/
 ;

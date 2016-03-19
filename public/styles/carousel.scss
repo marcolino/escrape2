@@ -1,13 +1,13 @@
 .carousel {
   /* background: #000; */
 }
-.carousel-inner img {
-  height: 100%;
-  margin: auto;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+.carousel-inner > .item > img {
+  width: 100%;
+  _margin: auto;
+  _top: 0;
+  _left: 0;
+  _right: 0;
+  _bottom: 0;
   z-index: -1;
 }
 .carousel-control.left, .carousel-control.right {

@@ -1,95 +1,19 @@
-<style>
-/*
-.panel-heading {
-  cursor: pointer;
-}
-.panel-heading .accordion-toggle:after {
-  font-family: 'Glyphicons Halflings';
-  float: right;
-  color: #bbb;
-  /* symbol for "opened" panels * /
-  content: "\e113";
-}
-.panel-heading .accordion-toggle.collapsed:after {
-  /* symbol for "collapsed" panels * /
-  content: "\e114"; /* adjust as needed, taken from bootstrap.css * /
-}
-*/
-
-/*
-      @import url('//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css');
-      @import url('//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css');
-*/
-
-      .panel-heading {
-        cursor: pointer;
-      }
-      
-      /* CSS Method for adding Font Awesome Chevron Icons */
-      .accordion-toggle:after {
-        /* symbol for "opening" panels */
-        _font-family: "FontAwesome";
-        font-family: 'Glyphicons Halflings';
-        _content: "\f077";
-  content: "\e113";
-        float: right;
-        color: inherit;
-      }
-      .panel-heading.collapsed .accordion-toggle:after {
-        /* symbol for "collapsed" panels */
-        _content: "\f078";
-  content: "\e114"; /* adjust as needed, taken from bootstrap.css */
-      }
-
-.btn-panel {
-  height: 1.7em;
-  padding: 0 10px 0 10px;
-} 
-.panel-info {
-  line-height: 1.8em;
-}
-.panel-info-label {
-  font-weight: normal;
-}
-.panel-info-textarea {
-  font-size: 0.8em;
-  font-weight: normal;
-  border: none;
-  position: relative;
-  top: -1px;
-}
-.panel-info-button {
-  height: 2.2em;
-  padding: 0 10px 0 10px;
-  position: relative;
-  top: 1px;
-}
-</style>
-<script>
-function stopPropagation(event) { // don't propogate the event to the document
-  if (event.stopPropagation) {
-      event.stopPropagation(); // W3C model
-  } else {
-      event.cancelBubble = true; // IE model
-  }
-}
-</script>
 <div ng-init="loadPerson()">
 
   <div id="accordion-info" class="panel-group" ng-show="sections['data'].visible"> <!-- person's data -->
     <div class="panel panel-default">
       <div class="panel-heading" data-toggle="collapse" data-parent="#accordion-info" data-target="#collapse-info">
         <h4 class="panel-title accordion-toggle panel-title-left">
-              <span>
-                Person Info:
-                &emsp;
-                <input type="button" class="btn btn-default btn-sm btn-panel" onclick="stopPropagation(event);" ng-value="person.name" />
-                &emsp;
-                <a data-ng-href="tel:{{ person.phone }}">
-                  <!--<button class="btn btn-success btn-sm" type="button" _style="width: 3.2em;"><span class="glyphicon glyphicon-earphone"></span></button>-->
-                  <input type="button" class="btn btn-success btn-sm btn-panel" onclick="stopPropagation(event);" ng-value="person.phone" />
-                </a>
-              </span>
+          <span>
+            Person Info:
+            &emsp;
+            <input type="button" class="btn btn-default btn-sm btn-panel" onclick="stopPropagation(event);" ng-value="person.name" />
+            &emsp;
+            <a data-ng-href="tel:{{ person.phone }}">
+              <!--<button class="btn btn-success btn-sm" type="button" _style="width: 3.2em;"><span class="glyphicon glyphicon-earphone"></span></button>-->
+              <input type="button" class="btn btn-success btn-sm btn-panel" onclick="stopPropagation(event);" ng-value="person.phone" />
+            </a>
+          </span>
         </h4>
       </div>
 
@@ -129,11 +53,64 @@ function stopPropagation(event) { // don't propogate the event to the document
             </div>
             <div class="col-xs-9">
               <span class="label label-success panel-info-label">{{ personPhone }}</span>
+              <a data-ng-href="tel:{{ person.phone }}">
+                <button class="btn btn-success btn-sm panel-info-button" type="button"><span class="glyphicon glyphicon-earphone"></span></button>
+              </a>
+            </div>
+          </div>
+
+
+
+          <div class="row row-small-padding">
+            <div class="col-xs-3" style="text-align:right;">
+              <span class="label label-default panel-info-label">Nationality</span>
+            </div>
+            <div class="col-xs-9">
+              <span class="label label-success panel-info-label">{{ personShow.nationality }}</span>
+              <a data-ng-href="tel:{{ person.phone }}">
+                <button class="btn btn-success btn-sm panel-info-button" type="button"><span class="glyphicon glyphicon-earphone"></span></button>
+              </a>
+            </div>
+          </div>
+
+          <div class="row row-small-padding">
+            <div class="col-xs-3" style="text-align:right;">
+              <span class="label label-default panel-info-label">Provider(s)</span>
+            </div>
+            <div class="col-xs-9">
+              <span class="label label-success panel-info-label">{{ personPhone }}</span>
                 <a data-ng-href="tel:{{ person.phone }}">
                   <button class="btn btn-success btn-sm panel-info-button" type="button"><span class="glyphicon glyphicon-earphone"></span></button>
                 </a>
             </div>
           </div>
+
+          <div class="row row-small-padding">
+            <div class="col-xs-3" style="text-align:right;">
+              <span class="label label-default panel-info-label">Address</span>
+            </div>
+            <div class="col-xs-9">
+              <span class="label label-success panel-info-label">{{ personPhone }}</span>
+                <a data-ng-href="tel:{{ person.phone }}">
+                  <button class="btn btn-success btn-sm panel-info-button" type="button"><span class="glyphicon glyphicon-earphone"></span></button>
+                </a>
+            </div>
+          </div>
+
+          <div class="row row-small-padding">
+            <div class="col-xs-3" style="text-align:right;">
+              <span class="label label-default panel-info-label">Category</span>
+            </div>
+            <div class="col-xs-9">
+              <span class="label label-success panel-info-label">{{ personPhone }}</span>
+                <a data-ng-href="tel:{{ person.phone }}">
+                  <button class="btn btn-success btn-sm panel-info-button" type="button"><span class="glyphicon glyphicon-earphone"></span></button>
+                </a>
+            </div>
+          </div>
+
+
+
 
           <div class="row row-small-padding">
             <div class="col-xs-3" style="text-align:right;">
@@ -192,13 +169,13 @@ function stopPropagation(event) { // don't propogate the event to the document
                         <div class="panel panel-default">
                           <div class="panel-heading collapsed" data-toggle="collapse" data-parent="#accordion-{{ topicIndex }}" data-target="#collapse-{{ topicIndex }}" ng-click="panelTopicToggled(topicIndex);">
                             <h4 class="panel-title accordion-toggle panel-title-left">
-                                <span class="label label-warning label-as-badge"> ?{{ topic.postsCount }} </span> &emsp; <!-- TODO... -->
+                              <span class="label label-warning label-as-badge"> ?{{ topic.postsCount }} </span> &emsp; <!-- TODO... -->
 
-                                <!--<span class="label label-as-badge">in section</span>-->
-                                <span class="label label-info label-as-badge">{{ topic.section }} </span> &emsp;
+                              <!--<span class="label label-as-badge">in section</span>-->
+                              <span class="label label-info label-as-badge">{{ topic.section }} </span> &emsp;
 
-                                <!--<span class="label label-as-badge">topic</span>-->
-                                <span class="label label-success label-as-badge">{{ topic.title }} </span> &emsp;
+                              <!--<span class="label label-as-badge">topic</span>-->
+                              <span class="label label-success label-as-badge">{{ topic.title }} </span> &emsp;
                             </h4>
                           </div>
                           <div id="collapse-{{ topicIndex }}" class="panel-collapse collapse" ng-class="{ in: false }">

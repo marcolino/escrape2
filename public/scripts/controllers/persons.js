@@ -84,11 +84,16 @@ var t = console.time('loadPerson'); // TODO: development only
 console.timeEnd('loadPerson');
       $scope.person = response;
 
+      $scope.personShow = {
+        //...
+        nationality: 'russa', // $scope.showPersonNationality($scope.person);
+      };
       $scope.personName = $scope.showPersonName($scope.person);
       $scope.personKey = $scope.showPersonKey($scope.person);
       $scope.personDateOfFirstSync = $scope.showPersonDateOfFirstSync($scope.person);
       $scope.personPhone = $scope.showPersonPhone($scope.person);
       $scope.personDescription = $scope.showPersonDescription($scope.person);
+      $scope.personNationality = 'russa'; // $scope.showPersonNationality($scope.person);
 
       $scope.loadReviewTopics($scope.person);
       //$scope.loadReviewTopicPosts($scope.person);
