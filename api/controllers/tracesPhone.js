@@ -120,7 +120,7 @@ var tracesPhoneProviderPrototype = {
         if (err) {
           return callback('could not save phone traces:' + err.toString());
         }
-        log.info('traces save finished; inserted:', result.inserted, ', updated:', result.updated);
+        log.info('phone traces save finished; inserted:', result.inserted, ', updated:', result.updated);
         callback(null, result); // success
       }
     );
@@ -181,9 +181,11 @@ var tracesPhoneProviderPrototype = {
       'bs9.eu',
       'chechiamarepertelefono.besaba.com',
       'checkwhocalled.com',
+      'code.wnote.net',
       'grfx.cstv.com',
       'factornumber.com',
       'ip.haoxiana.com',
+      'm.sexyguidaitalia.com',
       'md5.bubble.ro',
       'numberinquiry.com',
       'numbers-book.com',

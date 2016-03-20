@@ -79,6 +79,35 @@ app.use('/api/*', function(req, res, next) { // unforeseen request
   res.json({ status: status, error: 'API path ' + req.originalUrl + ' not found' });
 });
 
+/*
+// static resource request
+app.use('/static/*', function(req, res, next) {
+console.log('STATIC req.originalUrl:', req.originalUrl);
+/*
+  baseUrl: '/static/geo.html',
+  originalUrl: '/static/geo.html?country=ru',
+  _parsedUrl: 
+   Url {
+     protocol: null,
+     slashes: null,
+     auth: null,
+     host: null,
+     port: null,
+     hostname: null,
+     hash: null,
+     search: '?country=ru',
+     query: 'country=ru',
+     pathname: '/static/geo.html',
+     path: '/static/geo.html?country=ru',
+     href: '/static/geo.html?country=ru',
+     _raw: '/static/geo.html?country=ru' },
+  params: { '0': 'geo.html' },
+  query: { country: 'ru' },
+* /
+  res.sendFile(req.originalUrl, { root: staticPathPublic });
+});
+*/
+
 // all other (client) requests go to frontend routes
 app.use(function(req, res, next) {
   res.sendFile('index.html', { root: staticPathPublic });

@@ -8,7 +8,8 @@
     "angular": "latest",
     "angular-route": "latest",
     "angular-bootstrap": "^1.1.2",
-    "angular-sanitize": "^1.5.0"
+    "angular-sanitize": "^1.5.0",
+    "world-flags-sprite": "*"
   },
   "resolutions": {
     "angular": "1.5.0"

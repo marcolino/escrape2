@@ -47,6 +47,7 @@ var cfg = {
     index: [ app + '/index.html' ],
     views: [ app + '/views/**/*.html' ],
     images: [ app + '/images/**' ],
+    static: [ app + '/static/**' ],
   },
   validation: {
     html: {
@@ -91,11 +92,13 @@ gulp.task('frontend-scripts-vendor-build', function() {
     .src(mainBowerFiles([ '**/*.js' ]))
       .pipe(print(function(filepath) { return "main bower js file: " + filepath; }))
     .pipe(concat({ path: 'vendor.js', cwd: '' }))
-    //bower.pipe(uglify({
-    //compress: {
-    //    negate_iife: false
-    //  }
-    //}))
+/* developing...
+    .pipe(uglify({
+      compress: {
+        negate_iife: false
+      }
+    }))
+*/
     .pipe(rev())
     .pipe(gulp.dest(dist + '/scripts'))
   ;
@@ -143,10 +146,11 @@ gulp.task('frontend-styles-custom-build', function() {
     .src(cfg.frontend.styles)
     //.pipe(print(function(filepath) { return "main custom css files: " + filepath; }))
     .pipe(sass()
-    .on('error', function (err) {
-      console.error(err);
-      this.emit('end');
-    }))
+      .on('error', function (err) {
+        console.error(err);
+        this.emit('end');
+      })
+    )
     //.pipe(postcss([ minifyCss(), ]))
     .pipe(concat({ path: 'custom.css', cwd: '' }))
     .pipe(rev())
@@ -211,6 +215,14 @@ gulp.task('frontend-styles', [ 'frontend-styles-vendor-build', 'frontend-styles-
   ;
 });
 
+gulp.task('frontend-static', function() {
+  return gulp
+    .src(cfg.frontend.static)
+    .pipe(gulp.dest(dist + '/static'))
+    .pipe(livereload(/*{stream: true}*/))
+  ;
+});
+
 gulp.task('frontend-views', function() {
   return gulp
     .src(cfg.frontend.views)
@@ -262,10 +274,11 @@ gulp.task('check', function() {
   });
 });
 
-gulp.task('development', [ 'backend-scripts', 'frontend-scripts', 'frontend-styles', 'frontend-views', 'frontend-images', 'nodemon' ], function() {
+gulp.task('development', [ 'backend-scripts', 'frontend-scripts', 'frontend-styles', 'frontend-static', 'frontend-views', 'frontend-images', 'nodemon' ], function() {
   livereload.listen({ quiet: false });
   gulp.watch(cfg.backend.scripts, [ 'backend-scripts' ]);
   gulp.watch(cfg.frontend.index, [ 'frontend-scripts', 'frontend-styles' ]);
+  gulp.watch(cfg.frontend.static, [ 'frontend-static' ]);
   gulp.watch(cfg.frontend.scripts, [ 'frontend-scripts' ]);
   gulp.watch(cfg.frontend.styles, [ 'frontend-styles' ]);
   gulp.watch(cfg.frontend.images, [ 'frontend-images' ]);

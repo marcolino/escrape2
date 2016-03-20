@@ -297,7 +297,8 @@ exports.sync = function() { // sync persons
                       log.error('@contents@:', result.contents);
                       return callbackInner(); // skip this inner loop
                     }
-                    person.zone = local.getDetailsZone($, provider);
+                    person.addressZone = local.getDetailsAddressZone($, provider);
+log.info(provider.key, 'ADDRESS ZONE:', person.addressZone);
                     person.description = local.getDetailsDescription($, provider);
 /*
 // DEBUG ONLY: FORCE ONE PERSON DESCRIPTION CHANGE! ///////////
@@ -1164,7 +1165,7 @@ local.getDetailsName = function($, provider) {
   return val;
 };
 
-local.getDetailsZone = function($, provider) {
+local.getDetailsAddressZone = function($, provider) {
   var val = '', element;
   if (provider.key === 'SGI') {
     element = $('td[id="ctl00_content_CellaZona"]');
@@ -1173,10 +1174,20 @@ local.getDetailsZone = function($, provider) {
     }
   }
   if (provider.key === 'TOE') {
-    element = $('a > span > i[class="icon-location"]');
+    var body = $.html();
+    var match = body.match(/.*data-map-address="\s*(.*?)\s*".*/);
+    if (match && match.length === 2) {
+      return match[1];
+    } else {
+      return '';
+    }
+/*
+    element = $('a > span > i[class="icon-location"]').next();
     if (element) {
       val = $(element).text();
+      val = val.replace(/^\(/, '').replace(/\)$/, '');
     }
+*/
   }
   if (provider.key === 'FORBES') {
     val = '';

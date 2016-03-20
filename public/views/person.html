@@ -7,11 +7,11 @@
           <span>
             Person Info:
             &emsp;
-            <input type="button" class="btn btn-default btn-sm btn-panel" onclick="stopPropagation(event);" ng-value="person.name" />
+            <input type="button" class="btn btn-default btn-sm btn-panel" onclick="event.stopPropagation();" ng-value="person.name" />
             &emsp;
             <a data-ng-href="tel:{{ person.phone }}">
               <!--<button class="btn btn-success btn-sm" type="button" _style="width: 3.2em;"><span class="glyphicon glyphicon-earphone"></span></button>-->
-              <input type="button" class="btn btn-success btn-sm btn-panel" onclick="stopPropagation(event);" ng-value="person.phone" />
+              <input type="button" class="btn btn-success btn-sm btn-panel" onclick="event.stopPropagation();" ng-value="person.phone" />
             </a>
           </span>
         </h4>
@@ -25,25 +25,27 @@
               <span class="label label-default panel-info-label">Name</span>
             </div>
             <div class="col-xs-9">
-              <span class="label label-success panel-info-label">{{ personName }}</span>
+              <span class="label label-success panel-info-label">{{ personShow.name }}</span>
             </div>
           </div>
 
+          <!--
           <div class="row row-small-padding">
             <div class="col-xs-3" style="text-align:right;">
               <span class="label label-default panel-info-label">Key</span>
             </div>
             <div class="col-xs-9">
-              <span class="label label-success panel-info-label">{{ personKey }}</span>
+              <span class="label label-success panel-info-label">{{ personShow.key }}</span>
             </div>
           </div>
+          -->
 
           <div class="row row-small-padding">
             <div class="col-xs-3" style="text-align:right;">
               <span class="label label-default panel-info-label">Date of arrival</span>
             </div>
             <div class="col-xs-9">
-              <span class="label label-success panel-info-label">{{ personDateOfFirstSync }}</span>
+              <span class="label label-success panel-info-label">{{ personShow.dateOfFirstSync }}</span>
             </div>
           </div>
 
@@ -52,14 +54,12 @@
               <span class="label label-default panel-info-label">Phone</span>
             </div>
             <div class="col-xs-9">
-              <span class="label label-success panel-info-label">{{ personPhone }}</span>
+              <span class="label label-success panel-info-label">{{ personShow.phone }}</span>
               <a data-ng-href="tel:{{ person.phone }}">
                 <button class="btn btn-success btn-sm panel-info-button" type="button"><span class="glyphicon glyphicon-earphone"></span></button>
               </a>
             </div>
           </div>
-
-
 
           <div class="row row-small-padding">
             <div class="col-xs-3" style="text-align:right;">
@@ -67,9 +67,13 @@
             </div>
             <div class="col-xs-9">
               <span class="label label-success panel-info-label">{{ personShow.nationality }}</span>
-              <a data-ng-href="tel:{{ person.phone }}">
-                <button class="btn btn-success btn-sm panel-info-button" type="button"><span class="glyphicon glyphicon-earphone"></span></button>
-              </a>
+              <!--<a href="#" NOng-click="openModalUrl('http://localhost/geo.php?country=' + person.nationality)">-->
+                <button class="btn btn-success btn-sm panel-info-button" type="button">
+                  <span class="f16">
+                    <span class="flag" ng-class="person.nationality"></span>
+                  </span>
+                </button>
+              <!--</a>-->
             </div>
           </div>
 
@@ -78,47 +82,37 @@
               <span class="label label-default panel-info-label">Provider(s)</span>
             </div>
             <div class="col-xs-9">
-              <span class="label label-success panel-info-label">{{ personPhone }}</span>
-                <a data-ng-href="tel:{{ person.phone }}">
-                  <button class="btn btn-success btn-sm panel-info-button" type="button"><span class="glyphicon glyphicon-earphone"></span></button>
-                </a>
+              <span ng-repeat="provider in personShow.providers">
+                <button class="btn btn-success btn-sm panel-info-button" type="button"><a data-ng-href="{{person.url}}" target="_blank"><img data-ng-src="{{provider.logoSrc}}" height="20" /></a></button>
+              </span>
             </div>
           </div>
 
           <div class="row row-small-padding">
             <div class="col-xs-3" style="text-align:right;">
-              <span class="label label-default panel-info-label">Address</span>
+              <span class="label label-default panel-info-label">Address zone</span>
             </div>
             <div class="col-xs-9">
-              <span class="label label-success panel-info-label">{{ personPhone }}</span>
-                <a data-ng-href="tel:{{ person.phone }}">
-                  <button class="btn btn-success btn-sm panel-info-button" type="button"><span class="glyphicon glyphicon-earphone"></span></button>
-                </a>
+              <span class="label label-success panel-info-label">{{ personShow.addressZone }}</span>
             </div>
           </div>
 
-          <div class="row row-small-padding">
+          <div class="row row-small-padding" ng-show="personShow.category">
             <div class="col-xs-3" style="text-align:right;">
               <span class="label label-default panel-info-label">Category</span>
             </div>
             <div class="col-xs-9">
-              <span class="label label-success panel-info-label">{{ personPhone }}</span>
-                <a data-ng-href="tel:{{ person.phone }}">
-                  <button class="btn btn-success btn-sm panel-info-button" type="button"><span class="glyphicon glyphicon-earphone"></span></button>
-                </a>
+              <span class="label label-success panel-info-label">{{ personShow.category }} </span>
             </div>
           </div>
-
-
-
 
           <div class="row row-small-padding">
             <div class="col-xs-3" style="text-align:right;">
               <span class="label label-default panel-info-label">Description</span>
             </div>
             <div class="col-xs-9">
-              <!--<span class="label label-success">{{ personName }}</span>-->
-              <div class="form-control panel-info-textarea label-success" style="color: white; margin-top: 5px; padding: 0.5em; width:80%; height: 120px; overflow-y: auto;" ng-bind-html="personDescription"></div>
+              <!--<span class="label label-success">{{ personShow.name }}</span>-->
+              <div class="form-control panel-info-textarea label-success" style="color: white; margin-top: 5px; padding: 0.5em; width:80%; height: 120px; overflow-y: auto;" ng-bind-html="personShow.description"></div>
             </div>
           </div>
 
@@ -144,7 +138,7 @@
             <span>
               Person Footprints:
               &emsp;&emsp;&emsp;
-              <span class="star-rating" star-rating rating-value="rating" data-max="5" on-rating-selected="ratingFunction(rating)"></span>
+              <span class="star-rating" star-rating rating-value="rating" data-max="5" on-rating-selected="event.stopPropagation(); ratingFunction(rating)"></span>
             </span>
           </h4>
         </div>
