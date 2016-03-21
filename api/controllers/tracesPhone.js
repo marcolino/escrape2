@@ -120,7 +120,7 @@ var tracesPhoneProviderPrototype = {
         if (err) {
           return callback('could not save phone traces:' + err.toString());
         }
-        log.info('phone traces save finished; inserted:', result.inserted, ', updated:', result.updated);
+        log.info('phone', traces[0].phone, 'traces save finished; inserted:', result.inserted, ', updated:', result.updated);
         callback(null, result); // success
       }
     );
@@ -176,6 +176,7 @@ var tracesPhoneProviderPrototype = {
       '.mycaller.net',
       '.tumblr.com',
       '3xx.online',
+      'archive.org',
       'archiwumallegro.pl',
       'askfornumber.co.uk',
       'bs9.eu',
