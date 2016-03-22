@@ -86,6 +86,7 @@ var tracesPhoneProviderPrototype = {
       inserted: 0,
       updated: 0,
     };
+    var phone = traces.length ? traces[0].phone : ''; // to log results before callback (all traces share same phone by design)
     async.each(
       traces,
       function(trace, callbackInner) {
@@ -120,7 +121,7 @@ var tracesPhoneProviderPrototype = {
         if (err) {
           return callback('could not save phone traces:' + err.toString());
         }
-        log.info('phone', traces[0].phone, 'traces save finished; inserted:', result.inserted, ', updated:', result.updated);
+        log.info('phone', phone, 'traces save finished; inserted:', result.inserted, ', updated:', result.updated);
         callback(null, result); // success
       }
     );

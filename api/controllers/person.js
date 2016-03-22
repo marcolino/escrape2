@@ -1087,7 +1087,8 @@ local.getList = function(provider, $) {
     $('a[OnClick="get_position();"]').each(function(index, element) {
       var url = $(element).attr('href');
       if (url.match(/annuncio\//)) {
-        var key = url.replace(/\.\.\/escort\/annuncio\/(.*?)/, '$1');
+        //var key = url.replace(/\.\.\/escort\/annuncio\/(.*?)/, '$1');
+        var key = url.replace(/annuncio\/(.*?)/, '$1');
         val.push({ key: key, url: url });
       }
     });

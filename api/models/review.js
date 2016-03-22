@@ -47,8 +47,8 @@ var reviewSchema = new mongoose.Schema({
 });
 reviewSchema.index({ 'key': 1 }, { unique: true });
 reviewSchema.index({ 'phone': 1 }, { unique: false });
-reviewSchema.index({ 'topic.key': 1 }, { unique: true });
-reviewSchema.index({ 'topic.url': 1 }, { unique: false });
-reviewSchema.index({ 'topic.pageLast.url': 1 }, { unique: false });
+reviewSchema.index({ 'topic.key': 1 }, { unique: false }); // mongo does not support unique indexes for subdocuments
+reviewSchema.index({ 'topic.url': 1 }, { unique: false }); // mongo does not support unique indexes for subdocuments
+reviewSchema.index({ 'topic.pageLast.url': 1 }, { unique: false }); // mongo does not support unique indexes for subdocuments
 
 module.exports = mongoose.model('Review', reviewSchema);
