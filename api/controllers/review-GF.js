@@ -302,10 +302,16 @@ function parseDate(dateString, locale) { // parse date from custom format to Dat
   var year, month, day, hours, minutes, seconds, ampm;
 
   var dateStandardRE = /(\d{4}) (\w+) (\d{1,2}), (\d{2}):(\d{2}):(\d{2}) ([ap]m)/;
+//log.error('GF parseDate standard dateString:', dateString);
   var dateStandard = dateStandardRE.exec(dateString);
+//log.error('GF parseDate standard dateStandard:', dateStandard);
   if (dateStandard !== null) { // source date is in 'Standard' format
     year = parseInt(dateStandard[1]);
-    month = parseInt(monthLocales[locale][dateStandard[2] - 1]);
+    month = dateStandard[2];
+//log.error('GF parseDate standard month1:', month);
+//log.error('GF parseDate standard month2:', monthLocales[locale][month] - 1);
+    month = parseInt(monthLocales[locale][month] - 1);
+//log.error('GF parseDate standard month:', month);
     day = parseInt(dateStandard[3]);
     hours = parseInt(dateStandard[4]);
     minutes = parseInt(dateStandard[5]);
@@ -324,8 +330,8 @@ function parseDate(dateString, locale) { // parse date from custom format to Dat
         hours = hours + 12;
       }
     }
-//log.error('parseDate standard:', year, month, day, hours, minutes, seconds);
-//log.error('parseDate standard:', year, month, day, hours, minutes, seconds, new Date(year, month, day, hours, minutes, seconds));
+//log.error('GF parseDate standard values:', year, month, day, hours, minutes, seconds);
+//log.error('GF parseDate standard:', new Date(year, month, day, hours, minutes, seconds));
     return new Date(year, month, day, hours, minutes, seconds); // TODO: TO BE TESTED
   }
 
@@ -339,12 +345,12 @@ function parseDate(dateString, locale) { // parse date from custom format to Dat
     hours = dateToday[1];
     minutes = dateToday[2];
     seconds = dateToday[3];
-//log.error('parseDate today:', year, month, day, hours, minutes, seconds);
+//log.error('GF parseDate today:', new Date(year, month, day, hours, minutes, seconds));
     return new Date(year, month, day, hours, minutes, seconds); // TODO: TO BE TESTED
   }
 
   // source date is in unknown format
-//log.error('parseDate NULL');
+//log.error('GF parseDate NULL');
   return null;  
 }
 

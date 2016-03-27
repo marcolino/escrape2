@@ -314,6 +314,7 @@ function parseAuthorPostsCount(authorPostsCount) {
 
 function parseDate(ddmmyyyy) { // parse date from format dd/mm/yyyy to Date()
   var DMY = ddmmyyyy.split('/');
+//log.error('EA parseDate standard:', new Date(DMY[2], DMY[1], DMY[0]));
   return new Date(DMY[2], DMY[1], DMY[0]);
 }
 
