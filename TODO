@@ -35,6 +35,9 @@ function generateUserToken(user) {
 - use syncSeries also for images sync (to avoid new images duplication of SGI/cover.jpg and SGI/cover-thumb.jpg)
 - when token is expired, we should not get fatal errors (persons.html should be visible...)
 - when token is expired and then login done, the message 'login again please...' should be hidden
+- why reviews sync for phone '3804627715' collects 1974 posts, many topics from GF, when there is 1 topic with 3 posts on GF?
+
+
 
 V remove all "err.context = " lines
 V use `test.server.local` (in `/etc/hosts`) @home too

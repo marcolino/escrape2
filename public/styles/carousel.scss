@@ -1,9 +1,10 @@
 .carousel {
+  height: 100%;
   /* background: #000; */
 }
 .carousel-inner > .item > img {
-  width: 100%;
-  _margin: auto;
+  _width: 100%;
+  margin: auto;
   _top: 0;
   _left: 0;
   _right: 0;

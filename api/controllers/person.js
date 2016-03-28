@@ -238,7 +238,7 @@ exports.sync = function() { // sync persons
                 person.whenImageChangesUrlChangesToo = provider.whenImageChangesUrlChangesToo; // to spped-up images sync, when possible
 //log.debug('SET PERSON whenImageChangesUrlChangesToo');
 // SANDRA
-if (person.key !== 'TOE/3897') return callbackInner(); // TODO: DEBUG ONLY - sync only one person
+//if (person.key !== 'TOE/3897') return callbackInner(); // TODO: DEBUG ONLY - sync only one person
 
                 resource = {
                   url: person.url,

@@ -145,7 +145,7 @@
         <div id="collapse-footprints" class="panel-collapse collapse" ng-class="{ in: true }">
           <div class="panel-body">
   
-            <div id="accordion-{{ panelKey }}" class="panel-group" data-ng-repeat="(panelKey, panel) in panels">
+            <div id="accordion-{{ panelKey }}" class="panel-group" data-ng-repeat="(panelKey, panel) in footprints">
 
               <!-- PANEL COLLAPSING OK!!! -->
               <div class="panel panel-default">
@@ -158,7 +158,7 @@
                   <div class="panel-body" style="max-height: 480px; overflow-y: auto; overflow-x: hidden">
 
                     <div ng-if="panelKey === 'reviews'">
-                      <div id="accordion-{{ topicIndex }}" class="panel-group" data-ng-repeat="(topicIndex, topic) in panels.reviews.topics">
+                      <div id="accordion-{{ topicIndex }}" class="panel-group" data-ng-repeat="(topicIndex, topic) in footprints.reviews.topics">
 
                         <div class="panel panel-default">
                           <div class="panel-heading collapsed" data-toggle="collapse" data-parent="#accordion-{{ topicIndex }}" data-target="#collapse-{{ topicIndex }}" ng-click="panelTopicToggled(topicIndex);">
@@ -290,7 +290,7 @@
                                   <div style="margin: 1.5em; border-top: 1px solid #333;"></div>
                                 </div>
                               </div>
-                              <div class="text-center" ng-hide="panels.reviews.itemsLoaded[topicIndex]">
+                              <div class="text-center" ng-hide="footprints.reviews.itemsLoaded[topicIndex]">
                                 <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate loading"></span>
                               </div>
                             </div>
