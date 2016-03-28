@@ -237,8 +237,8 @@ exports.sync = function() { // sync persons
                 person.key = provider.key + '/' + element.key; // person key is the sum of provider key and element key
                 person.whenImageChangesUrlChangesToo = provider.whenImageChangesUrlChangesToo; // to spped-up images sync, when possible
 //log.debug('SET PERSON whenImageChangesUrlChangesToo');
-// INA
-//if (person.key !== 'TOE/4940') return callbackInner(); // TODO: DEBUG ONLY - sync only one person
+// SANDRA
+if (person.key !== 'TOE/3897') return callbackInner(); // TODO: DEBUG ONLY - sync only one person
 
                 resource = {
                   url: person.url,
