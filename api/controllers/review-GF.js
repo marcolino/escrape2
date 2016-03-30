@@ -43,7 +43,6 @@ GF.getTopics = function(phone, callback) {
   }
 
   var that = this;
- 
   throttledRequest(
     {
       url: url,
@@ -128,7 +127,7 @@ GF.getPosts = function(topics, callback) {
         async.whilst(
           function() { return topic.nextUrl !== null; },
           function(callbackWhilst) {
-            //log.debug('getPosts()', that.key, 'requesting url', topic.pageLast.url);
+            log.debug('    getPosts()', that.key, 'url', topic.pageLast.url);
             var options = {
               url: topic.nextUrl,
             };
