@@ -127,7 +127,7 @@ GF.getPosts = function(topics, callback) {
         async.whilst(
           function() { return topic.nextUrl !== null; },
           function(callbackWhilst) {
-            log.debug('    getPosts()', that.key, 'url', topic.pageLast.url);
+            log.debug('    getPosts('+topic.phone+')', that.key, 'url', topic.nextUrl);
             var options = {
               url: topic.nextUrl,
             };

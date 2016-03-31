@@ -48,22 +48,22 @@ var reviewProviderPrototype = {
     async.each(
       reviewProviders,
       function(rP, callbackInner) {
-        rP.getTopics(phone, function(err, results) {
+        rP.getTopics(phone, function(err, topics) {
           if (err) {
             return callbackInner(err);
           }
-          rP.getPosts(results, function(err, results) {
+          rP.getPosts(topics, function(err, posts) {
             if (err) {
               return callbackInner(err);
             }
-            if (results.length === 0) {
+            if (posts.length === 0) {
               //log.debug('no new posts found on provider', rP.key, 'for phone', phone);
               return callbackInner();
             }
-            //log.warn('saving', results.length, 'new posts found on provider', rP.key, 'for phone', phone);
+            //log.warn('saving', posts.length, 'new posts found on provider', rP.key, 'for phone', phone);
   
-            // save results to database
-            reviewProviderPrototype.save(results, function(err, result) {
+            // save posts to database
+            reviewProviderPrototype.save(posts, function(err, result) {
               if (err) {
                 return callbackInner(err);
               }
@@ -78,12 +78,12 @@ var reviewProviderPrototype = {
       function(err) { // 3rd param is the function to call when everything's done (inner callback)
         if (err) {
           if (typeof callback === 'function') { // this method can be called asynchronously, without a callback
-            return callback('can\'t sync posts for phone ' + phone + ': ' + err);
+            return callback('can\'t sync posts for phone', phone + ': ' + err.toString());
           } else {
-            return log.error('can\'t sync posts for phone', phone, ':', err);
+            return log.error('can\'t sync posts for phone', phone + ':', err);
           }
         }
-        if (callback) { // this method can be called asynchronously, without a callback
+        if (typeof callback === 'function') { // this method can be called asynchronously, without a callback
           callback(null, results);
         }
       }
