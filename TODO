@@ -35,8 +35,6 @@ function generateUserToken(user) {
 - use syncSeries also for images sync (to avoid new images duplication of SGI/cover.jpg and SGI/cover-thumb.jpg)
 - when token is expired, we should not get fatal errors (persons.html should be visible...)
 - when token is expired and then login done, the message 'login again please...' should be hidden
-- why reviews sync for phone '3804627715' collects 1974 posts, many topics from GF, when there is 1 topic with 3 posts on GF?
-
 
 
 V remove all "err.context = " lines
@@ -57,6 +55,8 @@ V put "persons sync finished" at the real end
 V profile with process.hrtime() *all* image functions
 V remove line in api/controllters/person.js: "//person.alias = null;"  (to avoid having persons with no alias, at some point in time)
 V add whenImageChangesUrlChangesToo: true, to config.providers
+V why reviews sync for phone '3804627715' collects 1974 posts, many topics from GF, when there is 1 topic with 3 posts on GF? (could not sync asyncrhronosly reviews while syncing persons)
+V why review-EA did not find any review for phone '3279474060' (EA active flag was set to false)
 
 
 

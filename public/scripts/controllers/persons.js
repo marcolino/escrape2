@@ -27,8 +27,8 @@ angular.module('PersonCtrl', []).controller('PersonController', function($rootSc
       name: 'Reviews',
       active: false,
       topics: [],
-      items: [],
-      itemsLoaded: [],
+      items: [], // NO, under topics...
+      itemsLoaded: [], // NO, under topics...
       loaded: false,
     },
     'phototraces': {

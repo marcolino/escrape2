@@ -103,11 +103,11 @@ GF.getPosts = function(topics, callback) {
         if (results.length > 0) { // topic is already present in DB
 //log.debug('getPosts()', that.key, 'topic exists already in DB:', topic.title);
 
-          /*
+          // TODO: remove that test at production (?)
           if (results.length > 1) { // safety check, this should not happen!
-            return callback(new Error('more than one review post found for provider ' + that.key + ' with topic.key value ' + topic.key));
+            return callback(new Error('more than one (' + results.length + ') review post found for provider ' + that.key + ' with topic.key value ' + topic.key + ' - results:' + results));
           }
-          */
+
           var lastTopicFound = results[results.length - 1].topic;
           topic.pageLast = {};
           topic.pageLast.url = lastTopicFound.pageLast.url;
@@ -127,7 +127,7 @@ GF.getPosts = function(topics, callback) {
         async.whilst(
           function() { return topic.nextUrl !== null; },
           function(callbackWhilst) {
-            log.debug('    getPosts('+topic.phone+')', that.key, 'url', topic.nextUrl);
+            //log.debug('getPosts('+topic.phone+')', that.key, 'url', topic.nextUrl);
             var options = {
               url: topic.nextUrl,
             };
@@ -359,10 +359,12 @@ function parseContents(contents) { // parse contents from contents string
   if (quotes) {
     contents = quotes[1] + quotes[3];
   }
-  contents = contents.replace(/^\s*/, '');
-  contents = contents.replace(/\s*$/, '');
-  contents = contents.replace(/^(<br>)*/, '');
-  contents = contents.replace(/(<br>)*$/, '');
+  if (contents) {
+    contents = contents.replace(/^\s*/, '');
+    contents = contents.replace(/\s*$/, '');
+    contents = contents.replace(/^(<br>)*/, '');
+    contents = contents.replace(/(<br>)*$/, '');
+  }
   return contents; 
 }
 

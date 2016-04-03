@@ -304,7 +304,7 @@ local.saveImageToDB = function(image, images, callback) {
               if (raw.lastErrorObject.updatedExisting) {
                 //log.info('image', doc.personKey, doc.basename, 'updated'.cyan);
               } else {
-                log.info(' ' + 'image', doc.personKey, doc.basename, 'added'.magenta);
+                log.info('image', doc.personKey, doc.basename, 'added'.magenta);
               }
               images.push(doc); // push added image
             }

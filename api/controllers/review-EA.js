@@ -15,7 +15,7 @@ var log = config.log;
 // EA reviewProvider initialization
 var EA = Object.create(reviewProviderPrototype);
 EA.key = 'EA';
-EA.active = false;
+EA.active = true;
 EA.url = 'http://www.escort-advisor.com';
 EA.pathSearch = '/ea/Numbers/';
 EA.tags = {
@@ -94,7 +94,7 @@ EA.getPosts = function(topics, callback) {
   async.each(
     topics,
     function(topic, callbackTopics) {
-      log.info('getPosts()', that.key, 'scraping topic:', topic.title);
+      //log.info('getPosts()', that.key, 'scraping topic:', topic.title);
 
       // check if topic is new or exists already
       Review.find({ 'topic.key': topic.key }).lean().exec(function(err, results) {
@@ -106,12 +106,16 @@ EA.getPosts = function(topics, callback) {
 
           // TODO: remove that test at production (?)
           if (results.length > 1) { // safety check, that should not happen!
-            return callback(new Error('more than one review post found for provider', that.key, 'with topic.pageLast.url value', topic.pageLast.url));
+            return callback(new Error('more than one (' + results.length + ') review post found for provider ' + that.key + ' with topic.key value ' + topic.key + ' - results:' + results));
           }
+
           var topicFound = results[0];
 //log.debug('getPosts()', that.key, 'scraping EXISTING topic:', topicFound.title);
-          topic.url = topicFound.pageLast.url; // set url as the last page url of found topic
-          topic.etag = topicFound.pageLast.etag; // set etag to last page etag of found topic
+          if (topicFound.pageLast) {
+            topic.url = topicFound.pageLast.url; // set url as the last page url of found topic
+            topic.etag = topicFound.pageLast.etag; // set etag to last page etag of found topic
+          }
+else { log.warn('topicFound without pageLast:', topicFound); } // TODO: DEBUGGING...
 
         } else { // topic is new
 //log.debug('getPosts()', that.key, 'topic is new');

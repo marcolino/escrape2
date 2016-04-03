@@ -335,15 +335,14 @@ if (person.key === 'FORBES/Shakira') {
                       callbackInner(); // this person is done
                     });
 
+/*
                     // sync phone reviews for this person
                     local.syncReviews(person, function(err, results) {
                       if (err) {
                         return log.warn(err);
                       }
-                      if (results.inserted > 0 || results.updated > 0) {
-                        log.debug('persons phone reviews sync done:', results.inserted, 'inserted,', results.updated, 'updated');
-                      }
                     });
+*/
                   }
                 );
               },
@@ -365,6 +364,10 @@ if (person.key === 'FORBES/Shakira') {
 //return log.debug('TERMINATING');
         log.info('' + retrievedProvidersCount, '/', totalProvidersCount, 'providers retrieved');
         log.info('' + retrievedPersonsCount, '/', totalPersonsCount, 'persons retrieved');
+
+        // sync phone reviews for this person (aynchronously)
+        log.info('persons phone reviews sync started (async)');
+        local.syncReviews(persons);
 
         // sync phone traces for all persons (aynchronously)
         log.info('persons phone traces sync started (async)');
@@ -401,7 +404,6 @@ if (person.key === 'FORBES/Shakira') {
                 return log.warn('can\'t sync person aliases:', err);
               }
               log.info('persons aliases sync finished');
-              log.info('persons sync finished');
             });
 
           });
@@ -412,19 +414,41 @@ if (person.key === 'FORBES/Shakira') {
   });
 };
 
-local.syncReviews = function(person, callback) {
-  review.sync(person.phone, function(err, results) {
-    if (err) {
-      return callback(err);
-    }
-    //log.info('sync\'d person', person.key, 'phone', person.phone, 'reviews:', results.inserted, 'inserted,', results.updated, 'updated');
-    callback(null, results);
+local.syncReviews = function(persons) {
+  // build personPhones array (with all active persons phones)
+  var personPhones = persons.filter(function(person) { // filter out persons with not available phone
+    return person.phoneIsAvailable && person.phone;
+  }).map(function(person) { // build personPhones array with person key, phone, and trace date of last sync
+    var personPhone = {};
+    personPhone.key = person.key;
+    personPhone.phone = person.phone;
+    return personPhone;
   });
+  //log.debug('syncReviews() - personPhones l (ength:', personPhones.length);
+
+  async.eachSeries(
+    personPhones,
+    function(person, callback) {
+      review.sync(person.phone, function(err, results) {
+        if (err) {
+          return callback(err);
+        }
+        //log.info('sync\'d person', person.key, 'phone', person.phone, 'reviews:', results.inserted, 'inserted,', results.updated, 'updated');
+        callback();
+      });
+    },
+    function(err) {
+      if (err) {
+        log.warn('can\'t sync reviews:', err);
+      }
+      log.info('all reviews sync finished');
+    }
+  );
 };
 
 local.syncTraces = function(persons) {
   tracesPhone.getAllPhones(function(err, traces) {
-    // build personPhones array (with all persons phones and traces date of last sync
+    // build personPhones array (with all active persons phones)
     var personPhones = persons.filter(function(person) { // filter out persons with not available phone
       return person.phoneIsAvailable && person.phone;
     }).map(function(person) { // build personPhones array with person key, phone, and trace date of last sync
