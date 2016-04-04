@@ -148,6 +148,7 @@ console.info('$scope.footprints.reviews.itemsLoaded[topicIndex] shoud be true:',
 
       var traces = $scope.hightlightPhoneTraces(person, response);
       $scope.footprints.phonetraces.items = traces;
+      $scope.footprints.phonetraces.loaded = true;
     });
   };
 
@@ -631,6 +632,6 @@ function getCountryName(countryCode) {
       return countryCode;
     }
   } else {
-    return 'unknown';
+    return null;
   }
 }

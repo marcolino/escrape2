@@ -104,10 +104,10 @@ EA.getPosts = function(topics, callback) {
         if (results.length > 0) { // topic is already present in DB
 //log.debug('getPosts()', that.key, 'topic exists already in DB:', topic.title);
 
-          // TODO: remove that test at production (?)
-          if (results.length > 1) { // safety check, that should not happen!
-            return callback(new Error('more than one (' + results.length + ') review post found for provider ' + that.key + ' with topic.key value ' + topic.key + ' - results:' + results));
-          }
+          //// TODO: remove that test: TOPICS CAN BE DUPLICATED!
+          //if (results.length > 1) { // safety check, that should not happen!
+          //  return callback(new Error('more than one (' + results.length + ') review post found for provider ' + that.key + ' with topic.key value ' + topic.key + ' - results:' + results));
+          //}
 
           var topicFound = results[0];
 //log.debug('getPosts()', that.key, 'scraping EXISTING topic:', topicFound.title);

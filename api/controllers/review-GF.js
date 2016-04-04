@@ -104,9 +104,9 @@ GF.getPosts = function(topics, callback) {
 //log.debug('getPosts()', that.key, 'topic exists already in DB:', topic.title);
 
           // TODO: remove that test at production (?)
-          if (results.length > 1) { // safety check, this should not happen!
-            return callback(new Error('more than one (' + results.length + ') review post found for provider ' + that.key + ' with topic.key value ' + topic.key + ' - results:' + results));
-          }
+          //if (results.length > 1) { // safety check, this should not happen!
+          //  return callback(new Error('more than one (' + results.length + ') review post found for provider ' + that.key + ' with topic.key value ' + topic.key + ' - results:' + results));
+          //}
 
           var lastTopicFound = results[results.length - 1].topic;
           topic.pageLast = {};
@@ -329,8 +329,7 @@ function parseDate(dateString, locale) { // parse date from custom format to Dat
         hours = hours + 12;
       }
     }
-//log.error('GF parseDate standard values:', year, month, day, hours, minutes, seconds);
-//log.error('GF parseDate standard:', new Date(year, month, day, hours, minutes, seconds));
+log.error('GF parseDate standard values:', year, month, day, hours, minutes, seconds);
     return new Date(year, month, day, hours, minutes, seconds); // TODO: TO BE TESTED
   }
 
@@ -344,12 +343,12 @@ function parseDate(dateString, locale) { // parse date from custom format to Dat
     hours = dateToday[1];
     minutes = dateToday[2];
     seconds = dateToday[3];
-//log.error('GF parseDate today:', new Date(year, month, day, hours, minutes, seconds));
+log.error('GF parseDate today:', new Date(year, month, day, hours, minutes, seconds));
     return new Date(year, month, day, hours, minutes, seconds); // TODO: TO BE TESTED
   }
 
   // source date is in unknown format
-//log.error('GF parseDate NULL');
+log.error('GF parseDate NULL');
   return null;  
 }
 

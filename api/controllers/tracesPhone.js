@@ -121,7 +121,9 @@ var tracesPhoneProviderPrototype = {
         if (err) {
           return callback('could not save phone traces:' + err.toString());
         }
-        log.info('phone', phone, 'traces save finished; inserted:', result.inserted, ', updated:', result.updated);
+        if (phone) { // no phone, no traces
+          log.info('phone', phone, 'traces save finished; inserted:', result.inserted, ', updated:', result.updated);
+        }
         callback(null, result); // success
       }
     );

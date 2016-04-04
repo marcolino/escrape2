@@ -121,7 +121,7 @@ var reviewProviderPrototype = {
           },
           function(err, doc, raw) { // result callback
             if (err) {
-              //log.debug('can\'t save trace', trace.phone, trace.link, ':', err);
+              //log.error('can\'t save review', doc.phone, doc.link, ':', err);
             } else {
               if (raw.lastErrorObject.updatedExisting) {
                 //log.debug('trace', doc.phone, doc.link, 'updated');
