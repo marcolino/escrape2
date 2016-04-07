@@ -18,7 +18,6 @@
       </div>
 
       <div id="collapse-info" class="panel-collapse collapse in">
-
         <div class="panel-body" class="panel-info" style="font-size: 1.2em; line-height: 1.7em;">
           <div class="row row-small-padding">
             <div class="col-xs-3" style="text-align:right;">
@@ -95,16 +94,20 @@
               <span class="label label-default panel-info-label">Address</span>
             </div>
             <div class="col-xs-9">
-              <span class="label label-success panel-info-label">{{ personShow.addressZone }}</span>
+              <div ng-show="personShow.address">
+                <span class="label label-success panel-info-label">{{ personShow.address }}</span>
+              </div>
             </div>
           </div>
 
-          <div class="row row-small-padding" ng-show="personShow.category">
+          <div class="row row-small-padding">
             <div class="col-xs-3" style="text-align:right;">
               <span class="label label-default panel-info-label">Category</span>
             </div>
             <div class="col-xs-9">
-              <span class="label label-success panel-info-label">{{ personShow.category }} </span>
+              <div ng-show="personShow.category">
+                <span class="label label-success panel-info-label">{{ personShow.category }} </span>
+              </div>
             </div>
           </div>
 
@@ -138,7 +141,7 @@
         <div class="panel-heading" data-toggle="collapse" data-parent="#accordion-footprints" data-target="#collapse-footprints">
           <h4 class="panel-title accordion-toggle panel-title-left">
             <span>
-              Person Footprints:
+              Footprints for phone <b>{{ person.phone }}</b>
               &emsp;&emsp;&emsp;
               <span class="star-rating" star-rating rating-value="rating" data-max="5" on-rating-selected="event.stopPropagation(); ratingFunction(rating)"></span>
             </span>
@@ -165,130 +168,141 @@
                         <div class="panel panel-default">
                           <div class="panel-heading collapsed" data-toggle="collapse" data-parent="#accordion-{{ topicIndex }}" data-target="#collapse-{{ topicIndex }}" ng-click="panelTopicToggled(topicIndex);">
                             <h4 class="panel-title accordion-toggle panel-title-left">
-                              <span class="label label-info label-as-badge">{{ topic.section }} </span> &emsp;
-                              <span class="label label-success label-as-badge">{{ topic.title }} </span> &emsp;
-                              <span class="label label-warning label-as-badge"> {{ topic.date | date:'yyyy-MM-dd' }} </span> &emsp;
+                              <span class="label label-danger label-as-badge" onclick="event.stopPropagation();"><a data-ng-href="{{topic.url}}" target="_blank">{{ topic.providerKey }}</a></span>
+                                &emsp;
+                              <span class="label label-info label-as-badge">{{ topic.section }}</span>
+                                &emsp;
+                              <span class="label label-success label-as-badge">{{ topic.title }}</span>
+                                &emsp;
+                              <span class="label label-warning label-as-badge">{{ topic.date | date:'yyyy-MM-dd' }}</span>
+                                &emsp;
+                              <span class="label label-primary label-as-badge">{{ topic.loaded ? topic.posts.length : '-' }}</span>
                             </h4>
                           </div>
                           <div id="collapse-{{ topicIndex }}" class="panel-collapse collapse" ng-class="{ in: false }">
                             <div class="panel-body">
-                    
-                              <pre>{{panel}}</pre>
-
-                              <div data-ng-repeat="post in panel.items">
-                                <div ng-if="post.topicIndex === topicIndex">
-                                  <div class="row">
-                                    <div class="col-xs-3" style="color: #eee; font-size: 0.8em;">
-                                      <div class="row">
-                                        <div class="col-xs-6" style="text-align: right;">
-                                          <div><i>Post&nbsp;n°</i></div>
-                                        </div>
-                                        <div class="col-xs-6">
-                                          <div style="">{{ 1 + $index }}</div>
-                                        </div>
+                              <div data-ng-repeat="post in topic.posts">
+                                <div class="row">
+                                  <div class="col-xs-3" style="color: #eee; font-size: 0.8em;">
+                                    <div class="row">
+                                      <div class="col-xs-6" style="text-align: right;">
+                                        <div><i>Post&nbsp;n°</i></div>
                                       </div>
-                                      <div class="row">
-                                        <div class="col-xs-6" style="text-align: right;">
-                                          <div><i>Post&nbsp;date</i></div>
-                                        </div>
-                                        <div class="col-xs-6">
-                                          <div>{{ post.date | date:'yyyy-MM-dd' }}</div>
-                                        </div>
-                                      </div>
-                                      <div class="row">
-                                        <div class="col-xs-6" style="text-align: right;">
-                                          <i>Autor&nbsp;name</i>
-                                        </div>
-                                        <div class="col-xs-6">
-                                          <div ng-bind-html="post.author.name"></div>
-                                        </div>
-                                      </div>
-                                      <div class="row">
-                                        <div class="col-xs-6" style="text-align: right;">
-                                          <i>Autor&nbsp;karma</i>
-                                        </div>
-                                        <div class="col-xs-6">
-                                          <div ng-bind-html="post.author.karma"></div>
-                                        </div>
-                                      </div>
-                                      <div class="row">
-                                        <div class="col-xs-6" style="text-align: right;">
-                                          <i>Autor&nbsp;posts</i>
-                                        </div>
-                                        <div class="col-xs-6">
-                                          <div ng-bind-html="post.author.postsCount"></div>
-                                        </div>
-                                      </div>
-    
-                                      <div style="margin: 0.3em; border-top: 1px solid #333;"></div>
-    
-                                      <div class="row" >
-                                        <div class="col-xs-6" style="text-align: right;">
-                                          <i>Beauty</i>
-                                        </div>
-                                        <div class="col-xs-6">
-                                          <div ng-bind-html="post.beauty"></div>
-                                        </div>
-                                      </div>
-                                      <div class="row" >
-                                        <div class="col-xs-6" style="text-align: right;">
-                                          <i>Performance:</i>
-                                        </div>
-                                        <div class="col-xs-6">
-                                          <div ng-bind-html="post.performance"></div>
-                                        </div>
-                                      </div>
-                                      <div class="row" >
-                                        <div class="col-xs-6" style="text-align: right;">
-                                          <i>Sympathy:</i>
-                                        </div>
-                                        <div class="col-xs-6">
-                                          <div ng-bind-html="post.sympathy"></div>
-                                        </div>
-                                      </div>
-                                      <div class="row" >
-                                        <div class="col-xs-6" style="text-align: right;">
-                                          <i>Cleanliness</i>
-                                        </div>
-                                        <div class="col-xs-6">
-                                          <div ng-bind-html="post.cleanliness"></div>
-                                        </div>
-                                      </div>
-                                      <div class="row" >
-                                        <div class="col-xs-6" style="text-align: right;">
-                                          <i>Location&nbsp;quality</i>
-                                        </div>
-                                        <div class="col-xs-6">
-                                          <div ng-bind-html="post.location.quality"></div>
-                                        </div>
-                                      </div>
-                                      <div class="row" >
-                                        <div class="col-xs-6" style="text-align: right;">
-                                          <i>Location&nbsp;cleanliness</i>
-                                        </div>
-                                        <div class="col-xs-6">
-                                          <div ng-bind-html="post.location.cleanliness"></div>
-                                        </div>
-                                      </div>
-                                      <div class="row" >
-                                        <div class="col-xs-6" style="text-align: right;">
-                                          <i>Location&nbsp;reachability</i>
-                                        </div>
-                                        <div class="col-xs-6">
-                                          <!--<div ng-bind-html="post.location.reachability"></div>-->
-                                          <!--<input-stars max="5" ng-model="reach"></input-stars>-->
-                                          <span class="star-rating" star-rating rating-value="rating" data-max="5" data-readonly="true" on-rating-selected="ratingFunction(rating)"></span>
-                                        </div>
+                                      <div class="col-xs-6">
+                                        <div style="">{{ 1 + $index }}</div>
                                       </div>
                                     </div>
-                                    <div class="col-xs-9">
-                                      <div ng-bind-html="post.contents" style="color: #cccc33; max-height: 200px; overflow-y: auto; overflow-x: hidden; padding-right: 0.5em;"></div>
+                                    <div class="row">
+                                      <div class="col-xs-6" style="text-align: right;">
+                                        <div><i>Post&nbsp;title</i></div>
+                                      </div>
+                                      <div class="col-xs-6">
+                                        <div style="">{{ post.title }}</div>
+                                      </div>
+                                    </div>
+                                    <div class="row">
+                                      <div class="col-xs-6" style="text-align: right;">
+                                        <div><i>Post&nbsp;date</i></div>
+                                      </div>
+                                      <div class="col-xs-6">
+                                        <div>{{ post.date | date:'yyyy-MM-dd' }}</div>
+                                      </div>
+                                    </div>
+                                    <div class="row">
+                                      <div class="col-xs-6" style="text-align: right;">
+                                        <i>Autor&nbsp;name</i>
+                                      </div>
+                                      <div class="col-xs-6">
+                                        <div ng-bind-html="post.author.name"></div>
+                                      </div>
+                                    </div>
+                                    <div class="row">
+                                      <div class="col-xs-6" style="text-align: right;">
+                                        <i>Autor&nbsp;karma</i>
+                                      </div>
+                                      <div class="col-xs-6">
+                                        <div ng-bind-html="post.author.karma"></div>
+                                      </div>
+                                    </div>
+                                    <div class="row">
+                                      <div class="col-xs-6" style="text-align: right;">
+                                        <i>Autor&nbsp;posts</i>
+                                      </div>
+                                      <div class="col-xs-6">
+                                        <div ng-bind-html="post.author.postsCount"></div>
+                                      </div>
+                                    </div>
+    
+                                    <div style="margin: 0.3em; border-top: 1px solid #333;"></div>
+    
+                                    <div class="row" >
+                                      <div class="col-xs-6" style="text-align: right;">
+                                        <i>Beauty</i>
+                                      </div>
+                                      <div class="col-xs-6">
+                                        <div ng-bind-html="post.beauty"></div>
+                                      </div>
+                                    </div>
+                                    <div class="row" >
+                                      <div class="col-xs-6" style="text-align: right;">
+                                        <i>Performance:</i>
+                                      </div>
+                                      <div class="col-xs-6">
+                                        <div ng-bind-html="post.performance"></div>
+                                      </div>
+                                    </div>
+                                    <div class="row" >
+                                      <div class="col-xs-6" style="text-align: right;">
+                                        <i>Sympathy:</i>
+                                      </div>
+                                      <div class="col-xs-6">
+                                        <div ng-bind-html="post.sympathy"></div>
+                                      </div>
+                                    </div>
+                                    <div class="row" >
+                                      <div class="col-xs-6" style="text-align: right;">
+                                        <i>Cleanliness</i>
+                                      </div>
+                                      <div class="col-xs-6">
+                                        <div ng-bind-html="post.cleanliness"></div>
+                                      </div>
+                                    </div>
+                                    <div class="row" >
+                                      <div class="col-xs-6" style="text-align: right;">
+                                        <i>Location&nbsp;quality</i>
+                                      </div>
+                                      <div class="col-xs-6">
+                                        <div ng-bind-html="post.location.quality"></div>
+                                      </div>
+                                    </div>
+                                    <div class="row" >
+                                      <div class="col-xs-6" style="text-align: right;">
+                                        <i>Location&nbsp;cleanliness</i>
+                                      </div>
+                                      <div class="col-xs-6">
+                                        <div ng-bind-html="post.location.cleanliness"></div>
+                                      </div>
+                                    </div>
+                                    <div class="row" >
+                                      <div class="col-xs-6" style="text-align: right;">
+                                        <i>Location&nbsp;reachability</i>
+                                      </div>
+                                      <div class="col-xs-6">
+                                        <!--<div ng-bind-html="post.location.reachability"></div>-->
+                                        <!--<input-stars max="5" ng-model="reach"></input-stars>-->
+                                        <span class="star-rating" star-rating rating-value="rating" data-max="5" data-readonly="true" on-rating-selected="ratingFunction(rating)"></span>
+                                      </div>
                                     </div>
                                   </div>
-                                  <div style="margin: 1.5em; border-top: 1px solid #333;"></div>
+                                  <div class="col-xs-9">
+                                    <div ng-bind-html="post.contents" style="color: #cccc33; max-height: 200px; overflow-y: auto; overflow-x: hidden; padding-right: 0.5em;"></div>
+                                  </div>
                                 </div>
+
+                                <div style="margin: 1.5em; border-top: 1px solid #666;"></div>
+
                               </div>
-                              <div class="text-center" ng-hide="footprints.reviews.itemsLoaded[topicIndex]">
+                              <div class="text-center" ng-hide="topic.loaded">
                                 <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate loading"></span>
                               </div>
                             </div>

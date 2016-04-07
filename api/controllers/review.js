@@ -63,7 +63,7 @@ var reviewProviderPrototype = {
             //log.warn('saving', posts.length, 'new posts found on provider', rP.key, 'for phone', phone);
   
             // save posts to database
-            reviewProviderPrototype.save(posts, function(err, result) {
+            reviewProviderPrototype.save(rP, posts, function(err, result) {
               if (err) {
                 return callbackInner(err);
               }
@@ -90,7 +90,7 @@ var reviewProviderPrototype = {
     );
   },
 
-  save: function(posts, callback) {
+  save: function(reviewProvider, posts, callback) {
     var result = {
       inserted: 0,
       updated: 0,
@@ -139,7 +139,7 @@ var reviewProviderPrototype = {
         if (err) {
           return callback(new Error('could not save reviews: ' + err));
         }
-        log.info('reviews inserted:', result.inserted + ',', 'updated:', result.updated, 'for phone', posts[0].phone);
+        log.info('reviews from', reviewProvider.key, 'inserted:', result.inserted + ',', 'updated:', result.updated, 'for phone', posts[0].phone);
         callback(null, result); // success
       }
     );

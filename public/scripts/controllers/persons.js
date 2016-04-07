@@ -27,8 +27,8 @@ angular.module('PersonCtrl', []).controller('PersonController', function($rootSc
       name: 'Reviews',
       active: false,
       topics: [],
-      items: [], // NO, under topics...
-      itemsLoaded: [], // NO, under topics...
+      //items: [], // NO, under topics...
+      //itemsLoaded: [], // NO, under topics...
       loaded: false,
     },
     'phototraces': {
@@ -46,6 +46,42 @@ angular.module('PersonCtrl', []).controller('PersonController', function($rootSc
     },
   };
 
+/*
+  $scope.topic = {
+    key: '',
+    providerKey: '',
+    section: '',
+    url: '',
+    title: '',
+    date: null,
+    posts: [],
+    loaded: false,
+  };
+
+  $scope.post = {
+    key: '',
+    phone: '',
+    author: {
+      name: '',
+      karma: '',
+      postsCount: 0
+    },
+    title: '',
+    date: null,
+    contents: '',
+    beauty: 0,
+    performance: 0,
+    sympathy: 0,
+    cleanliness: 0,
+    site: {
+      quality: 0,
+      cleanliness: 0,
+      reachability: 0,
+    },
+    loaded: false,
+  };
+*/
+
   $scope.$watch(function() { return Filter.get(); }, function(newValue, oldValue) {
     if (newValue !== oldValue) { // filter did change, re-load persons
       if ($location.path() !== '/persons') { // go to /persons, if not already there
@@ -56,15 +92,15 @@ angular.module('PersonCtrl', []).controller('PersonController', function($rootSc
   }, true); // last parameter is for object deep watch
 
   $scope.panelTopicToggled = function(topicIndex) {
-    console.log('panel topic', topicIndex, 'toggled');
-console.info('$scope.footprints.reviews.itemsLoaded[topicIndex]:', $scope.footprints.reviews.itemsLoaded[topicIndex]);
-    if (typeof $scope.footprints.reviews.itemsLoaded[topicIndex] === 'undefined') {
-console.info('$scope.footprints.reviews.itemsLoaded[topicIndex] is undefined, loading topic index', topicIndex, 'posts...');
-//$scope.footprints.reviews.items[topicIndex] = 'ok';
-      $scope.loadReviewTopicPosts($scope.footprints.reviews.topics[topicIndex].key);
+    //console.log('panel topic', topicIndex, 'toggled');
+    if (!$scope.footprints.reviews.topics[topicIndex].loaded) {
+      //console.info('$scope.footprints.reviews.topics[topicIndex].loaded is false, loading topic index', topicIndex, 'posts...');
+      $scope.loadReviewTopicPosts(topicIndex);
+    /*
     } else {
-console.info('$scope.footprints.reviews.itemsLoaded[topicIndex] already loaded');      
-    }
+      console.info('$scope.footprints.reviews.topics[topicIndex] already loaded');      
+    */
+  }
   };
 
   $scope.loadPersons = function() {
@@ -88,10 +124,9 @@ console.timeEnd('loadPerson');
         name: $scope.showPersonName($scope.person),
         dateOfFirstSync: $scope.showPersonDateOfFirstSync($scope.person),
         phone: $scope.showPersonPhone($scope.person),
-
         nationality: $scope.showPersonNationality($scope.person),
         providers: $scope.showPersonProviders($scope.person),
-        addressZone: $scope.showPersonAddressZone($scope.person),
+        address: $scope.showPersonAddress($scope.person),
         category: $scope.showPersonCategory($scope.person),
         description: $scope.showPersonDescription($scope.person),
         key: $scope.showPersonKey($scope.person),
@@ -130,11 +165,11 @@ console.info('loadReviewPosts() reviews posts:', response);
 */
 
   $scope.loadReviewTopicPosts = function(topicIndex) {
-    Review.getPostsByTopic(topicIndex, function(response) {
-console.info('+++++++++++++++ loadReviewTopicPosts(', topicIndex, ') reviews posts:', response);
-      $scope.footprints.reviews.items[topicIndex] = response;
-      $scope.footprints.reviews.itemsLoaded[topicIndex] = true;
-console.info('$scope.footprints.reviews.itemsLoaded[topicIndex] shoud be true:', typeof $scope.footprints.reviews.itemsLoaded[topicIndex]);
+    Review.getPostsByTopic($scope.footprints.reviews.topics[topicIndex].key, function(response) {
+console.info('loadReviewTopicPosts(', topicIndex, ') reviews posts:', response);
+console.info('topic posts length:', response.length);
+      $scope.footprints.reviews.topics[topicIndex].posts = response;
+      $scope.footprints.reviews.topics[topicIndex].loaded = true;
     });
   };
 
@@ -145,7 +180,6 @@ console.info('$scope.footprints.reviews.itemsLoaded[topicIndex] shoud be true:',
     }
     TracesPhone.getTracesByPhone(phone, function(response) {
       //console.log('loadPhoneTracesResults() - response:', response);
-
       var traces = $scope.hightlightPhoneTraces(person, response);
       $scope.footprints.phonetraces.items = traces;
       $scope.footprints.phonetraces.loaded = true;
@@ -331,9 +365,9 @@ console.log('$rootScope.user:', $rootScope.user);
     return providers;
   };
 
-  $scope.showPersonAddressZone = function(person) {
-    var addressZone = person.addressZone;
-    return addressZone;
+  $scope.showPersonAddress = function(person) {
+    var address = person.address;
+    return address;
   };
 
   $scope.showPersonCategory = function(person) {

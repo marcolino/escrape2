@@ -11,6 +11,7 @@ var config = {
   auth: {
     autoLogin: false
   },
+  city: 'torino',
   category: 'women',
 };
 

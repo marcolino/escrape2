@@ -111,7 +111,7 @@ GF.getPosts = function(topics, callback) {
           var lastTopicFound = results[results.length - 1].topic;
           topic.pageLast = {};
           topic.pageLast.url = lastTopicFound.pageLast.url;
-//log.debug('starting existing topic scraping from last url:', topic.pageLast.url);
+//log.warn('starting existing topic scraping from last url:', topic.pageLast.url);
           topic.pageLast.lastModified = lastTopicFound.pageLast.lastModified;
 
         } else { // topic is new
@@ -119,7 +119,7 @@ GF.getPosts = function(topics, callback) {
           topic.pageLast = {};
           topic.pageLast.url = topic.url.replace(/\/msg\d+\/.*/, ''); // transform specific post url to topic base url
           topic.pageLast.lastModified = null; // don't set lastModified
-//log.debug('starting new topic scraping from url:', topic.pageLast.url);
+//log.warn('starting new topic scraping from url:', topic.pageLast.url);
         }
 
         topic.nextUrl = topic.pageLast.url;
@@ -176,10 +176,16 @@ GF.getPosts = function(topics, callback) {
                   post.topic.author.name = topic.author.name ? topic.author.name : that.UNKNOWN_ENTITY;
                   post.topic.author.url = topic.author.url ? topic.author.url : that.UNKNOWN_ENTITY;
                   */
+                  post.topic.date = topic.date;
+                  //log.error('GF post topic date:', post.topic.date);
+
                   var postHtml = $(element).html();
             
-                  post.title = $(element).find('a[title^="TITLE..."]').text(); // post title (TODO!!!)
-
+                  post.title = $(element).find('div[id^="subject_"]').find('a').html(); // post title
+if (typeof post.title === 'undefined' || post.title === null) {
+  log.warn('post with null title - object:', post);
+  log.warn('post with null title - html:', postHtml);
+}
                   post.author = {};
                   post.author.name = $(element).find('a[title^="View the profile of "]').text(); // post author name regex
     
@@ -195,8 +201,12 @@ GF.getPosts = function(topics, callback) {
 
                   var dateRE = /&#xAB;\s*<b>(?:.*?)\s*on\:<\/b>\s*(.*?)\s*&#xBB;/; // post date regex
                   post.date = dateRE.exec(postHtml);
-                  post.date = post.date && post.date.length >= 1 ? parseDate(post.date[1], that.locale) : that.UNKNOWN_ENTITY;
-    
+                  post.date = (post.date && (post.date.length >= 1)) ? parseDate(post.date[1], that.locale) : that.UNKNOWN_ENTITY;
+/*
+if (post.date === 'undefined' || post.date === null || post.date.length < 10) {
+  log.error('GF post with null date:', post, ' - postHtml:', postHtml);
+}
+*/
                   // remove quotes of previous post from post
                   var contents = $(element).find('div.post').html();
                   post.contents = parseContents(contents);
@@ -329,7 +339,7 @@ function parseDate(dateString, locale) { // parse date from custom format to Dat
         hours = hours + 12;
       }
     }
-log.error('GF parseDate standard values:', year, month, day, hours, minutes, seconds);
+//log.error('GF parseDate standard values:', year, month, day, hours, minutes, seconds);
     return new Date(year, month, day, hours, minutes, seconds); // TODO: TO BE TESTED
   }
 
@@ -343,12 +353,12 @@ log.error('GF parseDate standard values:', year, month, day, hours, minutes, sec
     hours = dateToday[1];
     minutes = dateToday[2];
     seconds = dateToday[3];
-log.error('GF parseDate today:', new Date(year, month, day, hours, minutes, seconds));
+//log.error('GF parseDate today:', new Date(year, month, day, hours, minutes, seconds));
     return new Date(year, month, day, hours, minutes, seconds); // TODO: TO BE TESTED
   }
 
   // source date is in unknown format
-log.error('GF parseDate NULL');
+//log.error('GF parseDate NULL');
   return null;  
 }
 

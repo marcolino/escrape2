@@ -57,11 +57,11 @@ EA.getTopics = function(phone, callback) {
         topic.phone = phone;
         topic.providerKey = that.key;
         topic.body = body;
-        topic.section = that.key + ' reviews';
-        topic.url = url;
+        topic.section = 'main section';
+        topic.url = url + '?num=' + phone;
         topic.pageLast = {};
-        topic.pageLast.url = url;
-        topic.pageLast.etag = response.headers.etag;
+        //topic.pageLast.url = url;
+        topic.pageLast.lastModified = response.headers['last-modified'];
         topic.title = 'Review about ' + phone;
         topic.author = {};
         topic.author.name = that.key;
@@ -110,20 +110,12 @@ EA.getPosts = function(topics, callback) {
           //}
 
           var topicFound = results[0];
-//log.debug('getPosts()', that.key, 'scraping EXISTING topic:', topicFound.title);
           if (topicFound.pageLast) {
-            topic.url = topicFound.pageLast.url; // set url as the last page url of found topic
-            topic.etag = topicFound.pageLast.etag; // set etag to last page etag of found topic
+            if (topicFound.pageLast.lastModified >= topic.pageLast.lastModified) {
+              console.debug('EA getPosts() - skipping old review - topicFound.pageLast.lastModified:', topicFound.pageLast.lastModified, '>=', 'topic.pageLast.lastModified:', topic.pageLast.lastModified);
+              return callbackTopics(null);
+            }
           }
-else { log.warn('topicFound without pageLast:', topicFound); } // TODO: DEBUGGING...
-
-        } else { // topic is new
-//log.debug('getPosts()', that.key, 'topic is new');
-
-//log.debug('getPosts()', that.key, 'scraping NEW topic:', topic.title);
-          topic.url = topic.url; // keep topic url unchanged
-          topic.etag = null; // don't set etag
-
         }
 
         async.whilst(
@@ -139,6 +131,11 @@ else { log.warn('topicFound without pageLast:', topicFound); } // TODO: DEBUGGIN
               post.topic.providerKey = topic.providerKey;
               post.topic.section = topic.section;
               post.topic.url = topic.url;
+/*
+              post.topic.pageLast = {};
+              post.topic.pageLast.url = topic.pageLast.url;
+              post.topic.pageLast.lastModified = topic.pageLast.lastModified;
+*/
               post.topic.title = topic.title;
               post.topic.author = {};
               post.topic.author.name = topic.author.name;

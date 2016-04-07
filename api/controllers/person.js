@@ -294,10 +294,10 @@ exports.sync = function() { // sync persons
                     person.name = local.getDetailsName($, provider);
                     if (!person.name) { // should not happen, network.requestRetryAnonymous should catch it
                       log.warn('person', person.key, 'name not found,', 'contents length:', result.contents.length, ', skipping');
-                      log.error('@contents@:', result.contents);
+                      // log.error('@contents@:', result.contents);
                       return callbackInner(); // skip this inner loop
                     }
-                    person.addressZone = local.getDetailsAddressZone($, provider);
+                    person.address = local.getDetailsAddress($, provider);
                     person.description = local.getDetailsDescription($, provider);
 /*
 // DEBUG ONLY: FORCE ONE PERSON DESCRIPTION CHANGE! ///////////
@@ -1189,7 +1189,7 @@ local.getDetailsName = function($, provider) {
   return val;
 };
 
-local.getDetailsAddressZone = function($, provider) {
+local.getDetailsAddress = function($, provider) {
   var val = '', element;
   if (provider.key === 'SGI') {
     element = $('td[id="ctl00_content_CellaZona"]');
