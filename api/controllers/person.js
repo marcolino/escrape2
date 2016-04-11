@@ -237,8 +237,8 @@ exports.sync = function() { // sync persons
                 person.key = provider.key + '/' + element.key; // person key is the sum of provider key and element key
                 person.whenImageChangesUrlChangesToo = provider.whenImageChangesUrlChangesToo; // to spped-up images sync, when possible
 //log.debug('SET PERSON whenImageChangesUrlChangesToo');
-// SANDRA
-//if (person.key !== 'TOE/3897') return callbackInner(); // TODO: DEBUG ONLY - sync only one person
+// ALIZEE
+//if (person.key !== 'SGI/adv108n') return callbackInner(); // TODO: DEBUG ONLY - sync only one person
 
                 resource = {
                   url: person.url,
@@ -426,6 +426,8 @@ local.syncReviews = function(persons) {
   });
   //log.debug('syncReviews() - personPhones l (ength:', personPhones.length);
 
+var len = personPhones.length;
+var n = 0;
   async.eachSeries(
     personPhones,
     function(person, callback) {
@@ -434,6 +436,7 @@ local.syncReviews = function(persons) {
           return callback(err);
         }
         //log.info('sync\'d person', person.key, 'phone', person.phone, 'reviews:', results.inserted, 'inserted,', results.updated, 'updated');
+n++; log.debug('sync\'d review', n + '/' + len);
         callback();
       });
     },
@@ -469,6 +472,8 @@ local.syncTraces = function(persons) {
     });
     //log.debug('personPhones after sort:', personPhones);
 
+var len = personPhones.length;
+var n = 0;
     async.eachSeries(
       personPhones,
       function(person, callback) {
@@ -477,6 +482,7 @@ local.syncTraces = function(persons) {
             return callback(err);
           }
           //log.info('sync\'d person', person.key, 'phone', person.phone, 'traces:', results.inserted, 'inserted,', results.updated, 'updated');
+n++; log.debug('sync\'d trace', n + '/' + len);
           callback();
         });
       },

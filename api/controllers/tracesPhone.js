@@ -181,6 +181,7 @@ var tracesPhoneProviderPrototype = {
       '.tumblr.com',
       '389.mobydir.com',
       '3xx.online',
+      'anrufer.info',
       'any-number.info',
       'archive.org',
       'archiwumallegro.pl',
