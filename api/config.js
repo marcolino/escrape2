@@ -89,7 +89,7 @@ config.log = new (winston.Logger)({
       showlevel: true,
       timestamp: config.logger.timestamp,
       filename: config.logger.logFilePath,
-      maxsize: 10000000,
+      maxsize: 100000000,
       maxFiles: 1,
       json: false,
     }),

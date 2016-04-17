@@ -138,7 +138,7 @@ var tracesPhoneProviderPrototype = {
     });
   },
 
-  getAllPhones: function(callback) { // get all phone traces by phone (ordered by the most recently sync date)
+  getAllPhonesDateOfLastSync: function(callback) { // get all phone traces by phone (ordered by the most recently sync date)
     TracesPhone.find({}, { phone: 1, dateOfLastSync: 1 }).lean().exec(function(err, traces) {
       if (err) {
         return callback(err);
@@ -208,7 +208,9 @@ var tracesPhoneProviderPrototype = {
       'us.who-called.info',
       'usersearch.seraph.me',
       'ws.114chm.com',
+      'www.192.com',
       'www.411.com',
+      'www.6a6.org',
       'www.addresses.com',
       'www.bizapedia.com',
       'www.chistachiamando.it',
@@ -226,6 +228,7 @@ var tracesPhoneProviderPrototype = {
       'www.kodtelefona.ru',
       'www.learningace.com',
       'www.lericetteditonia.com',
+      'www.mea-tel.com',
       'www.mightynumbers.com',
       'www.numberinquiry.com', 
       'www.numberworlds.com',
@@ -241,10 +244,13 @@ var tracesPhoneProviderPrototype = {
       'www.unknowntelephone.com',
       'www.usaphonenumberslookup.com',
       'www.usawhocallme.com',
+      'www.vistaleaf.net',
       'www.whocaller.com',
       'www.whothecaller.net',
       'www.whycall.eu',
       'www.xiezhuangyuan.net',
+      'www.zhzf.cc',
+      'yellow-pages.me',
       'yun.baidu.com',
     ];
     if (!this.providers) { // getting providers from DB

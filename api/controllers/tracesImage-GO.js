@@ -22,24 +22,30 @@ GO.getTraces = function(imageUrl, callback) {
   };
   
   request(options, function (err, res, body) {
+    if (err) { // TODO: make this error more "friendly"...
+      return callback(null, results);
+    }
     var $ = cheerio.load(body);
     var bestGuess = $('a[class="_gUb"]').html();
-    console.log('Best guess:', bestGuess);
-    console.log('Similar images:');
+    //console.log('Best guess:', bestGuess);
+    //console.log('Similar images:');
     $('div[class="srg"] > div[class="g"]').each(function(index, element) { // showcase image
       var elementTitle = $(element).find('h3[class="r"] > a');
-      var url = $(elementTitle).attr('href');
+      var imageUrl = $(elementTitle).attr('href');
       var title = $(elementTitle).text();
       var description = $(element).find('span[class="st"]').html();
-      var thumbnailSrc = $(element).find('img[class="_WCg"]').attr('src');
-      if (url) {
+      var thumbnailUrl = $(element).find('img[class="_WCg"]').attr('src');
+      var dateOfLastSync = new Date();
+
+      if (imageUrl) {
         results.push([
           {
-            image: imageUrl,
-            url: url,
+            imageUrl: imageUrl,
             title: title,
             description: description,
-            thumbnailSrc: thumbnailSrc,
+            thumbnailUrl: thumbnailUrl,
+            betsGuess: bestGuess,
+            dateOfLastSync: dateOfLastSync,
           }
         ]);
       }

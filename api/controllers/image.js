@@ -21,6 +21,15 @@ exports.getByIdPerson = function(idPerson, callback) {
   });
 };
 
+exports.getAll = function(filter, callback) { // get all images
+  Image.find(filter, function(err, images) {
+    if (err) {
+      return callback(err);
+    }
+    callback(null, images);
+  });
+};
+
 exports.syncPersonsImages = function(persons, callback) {
   //log.error(persons);
   //return callback(null, persons);

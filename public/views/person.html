@@ -361,8 +361,8 @@
     </div>
   </div>
 
-  <div id="section-carousel" ng-show="sections['carousel'].visible"> <!-- carousel panel -->
-    <div id="carousel" class="carousel slide" data-ride="carousel" interval="0"> 
+  <div id="section-carousel" ng-if="sections['carousel'].visible"> <!-- carousel panel -->
+    <div id="carousel" class="carousel slide" data-ride="carousel" interval="false"> 
 
       <ol class="carousel-indicators">
         <li data-target="#carousel" ng-repeat="image in person.images" data-slide-to="{{ $index }}" ng-class="{ active: $first }"></li>

@@ -45,7 +45,7 @@ EA.getTopics = function(phone, callback) {
     },
     function (err, response, body) {
       if (err || response.statusCode !== 200) {
-        return callback(new Error('provider ' + that.key + ': error on response' + (response ? ' (' + response.statusCode + ')' : '') + ': ' + err + ' : ' + body), null);
+        return callback(new Error('provider ' + that.key + ': response' + (response ? ' (' + response.statusCode + ')' : '') + (err ? ':' + err : '') + (typeof body !== 'undefined' ? ': ' + body : ''), null));
       }
       //console.log(body);
       var topics = [];

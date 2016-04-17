@@ -35,11 +35,13 @@ var tracesImageProviderPrototype = {
       updated: 0,
     };
     
+    var imageUrl = ''; // TODO: get image from phone
+
     async.each(
       tracesImageProviders,
       function(tPP, callbackInner) {
         //log.debug('sync()', 'provider:', tPP.key);
-        tPP.getTraces(phone, function(err, traces) {
+        tPP.getTraces(imageUrl, function(err, traces) {
           if (err) {
             return callbackInner(err);
           }
@@ -133,8 +135,8 @@ var tracesImageProviderPrototype = {
     });
   },
 
-  getTracesByImage: function(image, callback) { // get image traces by image
-    TracesImage.find({ image: image }).lean().exec(function(err, traces) {
+  getTracesByImageUrl: function(imageUrl, callback) { // get image traces by image url
+    TracesImage.find({ imageUrl: imageUrl }).lean().exec(function(err, traces) {
       if (err) {
         return callback(err);
       }

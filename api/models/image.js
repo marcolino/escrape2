@@ -7,7 +7,7 @@ var imageSchema = new mongoose.Schema({
   personKey: { type: String, required: true }, // person.providerKey + '/' + person.key
   etag: String, // ETag
   size: Number, // image contents size
-  lastModified: String, // last modified tag
+  //lastModified: String, // last modified tag
   basename: String, // image file base name
   dateOfFirstSync: { type: Date, default: Date.now }, // date of first sync
   //dateOfLastSync: { type: Date, default: Date.now }, // date of last sync
@@ -19,11 +19,13 @@ var imageSchema = new mongoose.Schema({
 {
   autoIndex: config.env === 'development'
 });
-//imageSchema.index({ url: 1 }, { unique: true }); // for some provider issue, more persons could share same image url...
+imageSchema.index({ url: 1 }, { unique: false }); // for some provider issue, more persons could share same image url
 
-imageSchema.methods.xSave = function(callback) {
+/*
+imageSchema.methods.Save = function(callback) {
   return this.model('Image').savefind({ type: this.type }, callback);
 };
+*/
 
 /*
 // expose collection methods

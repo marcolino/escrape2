@@ -11,7 +11,8 @@ var mongoose = require('mongoose') // mongo abstraction
   , image = require('../controllers/image') // network handling
   , provider = require('../controllers/provider') // provider's controller
   , review = require('../controllers/review') // reviews controller
-  , tracesPhone = require('../controllers/tracesPhone') // trace phone's controller
+  , tracesImage = require('../controllers/tracesImage') // trace images controller
+  , tracesPhone = require('../controllers/tracesPhone') // trace phones controller
   , Person = require('../models/person') // model of person
   , UserToPerson = require('../models/userToPerson') // model of user-to-person
   , Image = require('../models/image') // model of image
@@ -335,14 +336,6 @@ if (person.key === 'FORBES/Shakira') {
                       callbackInner(); // this person is done
                     });
 
-/*
-                    // sync phone reviews for this person
-                    local.syncReviews(person, function(err, results) {
-                      if (err) {
-                        return log.warn(err);
-                      }
-                    });
-*/
                   }
                 );
               },
@@ -369,9 +362,13 @@ if (person.key === 'FORBES/Shakira') {
         log.info('persons phone reviews sync started (async)');
         local.syncReviews(persons);
 
+        // sync image traces for all persons (aynchronously)
+        log.info('persons image traces sync started (async)');
+        local.syncTracesImage(persons);
+
         // sync phone traces for all persons (aynchronously)
         log.info('persons phone traces sync started (async)');
-        local.syncTraces(persons);
+        local.syncTracesPhone(persons);
 
         // set activity status
         log.info('persons activity status setting started');
@@ -415,21 +412,21 @@ if (person.key === 'FORBES/Shakira') {
 };
 
 local.syncReviews = function(persons) {
-  // build personPhones array (with all active persons phones)
-  var personPhones = persons.filter(function(person) { // filter out persons with not available phone
+  // build personsAvailable array (with all active persons phones)
+  var personsAvailable = persons.filter(function(person) { // filter out persons with not available phone
     return person.phoneIsAvailable && person.phone;
-  }).map(function(person) { // build personPhones array with person key, phone, and trace date of last sync
+  }).map(function(person) { // build personsAvailable array with person key, phone, and trace date of last sync
     var personPhone = {};
     personPhone.key = person.key;
     personPhone.phone = person.phone;
     return personPhone;
   });
-  //log.debug('syncReviews() - personPhones l (ength:', personPhones.length);
+  //log.debug('syncReviews() - personsAvailable l (ength:', personsAvailable.length);
 
-var len = personPhones.length;
+var len = personsAvailable.length;
 var n = 0;
   async.eachSeries(
-    personPhones,
+    personsAvailable,
     function(person, callback) {
       review.sync(person.phone, function(err, results) {
         if (err) {
@@ -449,12 +446,111 @@ n++; log.debug('sync\'d review', n + '/' + len);
   );
 };
 
-local.syncTraces = function(persons) {
-  tracesPhone.getAllPhones(function(err, traces) {
-    // build personPhones array (with all active persons phones)
-    var personPhones = persons.filter(function(person) { // filter out persons with not available phone
+local.syncTracesImage = function(persons) {
+/*
+personsAvailable: {
+  key,
+};
+images: {
+  url,
+  personKey,
+  dateOfFirstSync,
+};
+tracesImage: {
+  imageUrl,
+  url,
+  title,
+  description,
+  thumbnailUrl,
+  dateOfLastSync,
+};
+*/
+  image.getAll(function(err, images) { // get all images
+    if (err) {
+log.error('syncTracesImage() - error in image.getAll:', err, 'CHECK WE ARE REALLY BAILING OUT...');
+      return err; // TODO: test if return really stops this function execution...
+    }
+    tracesImage.getAll(function(err, traces) { // get all images traces
+      if (err) {
+log.error('syncTracesImage() - error in tracesImage.getAll:', err, 'CHECK WE ARE REALLY BAILING OUT...');
+        return err; // TODO: test if return really stops this function execution...
+      }
+
+      var personsAvailableObj = {}; // persons available object
+      persons.forEach(function(person) {
+        if (person.phoneIsAvailable && person.phone) { // use only images from available persons
+          personsAvailableObj[person.key] = true;
+        }
+      });
+
+      var tracesObj = {}; // traces images object
+      traces.forEach(function(trace) {
+        tracesObj[trace.url] = { imageUrl: trace.imageUrl, dateOfLastSync: trace.dateOfLastSync, };
+      });
+
+      var imagesToSync = images.filter(function(image) { // available images array (images to sync)
+        if (image.personKey in personsAvailableObj) { // check image belongs to an available person
+          var tracesPerImage = traces.filter(function(trace) { // get all traces for this image
+            return image.url === trace.imageUrl;
+          });
+          if (tracesPerImage.length === 0) { 
+            return true; // no image trace yet for this image, adding image to imagesToSync array
+          }
+        }
+        return false;
+      });
+
+      /*
+      .map(function(person) { // build imagesAvailable array with person key, image, and trace date of last sync
+        var imageAvailable = {};
+        imageAvailable.key = person.key;
+        imageAvailable.imageUrl = images.filter(function(image) {
+          if (image.personKey === person.key) {
+
+          }
+          return image;
+        });
+        imageAvailable.dateOfLastSync = person.dateOfLastSync;
+        return imageAvailable;
+      });
+  
+      imagesAvailable.sort(function(a, b) { // sort imagesAvailable array to have traces never sync'd on top
+        return b.dateOfLastSync - a.dateOfLastSync;
+      });
+      */
+log.debug('syncTracesImage() - imagesToSync length:', imagesToSync.length);
+  
+var len = imagesToSync.length;
+var n = 0;
+      async.eachSeries(
+        imagesToSync,
+        function(image, callback) {
+          tracesImage.sync(image.url, function(err, results) {
+            if (err) {
+              return callback(err);
+            }
+            //log.info('sync\'d image traces for person', image.personKey, 'image url', image.url, 'traces:', results.inserted, 'inserted,', results.updated, 'updated');
+n++; log.debug('sync\'d image trace', n + '/' + len);
+            callback();
+          });
+        },
+        function(err) {
+          if (err) {
+            log.warn('can\'t sync image traces:', err);
+          }
+          log.info('all image traces sync finished');
+        }
+      );
+    });
+  });
+};
+
+local.syncTracesPhone = function(persons) {
+  tracesPhone.getAllPhonesDateOfLastSync(function(err, traces) {
+    // build personsAvailable array (with all active persons phones)
+    var personsAvailable = persons.filter(function(person) { // filter out persons with not available phone
       return person.phoneIsAvailable && person.phone;
-    }).map(function(person) { // build personPhones array with person key, phone, and trace date of last sync
+    }).map(function(person) { // build personsAvailable array with person key, phone, and trace date of last sync
       var personPhone = {};
       personPhone.key = person.key;
       personPhone.phone = person.phone;
@@ -463,34 +559,34 @@ local.syncTraces = function(persons) {
       return personPhone;
     });
 
-    personPhones.sort(function(a, b) { // sort personPhones array to have traces never sync'd on top
+    personsAvailable.sort(function(a, b) { // sort personsAvailable array to have traces never sync'd on top
       return (typeof a.tracesDateOfLastSync === 'undefined' && typeof b.tracesDateOfLastSync === 'undefined') ? b.dateOfLastSync - a.dateOfLastSync :
              (typeof a.tracesDateOfLastSync !== 'undefined') ?  1 :
              (typeof b.tracesDateOfLastSync !== 'undefined') ? -1 :
              a.tracesDateOfLastSync - b.tracesDateOfLastSync
       ;
     });
-    //log.debug('personPhones after sort:', personPhones);
+    //log.debug('personsAvailable after sort:', personsAvailable);
 
-var len = personPhones.length;
+var len = personsAvailable.length;
 var n = 0;
     async.eachSeries(
-      personPhones,
+      personsAvailable,
       function(person, callback) {
         tracesPhone.sync(person.phone, function(err, results) {
           if (err) {
             return callback(err);
           }
-          //log.info('sync\'d person', person.key, 'phone', person.phone, 'traces:', results.inserted, 'inserted,', results.updated, 'updated');
-n++; log.debug('sync\'d trace', n + '/' + len);
+          //log.info('sync\'d phone traces for person', person.key, 'phone', person.phone, 'traces:', results.inserted, 'inserted,', results.updated, 'updated');
+n++; log.debug('sync\'d phone trace', n + '/' + len);
           callback();
         });
       },
       function(err) {
         if (err) {
-          log.warn('can\'t sync traces:', err);
+          log.warn('can\'t sync phone traces:', err);
         }
-        log.info('all traces sync finished');
+        log.info('all phone traces sync finished');
       }
     );
   });

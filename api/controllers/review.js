@@ -78,7 +78,7 @@ var reviewProviderPrototype = {
       function(err) { // 3rd param is the function to call when everything's done (inner callback)
         if (err) {
           if (typeof callback === 'function') { // this method can be called asynchronously, without a callback
-            return callback('can\'t sync posts for phone' + ' ' + phone + ': ' + err.toString());
+            return callback('can\'t sync posts for phone' + ' ' + phone + ': ' + err);
           } else {
             return log.error('can\'t sync posts for phone', phone + ':', err);
           }

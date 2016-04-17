@@ -52,7 +52,7 @@ GF.getTopics = function(phone, callback) {
     },
     function (err, response, body) {
       if (err || response.statusCode !== 200) {
-        return callback(new Error('provider ' + that.key + ': error on response' + (response ? ' (' + response.statusCode + ')' : '') + ':' + err + ': ' + body), null);
+        return callback(new Error('provider ' + that.key + ': response' + (response ? ' (' + response.statusCode + ')' : '') + (err ? ':' + err : '') + (typeof body !== 'undefined' ? ': ' + body : ''), null));
       }
       var $ = cheerio.load(body);
       $('div[class~="topic_details"]').each(function (i, element) { // topics loop
