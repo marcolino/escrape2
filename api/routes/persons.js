@@ -31,7 +31,7 @@ var getAll = function(req, res) {
   var filter = {};
   if (req.params.search && req.params.search !== null) {
     var filters = [];
-    filters.push({ name: RegExp(req.params.search, 'i') }); // search on name
+    filters.push({ name: new RegExp(req.params.search, 'i') }); // search on name
     filters.push({ description: new RegExp(req.params.search, 'i') });// search on description
     filters.push({ phone: new RegExp(req.params.search, '') }); // search on phone
     filter = { $or: filters }; // sum filters with OR

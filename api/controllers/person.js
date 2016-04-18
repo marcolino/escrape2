@@ -476,20 +476,23 @@ log.error('syncTracesImage() - error in tracesImage.getAll:', err, 'CHECK WE ARE
         return err; // TODO: test if return really stops this function execution...
       }
 
-      var personsAvailableObj = {}; // persons available object
+      var personsAvailable = {}; // persons available object
       persons.forEach(function(person) {
         if (person.phoneIsAvailable && person.phone) { // use only images from available persons
-          personsAvailableObj[person.key] = true;
+          personsAvailable[person.key] = true;
         }
       });
+log.debug('syncTracesImage() - personsAvailable length:', personsAvailable.length);
 
+      /*
       var tracesObj = {}; // traces images object
       traces.forEach(function(trace) {
         tracesObj[trace.url] = { imageUrl: trace.imageUrl, dateOfLastSync: trace.dateOfLastSync, };
       });
+      */
 
       var imagesToSync = images.filter(function(image) { // available images array (images to sync)
-        if (image.personKey in personsAvailableObj) { // check image belongs to an available person
+        if (image.personKey in personsAvailable) { // check image belongs to an available person
           var tracesPerImage = traces.filter(function(trace) { // get all traces for this image
             return image.url === trace.imageUrl;
           });
@@ -527,6 +530,7 @@ var n = 0;
         function(image, callback) {
           tracesImage.sync(image.url, function(err, results) {
             if (err) {
+              log.error('can\'t sync image traces:', err);
               return callback(err);
             }
             //log.info('sync\'d image traces for person', image.personKey, 'image url', image.url, 'traces:', results.inserted, 'inserted,', results.updated, 'updated');

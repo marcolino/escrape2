@@ -23,8 +23,8 @@ var tracesImageProviderPrototype = {
     throw new Error("can't call abstract method");
   },
 
-  sync: function(phone, callback) {
-    //log.debug('sync()', 'syncyng tracesImages from all tracesImage providers for phone value', phone);
+  sync: function(imageUrl, callback) {
+    //log.debug('sync()', 'syncyng tracesImages from all tracesImage providers for image url', imageUrl);
     var tracesImageProviders = [
       require('./tracesImage-GO'),
     ];
@@ -35,8 +35,6 @@ var tracesImageProviderPrototype = {
       updated: 0,
     };
     
-    var imageUrl = ''; // TODO: get image from phone
-
     async.each(
       tracesImageProviders,
       function(tPP, callbackInner) {
@@ -46,7 +44,7 @@ var tracesImageProviderPrototype = {
             return callbackInner(err);
           }
           if (results.length === 0) {
-            log.debug('no image traces found on provider', tPP.key, 'for phone', phone);
+            log.debug('no image traces found on provider', tPP.key, 'for image url', imageUrl);
             return callbackInner();
           }
 
