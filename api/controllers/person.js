@@ -358,17 +358,24 @@ if (person.key === 'FORBES/Shakira') {
         log.info('' + retrievedProvidersCount, '/', totalProvidersCount, 'providers retrieved');
         log.info('' + retrievedPersonsCount, '/', totalPersonsCount, 'persons retrieved');
 
+        if (
+          (retrievedProvidersCount < totalProvidersCount) ||
+          (retrievedPersonsCount < totalPersonsCount)
+        ) {
+          //return log.warn('not all providers/persons sync\'d: skipping images, footprints and aliases sync');
+        }
+
         // sync phone reviews for this person (aynchronously)
-        log.info('persons phone reviews sync started (async)');
-        local.syncReviews(persons);
+        //log.info('persons phone reviews sync started (async)');
+        //local.syncReviews(persons);
 
         // sync image traces for all persons (aynchronously)
         log.info('persons image traces sync started (async)');
         local.syncTracesImage(persons);
 
-        // sync phone traces for all persons (aynchronously)
-        log.info('persons phone traces sync started (async)');
-        local.syncTracesPhone(persons);
+        // sync phone trcaces for all persons (aynchronously)
+        //log.info('persons phone traces sync started (async)');
+        //local.syncTracesPhone(persons);
 
         // set activity status
         log.info('persons activity status setting started');
@@ -378,6 +385,7 @@ if (person.key === 'FORBES/Shakira') {
           }
           log.info('persons activity status setting finished');
 
+/*
           // sync persons images
           log.info('persons images sync started');
           config.timeStart = process.hrtime(); // TODO: development only
@@ -404,6 +412,7 @@ if (person.key === 'FORBES/Shakira') {
             });
 
           });
+*/
 
         });
       }
@@ -476,13 +485,14 @@ log.error('syncTracesImage() - error in tracesImage.getAll:', err, 'CHECK WE ARE
         return err; // TODO: test if return really stops this function execution...
       }
 
+log.debug('syncTracesImage() - persons length:', persons.length);
       var personsAvailable = {}; // persons available object
       persons.forEach(function(person) {
         if (person.phoneIsAvailable && person.phone) { // use only images from available persons
           personsAvailable[person.key] = true;
         }
       });
-log.debug('syncTracesImage() - personsAvailable length:', personsAvailable.length);
+log.debug('syncTracesImage() - personsAvailable length:', Object.keys(personsAvailable).length);
 
       /*
       var tracesObj = {}; // traces images object
@@ -528,6 +538,7 @@ var n = 0;
       async.eachSeries(
         imagesToSync,
         function(image, callback) {
+log.debug('syncTracesImage() - sync\'ing image url:', image.url);
           tracesImage.sync(image.url, function(err, results) {
             if (err) {
               log.error('can\'t sync image traces:', err);

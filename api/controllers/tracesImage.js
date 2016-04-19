@@ -24,7 +24,7 @@ var tracesImageProviderPrototype = {
   },
 
   sync: function(imageUrl, callback) {
-    //log.debug('sync()', 'syncyng tracesImages from all tracesImage providers for image url', imageUrl);
+//log.debug('sync() - syncyng tracesImages from all tracesImage providers for image url', imageUrl);
     var tracesImageProviders = [
       require('./tracesImage-GO'),
     ];
@@ -35,15 +35,18 @@ var tracesImageProviderPrototype = {
       updated: 0,
     };
     
+//log.debug('sync() - tracesImageProviders length:', tracesImageProviders.length);
+//log.debug('sync() - tracesImageProviders:', tracesImageProviders);
+
     async.each(
       tracesImageProviders,
       function(tPP, callbackInner) {
-        //log.debug('sync()', 'provider:', tPP.key);
+//log.debug('sync() - provider:', tPP.key);
         tPP.getTraces(imageUrl, function(err, traces) {
           if (err) {
             return callbackInner(err);
           }
-          if (results.length === 0) {
+          if (traces.length === 0) {
             log.debug('no image traces found on provider', tPP.key, 'for image url', imageUrl);
             return callbackInner();
           }
@@ -77,18 +80,20 @@ var tracesImageProviderPrototype = {
   },
 
   save: function(traces, callback) {
+//log.debug('save() - saving', traces.length, 'image traces:', traces);
+log.debug('save() - saving', traces.length, 'image traces');
     var result = {
       inserted: 0,
       updated: 0,
     };
-    var phone = traces.length ? traces[0].phone : ''; // to log results before callback (all traces share same phone by design)
     async.each(
       traces,
       function(trace, callbackInner) {
+log.debug('save() - findOneAndUpdate:', trace);
         TracesImage.findOneAndUpdate(
           { // query
-            phone: trace.phone,
-            link: trace.link,
+            imageUrl: trace.imageUrl,
+            url: trace.url,
           },
           trace, // object to save
           { // options
@@ -98,13 +103,13 @@ var tracesImageProviderPrototype = {
           },
           function(err, doc, raw) { // result callback
             if (err) {
-              //log.debug('can\'t save trace', trace.phone, trace.link, ':', err);
+              //log.debug('can\'t save image trace', trace.imageUrl, ':', err);
             } else {
               if (raw.lastErrorObject.updatedExisting) {
-                //log.debug('trace', doc.phone, doc.link, 'updated');
+                log.debug('save() - image trace', doc/*.imageUrl*/, 'updated');
                 result.updated++;
               } else {
-                //log.debug('trace', doc.phone, doc.link, 'inserted');
+                log.debug('save() - image trace', doc/*.imageUrl*/, 'inserted');
                 result.inserted++;
               }
             }
@@ -114,11 +119,9 @@ var tracesImageProviderPrototype = {
       },
       function(err) {
         if (err) {
-          return callback('could not save phone traces:' + err.toString());
+          return callback('could not save image traces:' + err.toString());
         }
-        if (phone) { // no phone, no traces
-          log.info('phone', phone, 'traces save finished; inserted:', result.inserted, ', updated:', result.updated);
-        }
+        log.info('image traces save finished; inserted:', result.inserted, ', updated:', result.updated);
         callback(null, result); // success
       }
     );

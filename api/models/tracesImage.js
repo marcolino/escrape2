@@ -16,6 +16,6 @@ var tracesImage = new mongoose.Schema({
   collection: 'tracesImages'
 });
 // define compound index, unique
-tracesImage.index({ imageUrl: 1, url: 1 }, { unique: false });
+tracesImage.index({ imageUrl: 1, url: 1 }, { unique: true });
 
 module.exports = mongoose.model('TracesImage', tracesImage);

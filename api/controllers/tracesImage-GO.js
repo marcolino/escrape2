@@ -6,14 +6,13 @@ var request = require('request'),
 
 // Google searchImagesProvider initialization
 var GO = Object.create({});
-GO.key = 'Google';
+GO.key = 'GO'; // Google
 GO.active = true;
 
 GO.getTraces = function(imageUrl, callback) {
+  //console.error('GO.getTraces:', imageUrl);
   var googleSearchByImageUrl = 'https://www.google.com/searchbyimage';
   var userAgent = 'Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11';
-
-  var results = [];
 
   var options = {
     url: googleSearchByImageUrl,
@@ -21,6 +20,8 @@ GO.getTraces = function(imageUrl, callback) {
     headers: { 'user-agent': userAgent }
   };
   
+  var results = [];
+
   request(options, function (err, res, body) {
     if (err) { // TODO: make this error more "friendly"...
       return callback(null, results);
@@ -31,23 +32,23 @@ GO.getTraces = function(imageUrl, callback) {
     //console.log('Similar images:');
     $('div[class="srg"] > div[class="g"]').each(function(index, element) { // showcase image
       var elementTitle = $(element).find('h3[class="r"] > a');
-      var imageUrl = $(elementTitle).attr('href');
+      var url = $(elementTitle).attr('href');
       var title = $(elementTitle).text();
       var description = $(element).find('span[class="st"]').html();
       var thumbnailUrl = $(element).find('img[class="_WCg"]').attr('src');
       var dateOfLastSync = new Date();
 
-      if (imageUrl) {
-        results.push([
-          {
-            imageUrl: imageUrl,
-            title: title,
-            description: description,
-            thumbnailUrl: thumbnailUrl,
-            betsGuess: bestGuess,
-            dateOfLastSync: dateOfLastSync,
-          }
-        ]);
+      if (url) {
+        //console.error('GO.getTraces - found:', title);
+        results.push({
+          imageUrl: imageUrl,
+          url: url,
+          title: title,
+          description: description,
+          thumbnailUrl: thumbnailUrl,
+          betsGuess: bestGuess,
+          dateOfLastSync: dateOfLastSync,
+        });
       }
     });
     return callback(null, results);
