@@ -87,6 +87,7 @@ router.route('/getByKey/:key([^/]+/[^/]+)').
   })
 ;
 
+/*
 router.route('/getImages/:id').
   get(function(req, res) { // get images by idPerson
     image.getByIdPerson(req.params.id, function(err, images) {
@@ -98,6 +99,7 @@ router.route('/getImages/:id').
     });
   })
 ;
+*/
 
 router.route('/syncAliasesBatch').
   get(function(req, res) { // build aliases

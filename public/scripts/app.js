@@ -34,6 +34,7 @@ var app = angular.module('escrape2', [
   'FilterService',
   'PersonService',
   'ReviewService',
+  'TracesImageService',
   'TracesPhoneService'
 ]);
 

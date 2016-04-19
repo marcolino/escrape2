@@ -14,9 +14,18 @@ var mkdirp = require('mkdirp') // to make directories with parents
 var local = {};
 var log = config.log;
 
-// get all images for person
+/*
+// get all images for person id
 exports.getByIdPerson = function(idPerson, callback) {
   Image.find({ idPerson: idPerson }, function(err, images) {
+    return callback(err, images);
+  });
+};
+*/
+
+// get all images for person key
+exports.getByPersonKey = function(personKey, callback) {
+  Image.find({ personKey: personKey }, function(err, images) {
     return callback(err, images);
   });
 };
@@ -738,10 +747,10 @@ exports.syncPersonsImagesCheck = function(persons, callback) {
 
 module.exports = exports;
 
+/*
 // TODO: DEBUG ONLY ///////////////////////////////////////////////////////////
 var db = require('../models/db'); // database wiring
 
-/*
 Image.find({ $or: [ {basename:'b332ce4783bae8f37ad7d19f8eadd6ed.jpg'}, {basename: '28a799820ecc0e863c4de6f7a095cae7.jpg'} ] }, function(err, images) {
   if (err) {
     return log.error('Image.find:', err);

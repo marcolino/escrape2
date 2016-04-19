@@ -1,10 +1,10 @@
 'use strict';
 
-angular.module('PersonCtrl', []).controller('PersonController', function($rootScope, $scope, $location, $routeParams, $window, $uibModal, Person, Filter, Review, TracesPhone) {
+angular.module('PersonCtrl', []).controller('PersonController', function($rootScope, $scope, $location, $routeParams, $window, $uibModal, Person, Filter, Review, TracesImage, TracesPhone) {
 
   $scope.rating = 3;
   $scope.ratingFunction = function(rating) {
-    console.log('reachFunction():', rating);
+    console.log('ratingFunction():', rating);
   };
 
   $scope.sections = {
@@ -31,15 +31,15 @@ angular.module('PersonCtrl', []).controller('PersonController', function($rootSc
       //itemsLoaded: [], // NO, under topics...
       loaded: false,
     },
-    'phototraces': {
-      name: 'Photos Traces',
+    'imagetraces': {
+      name: 'Image traces',
       active: false,
       items: [],
       loaded: false,
     },
     'phonetraces': {
       rating: 77,
-      name: 'Phone Traces',
+      name: 'Phone traces',
       active: false,
       items: [],
       loaded: false,
@@ -134,6 +134,7 @@ console.timeEnd('loadPerson');
 
       $scope.loadReviewTopics($scope.person);
       //$scope.loadReviewTopicPosts($scope.person);
+      $scope.loadImageTraces($scope.person);
       $scope.loadPhoneTraces($scope.person);
     });
   };
@@ -173,17 +174,51 @@ console.info('topic posts length:', response.length);
     });
   };
 
+  $scope.loadImageTraces = function(person) {
+console.log('loadImageTraces()');
+    TracesImage.getTracesByPersonKey(person.key, function(response) {
+console.log('getTracesByPersonKey() - response:', response);
+      var traces = $scope.hightlightImageTraces(person, response);
+      $scope.footprints.imagetraces.items = traces;
+      $scope.footprints.imagetraces.loaded = true;
+    });
+  };
+
   $scope.loadPhoneTraces = function(person) {
     var phone = person.phone;
     if (!phone) {
       return;
     }
     TracesPhone.getTracesByPhone(phone, function(response) {
-      //console.log('loadPhoneTracesResults() - response:', response);
+console.log('loadPhoneTracesResults() - response:', response);
       var traces = $scope.hightlightPhoneTraces(person, response);
       $scope.footprints.phonetraces.items = traces;
       $scope.footprints.phonetraces.loaded = true;
     });
+  };
+
+  // highlight person name in image traces title and description fields
+  $scope.hightlightImageTraces = function(person, traces) {
+    var i, e, tracesLen, searchLen;
+    for (i = 0, tracesLen = traces.length; i < tracesLen; i++) {
+console.log('traces[i]:', traces[i]);
+      //var RE = new RegExp('\b' + '(' + person.name + ')' + '\b', 'mig');
+      var RE = new RegExp('(' + person.name + ')', 'mig');
+      var searchFields = [ 'title', 'description' ];
+      for (e = 0, searchLen = searchFields.length; e < searchLen; e++) {
+        if (traces[i][searchFields[e]]) { // TODO: avoid empty traces, before...
+          traces[i][searchFields[e]] = highlight(traces[i][searchFields[e]], RE);
+        }
+      }
+    }
+    return traces;
+
+    function highlight(value, re) {
+      value = value.replace(re, function(match, capture) {
+        return '<span class="hightlight">&nbsp;' + match + '&nbsp;</span>';
+      });
+      return value;
+    }
   };
 
   // highlight person name in phone traces title and description fields

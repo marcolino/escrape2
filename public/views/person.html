@@ -311,11 +311,12 @@
                       </div>
                     </div> <!-- /panel reviews -->
 
-                    <div ng-if="panelKey === 'phototraces'">
-                      ... phototraces...
+                    <div ng-if="panelKey === 'imagetraces'">
+                      ... imagetraces...
                       <div data-ng-repeat="trace in panel.items">
                         <div class="row">
                           <div class="col-xs-12">
+                           <pre>{{trace}}</pre>
                           </div>
                         </div>
                       </div>

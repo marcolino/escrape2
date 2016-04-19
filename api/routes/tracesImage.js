@@ -2,6 +2,8 @@
 
 var express = require('express')
   , tracesImage = require('../controllers/tracesImage')
+  , image = require('../controllers/image')
+  , async = require('async') // to call many async functions in a loop
 ;
 
 var router = module.exports = express.Router();
@@ -16,6 +18,7 @@ router.route('/sync/:image').
 ;
 router.get('/', getAll);
 router.get('/getTracesByImageUrl/:image', getTracesByImageUrl);
+router.get('/getTracesByPersonKey/:key([^/]+/[^/]+)', getTracesByPersonKey);
 
 function getAll(req, res) { // get all image traces
   tracesImage.getAll(function(err, traces) {
@@ -23,6 +26,37 @@ function getAll(req, res) { // get all image traces
       return res.status(500).json(err); // TODO: test this...
     }
     res.json(traces);
+  });
+}
+
+function getTracesByPersonKey(req, res) { // get image traces by person key
+  var personKey = req.params.key;
+//console.log('personKey:', personKey);
+  image.getByPersonKey(personKey, function(err, images) {
+    if (err) {
+      return res.status(500).json(err); // TODO: test this...
+    }
+    var tracesAll = [];
+    async.each(
+      images,
+      function(image, callback) {
+        tracesImage.getTracesByImageUrl(image.url, function(err, traces) {
+          if (err) {
+            return res.status(500).json(err);
+          }
+//console.log(traces);
+          tracesAll.push(traces);
+          callback();
+        });
+      },
+      function(err) {
+        if (err) {
+          return res.status(500).json(err);
+        }
+//console.log('tracesAll:', tracesAll);
+        res.json(tracesAll);
+      }
+    );
   });
 }
 
