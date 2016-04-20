@@ -45,7 +45,9 @@ function getTracesByPersonKey(req, res) { // get image traces by person key
             return res.status(500).json(err);
           }
 //console.log(traces);
-          tracesAll.push(traces);
+          if (traces.length) {
+            tracesAll.push(traces);
+          }
           callback();
         });
       },

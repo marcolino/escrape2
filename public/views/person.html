@@ -130,7 +130,7 @@
   <div id="section-slider" class="panel" ng-show="sections['slider'].visible"> <!-- person's thumbnail images slider -->
     <div class="slider">
       <span data-ng-repeat="image in person.images">
-        <img data-ng-src="{{ getImageShowcaseUrl(image) }}" alt="..." ng-click="carouselOpen($index)"/>
+        <img data-ng-src="{{ getImageShowcaseUrl(image) }}" ng-click="carouselOpen($index)"/>
       </span>
     </div>
   </div>
@@ -312,11 +312,25 @@
                     </div> <!-- /panel reviews -->
 
                     <div ng-if="panelKey === 'imagetraces'">
-                      ... imagetraces...
-                      <div data-ng-repeat="trace in panel.items">
-                        <div class="row">
-                          <div class="col-xs-12">
-                           <pre>{{trace}}</pre>
+                      <div data-ng-repeat="traces in panel.items"> <!-- traces for all images -->
+                        <div data-ng-repeat="trace in traces"> <!-- tracs for each image -->
+                          <!-- <pre>{{trace}}</pre> -->
+                          <div ng-if="$index === 0 && trace.bestGuess" ng-bind-html="'Best guess: ' + trace.bestGuess" style="color:yellow;"></div>
+                          <div class="row thumbnail" style="margin: 5px 0 5px 0">
+                            <div class="row" style="margin-bottom: 5px">
+                              <div class="col-xs-12">
+                                <a data-ng-href="{{ trace.url }}" target="_blank"><span ng-bind-html="trace.title" style="color:lightblue; font-size:1.1em"></span></a>
+                              </div>
+                            </div>
+
+                            <div class="row" style="margin-left: 5px">
+                              <div class="col-xs-2">
+                                <a data-ng-href="{{ trace.url }}" target="_blank"><img data-ng-src="{{ trace.thumbnailUrl }}"></a>
+                              </div>
+                              <div class="col-xs-10">
+                                <a data-ng-href="{{ trace.url }}" target="_blank"><div ng-bind-html="trace.description"></div></a>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>

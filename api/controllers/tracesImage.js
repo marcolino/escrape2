@@ -80,8 +80,7 @@ var tracesImageProviderPrototype = {
   },
 
   save: function(traces, callback) {
-//log.debug('save() - saving', traces.length, 'image traces:', traces);
-log.debug('save() - saving', traces.length, 'image traces');
+//log.debug('save() - saving', traces.length, 'image traces');
     var result = {
       inserted: 0,
       updated: 0,
@@ -89,7 +88,7 @@ log.debug('save() - saving', traces.length, 'image traces');
     async.each(
       traces,
       function(trace, callbackInner) {
-log.debug('save() - findOneAndUpdate:', trace);
+//log.debug('save() - findOneAndUpdate:', trace);
         TracesImage.findOneAndUpdate(
           { // query
             imageUrl: trace.imageUrl,
@@ -106,10 +105,10 @@ log.debug('save() - findOneAndUpdate:', trace);
               //log.debug('can\'t save image trace', trace.imageUrl, ':', err);
             } else {
               if (raw.lastErrorObject.updatedExisting) {
-                log.debug('save() - image trace', doc/*.imageUrl*/, 'updated');
+                log.debug('save() - image trace', doc.imageUrl, 'updated');
                 result.updated++;
               } else {
-                log.debug('save() - image trace', doc/*.imageUrl*/, 'inserted');
+                log.debug('save() - image trace', doc.imageUrl, 'inserted');
                 result.inserted++;
               }
             }

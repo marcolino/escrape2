@@ -36,6 +36,7 @@ GO.getTraces = function(imageUrl, callback) {
       var title = $(elementTitle).text();
       var description = $(element).find('span[class="st"]').html();
       var thumbnailUrl = $(element).find('img[class="_WCg"]').attr('src');
+if (!thumbnailUrl) { console.error('thumbnailUrl for imageUrl', googleSearchByImageUrl + '?image_url=' + imageUrl, 'is null!'); }
       var dateOfLastSync = new Date();
 
       if (url) {
@@ -46,7 +47,7 @@ GO.getTraces = function(imageUrl, callback) {
           title: title,
           description: description,
           thumbnailUrl: thumbnailUrl,
-          betsGuess: bestGuess,
+          bestGuess: bestGuess,
           dateOfLastSync: dateOfLastSync,
         });
       }
