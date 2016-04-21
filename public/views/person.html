@@ -160,7 +160,7 @@
                   </h4>
                 </div>
                 <div id="collapse-{{ panelKey }}" class="panel-collapse collapse">
-                  <div class="panel-body" style="max-height: 480px; overflow-y: auto; overflow-x: hidden">
+                  <div class="panel-body" style="max-height: 480px; overflow-y: auto; o_verflow-x: hidden">
 
                     <div ng-if="panelKey === 'reviews'">
                       <div id="accordion-{{ topicIndex }}" class="panel-group" data-ng-repeat="(topicIndex, topic) in footprints.reviews.topics">
@@ -311,11 +311,39 @@
                       </div>
                     </div> <!-- /panel reviews -->
 
+<style>
+.trace-image {
+  border-bottom: 1px solid #333;
+  border-right: 1px solid #333;
+  margin: 0.4em 8.0em 0.4em 0;
+}
+.trace-image-bestguesses {
+  color: yellow;
+}
+.trace-image-block {
+  min-height: 100px;
+}
+.trace-image-title {
+  font-size: 1.2em;
+}
+.trace-image-title a {
+  color: lightblue;
+}
+.trace-image-thumbnail {
+  padding-left: 20px;
+  padding-top: 5px;
+  min-width: 60px;
+}
+.trace-image-description {
+}
+</style>
+
                     <div ng-if="panelKey === 'imagetraces'">
                       <div data-ng-repeat="traces in panel.items"> <!-- traces for all images -->
                         <div data-ng-repeat="trace in traces"> <!-- tracs for each image -->
                           <!-- <pre>{{trace}}</pre> -->
                           <div class="container">
+                            <!--
                             <div ng-if="$index === 0 && trace.bestGuess" ng-bind-html="'Best guess: ' + trace.bestGuess" style="color:yellow;"></div>
                             <div class="row thumbnail" style="margin: 5px 0 5px 0">
                               <div class="row" style="margin-bottom: 5px">
@@ -333,12 +361,12 @@
                                 </div>
                               </div>
                             </div>
+                            -->
 
-                            <!-- new trace-image styling as from https://jsfiddle.net/vop2hpqo/ --><hr>
                             <div ng-if="$index === 0 && trace.bestGuess">
                               <div class="trace-image thumbnail">
                                 <div class="row">
-                                  <div class="col-md-12">
+                                  <div class="col-xs-12">
                                     Best guess:
                                     <span class="trace-image-bestguesses" ng-bind-html="trace.bestGuess"></span>
                                   </div>
@@ -348,59 +376,29 @@
 
                             <div class="trace-image trace-image-block thumbnail">
                               <div class="row">
-                                <div class="col-md-12">
+                                <div class="col-xs-12">
                                   <div class="trace-image-title">
                                     <a data-ng-href="{{ trace.url }}" target="_blank"><span ng-bind-html="trace.title"></span></a>
                                   </div>
                                 </div>    
                               </div>
                               <div class="row">
-                                <div class="trace-image-thumbnail">
+                                <div class="col-xs-1 trace-image-thumbnail">
                                   <a data-ng-href="{{ trace.url }}" target="_blank"><img data-ng-src="{{ trace.thumbnailUrl }}"></a>
                                 </div>
-                                <div class="col-md-12 trace-image-description">
-                                <a data-ng-href="{{ trace.url }}" target="_blank"><span ng-bind-html="trace.description"></span></a>
+                                <div class="col-xs-11 trace-image-description">
+                                  <a data-ng-href="{{ trace.url }}" target="_blank"><span ng-bind-html="trace.description"></span></a>
                                 </div>        
                               </div>    
                             </div>
-<style>
-.trace-image {
-  border-bottom: 1px solid #333;
-  border-right: 1px solid #333;
-  margin: 0.4em 0 0.4em 0;
-}
-.trace-image-bestguesses {
-  color: yellow;
-}
-.trace-image-block {
-  min-height: 100px;
-}
-.trace-image-title {
-  font-size: 1.2em;
-}
-.trace-image-title a {
-  color: lightblue;
-}
-.trace-image-thumbnail {
-  padding-left: 20px;
-  padding-top: 5px;
-  width: 60px;
-  position: fixed;
-  z-index: 999; /* to accept input */
-}
-.trace-image-description {
-  padding-left: 75px;
-}
-</style>
+
                           </div>
-
                         </div>
-
                       </div>
                       <div class="text-center" ng-hide="panel.loaded">
                         <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate loading"></span>
                       </div>
-                    </div> <!-- /panel phototraces -->
+                    </div> <!-- /panel imagetraces -->
 
                     <div ng-if="panelKey === 'phonetraces'">
                       <div data-ng-repeat="trace in panel.items">
