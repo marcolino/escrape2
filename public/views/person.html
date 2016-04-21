@@ -315,24 +315,81 @@
                       <div data-ng-repeat="traces in panel.items"> <!-- traces for all images -->
                         <div data-ng-repeat="trace in traces"> <!-- tracs for each image -->
                           <!-- <pre>{{trace}}</pre> -->
-                          <div ng-if="$index === 0 && trace.bestGuess" ng-bind-html="'Best guess: ' + trace.bestGuess" style="color:yellow;"></div>
-                          <div class="row thumbnail" style="margin: 5px 0 5px 0">
-                            <div class="row" style="margin-bottom: 5px">
-                              <div class="col-xs-12">
-                                <a data-ng-href="{{ trace.url }}" target="_blank"><span ng-bind-html="trace.title" style="color:lightblue; font-size:1.1em"></span></a>
+                          <div class="container">
+                            <div ng-if="$index === 0 && trace.bestGuess" ng-bind-html="'Best guess: ' + trace.bestGuess" style="color:yellow;"></div>
+                            <div class="row thumbnail" style="margin: 5px 0 5px 0">
+                              <div class="row" style="margin-bottom: 5px">
+                                <div class="col-xs-12">
+                                  <a data-ng-href="{{ trace.url }}" target="_blank"><span ng-bind-html="trace.title" style="color:lightblue; font-size:1.1em"></span></a>
+                                </div>
+                              </div>
+
+                              <div class="row" style="margin-left: 5px">
+                                <div class="col-xs-2">
+                                  <a data-ng-href="{{ trace.url }}" target="_blank"><img data-ng-src="{{ trace.thumbnailUrl }}"></a>
+                                </div>
+                                <div class="col-xs-10">
+                                  <a data-ng-href="{{ trace.url }}" target="_blank"><div ng-bind-html="trace.description"></div></a>
+                                </div>
                               </div>
                             </div>
 
-                            <div class="row" style="margin-left: 5px">
-                              <div class="col-xs-2">
-                                <a data-ng-href="{{ trace.url }}" target="_blank"><img data-ng-src="{{ trace.thumbnailUrl }}"></a>
-                              </div>
-                              <div class="col-xs-10">
-                                <a data-ng-href="{{ trace.url }}" target="_blank"><div ng-bind-html="trace.description"></div></a>
+                            <!-- new trace-image styling as from https://jsfiddle.net/vop2hpqo/ --><hr>
+                            <div ng-if="$index === 0 && trace.bestGuess">
+                              <div class="trace-image thumbnail">
+                                <div class="row">
+                                  <div class="col-md-12">
+                                    Best guess:
+                                    <span class="trace-image-bestguesses" ng-bind-html="trace.bestGuess"></span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
+
+                            <div class="trace-image thumbnail">
+                              <div class="row">
+                                <div class="col-md-12">
+                                  <div class="trace-image-title">
+                                    <a data-ng-href="{{ trace.url }}" target="_blank"><span ng-bind-html="trace.title"></span></a>
+                                  </div>
+                                </div>    
+                              </div>
+                              <div class="row">
+                                <div class="trace-image-thumbnail">
+                                  <a data-ng-href="{{ trace.url }}" target="_blank"><img data-ng-src="{{ trace.thumbnailUrl }}"></a>
+                                </div>
+                                <div class="col-md-12 trace-image-description">
+                                <a data-ng-href="{{ trace.url }}" target="_blank"><span ng-bind-html="trace.description"></span></a>
+                                </div>        
+                              </div>    
+                            </div>
+<style>
+.trace-image {
+  border-bottom: 1px solid #333;
+  border-right: 1px solid #333;
+  margin: 0.4em 0 0.4em 0;
+}
+.trace-image-title {
+  font-size: 1.2em;
+}
+.trace-image-title a {
+  color: lightblue;
+}
+.trace-image-thumbnail {
+  padding-left: 20px;
+  padding-top: 5px;
+  width: 60px;
+  position: fixed;
+  z-index: 999; /* to accept input */
+}
+.trace-image-description {
+  padding-left: 75px;
+}
+</style>
                           </div>
+
                         </div>
+
                       </div>
                       <div class="text-center" ng-hide="panel.loaded">
                         <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate loading"></span>
