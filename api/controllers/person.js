@@ -482,7 +482,6 @@ log.error('syncTracesImage() - error in image.getAll:', err, 'CHECK WE ARE REALL
 log.error('syncTracesImage() - error in tracesImage.getAll:', err, 'CHECK WE ARE REALLY BAILING OUT...');
         return err; // TODO: test if return really stops this function execution...
       }
-
 //log.debug('syncTracesImage() - persons length:', persons.length);
       var personsAvailable = {}; // persons available object
       persons.forEach(function(person) {
