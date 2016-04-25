@@ -536,6 +536,12 @@ exports.rebuildAllSignatures = function(callback) { // TODO: do we need this fun
   });
 };
 
+exports.setAvailability = function(imageUrl, mode, callback) { // set avaialbily property for images with a given url, based on boolean mode
+  Image.update({ 'image.url': imageUrl }, { isAvailable: mode}, { multi: true }, function(err) {
+    callback(err);
+  });
+};
+
 exports.signature = function(contents, callback) {
 //var t; if (config.profile) t = process.hrtime(); // TODO: PROFILE ONLY
   var signature = contents.hash(2);

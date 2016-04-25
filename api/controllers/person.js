@@ -454,33 +454,15 @@ n++; log.debug('sync\'d review', n + '/' + len);
 };
 
 local.syncTracesImage = function(persons) {
-/*
-personsAvailable: {
-  key,
-};
-images: {
-  url,
-  personKey,
-  dateOfFirstSync,
-};
-tracesImage: {
-  imageUrl,
-  url,
-  title,
-  description,
-  thumbnailUrl,
-  dateOfLastSync,
-};
-*/
   image.getAll(function(err, images) { // get all images
     if (err) {
 log.error('syncTracesImage() - error in image.getAll:', err, 'CHECK WE ARE REALLY BAILING OUT...');
-      return err; // TODO: test if return really stops this function execution...
+      return; // TODO: test if return really stops this function execution...
     }
     tracesImage.getAll(function(err, traces) { // get all images traces
       if (err) {
 log.error('syncTracesImage() - error in tracesImage.getAll:', err, 'CHECK WE ARE REALLY BAILING OUT...');
-        return err; // TODO: test if return really stops this function execution...
+        return; // TODO: test if return really stops this function execution...
       }
 //log.debug('syncTracesImage() - persons length:', persons.length);
       var personsAvailable = {}; // persons available object
@@ -537,6 +519,13 @@ var n = 0;
         function(image, callback) {
 //log.debug('syncTracesImage() - sync\'ing image url:', image.url);
           tracesImage.sync(image.url, function(err, results) {
+            if (err === 'unavailable') {
+log.error('syncTracesImage() - UNAVAILABLE in tracesImage.getAll ~ CHECK WE ARE REALLY BAILING OUT...');
+              image.setAvailability(image.url, false, function(err, result) {
+                log.error('can\'t set availability on image syncTracesImage()');
+              });
+              return callback();
+            }
             if (err) {
               log.error('can\'t sync image traces:', err);
               return callback(err);

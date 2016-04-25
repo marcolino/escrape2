@@ -14,7 +14,8 @@ var imageSchema = new mongoose.Schema({
   signature: String, // 64) binary ([0-1])bytes signature (perceptual hash)
   //hasDuplicate: Boolean, // this image has a duplicate
   isShowcase: Boolean, // this image is showcase for person
-  isTruthful: Boolean // this image is to be considered thruthful
+  isTruthful: Boolean, // this image is to be considered thruthful
+  isAvaliable: { type: Boolean, default: true } // this image is publicly available on it's url
 },
 {
   autoIndex: config.env === 'development'

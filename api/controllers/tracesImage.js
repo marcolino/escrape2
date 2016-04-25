@@ -15,7 +15,7 @@ var tracesImageProviderPrototype = {
   key: undefined,
   active: undefined,
   url: undefined,
-  unavailableImagesDir: undefined,'config/images/unavailable',
+  unavailableImagesDir: undefined,
 
   /**
    @abstract
