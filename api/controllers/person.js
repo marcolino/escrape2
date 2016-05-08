@@ -369,10 +369,11 @@ if (person.key === 'FORBES/Shakira') {
         log.info('persons phone reviews sync started (async)');
         local.syncReviews(persons);
 
+/*
         // sync image traces for all persons (aynchronously)
         log.info('persons image traces sync started (async)');
         local.syncTracesImage(persons);
-
+*/
         // sync phone trcaces for all persons (aynchronously)
         log.info('persons phone traces sync started (async)');
         local.syncTracesPhone(persons);

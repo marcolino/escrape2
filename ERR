@@ -1,0 +1,22 @@
+GO.checkUnavailable() - unavalilable filenames md5 are: undefined
+/home/marco/apps/escrape2/api/controllers/tracesImage-GO.js:82
+  Object.keys(GO.unavailableImagesMd5).some(function(element, index, array) {
+         ^
+
+TypeError: Cannot convert undefined or null to object
+    at Function.keys (native)
+    at Object.GO.checkUnavailable (/home/marco/apps/escrape2/api/controllers/tracesImage-GO.js:82:10)
+    at Request._callback (/home/marco/apps/escrape2/api/controllers/tracesImage-GO.js:41:12)
+    at Request.self.callback (/home/marco/apps/escrape2/node_modules/request/request.js:198:22)
+    at emitTwo (events.js:87:13)
+    at Request.emit (events.js:172:7)
+    at Request.<anonymous> (/home/marco/apps/escrape2/node_modules/request/request.js:1035:10)
+    at emitOne (events.js:82:20)
+    at Request.emit (events.js:169:7)
+    at IncomingMessage.<anonymous> (/home/marco/apps/escrape2/node_modules/request/request.js:962:12)
+    at emitNone (events.js:72:20)
+    at IncomingMessage.emit (events.js:166:7)
+    at endReadableNT (_stream_readable.js:913:12)
+    at nextTickCallbackWith2Args (node.js:442:9)
+    at process._tickCallback (node.js:356:17)
+
