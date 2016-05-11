@@ -60,7 +60,7 @@ persons.sort(compare);
     if (err) {
       return callback(err);
     }
-    log.debug('' + persons.length, 'persons loaded in', process.hrtime(config.time)[0] + (process.hrtime(config.time)[1] / 1000000000), 'seconds');
+    log.debug('' + persons.length, 'persons loaded from database in', process.hrtime(config.time)[0] + (process.hrtime(config.time)[1] / 1000000000), 'seconds');
 
     /* THIS IS GOOD!!! */
     var currentUserId = 'marco'; // TODO: use _id...

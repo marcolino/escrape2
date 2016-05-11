@@ -8,8 +8,9 @@ var providerSchema = new mongoose.Schema({
   url: String,
   language: String,
   categories: Object,
-  whenImageChangesUrlChangesToo: Boolean,
   pathSearch: String,
+  whenImageChangesUrlChangesToo: Boolean,
+  unavailableImageUrl: String,
 }, {
   autoIndex: config.env === 'development'
 });
