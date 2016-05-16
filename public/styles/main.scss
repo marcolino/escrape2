@@ -86,7 +86,7 @@ a:hover, a:visited, a:link, a:active {
   bottom: 0.2em;
 }
 
-.showcase-caption-comments img {
+.showcase-caption-reviews img {
   height: 25px;
   bottom: 0.2em;
 }
@@ -157,4 +157,8 @@ a:hover, a:visited, a:link, a:active {
 
 .panel-title-left {
   text-align: left;
+}
+
+.cursor-pointer {
+  cursor: pointer;
 }

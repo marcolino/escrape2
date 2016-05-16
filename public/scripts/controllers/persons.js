@@ -281,6 +281,13 @@ console.log('traces[i]:', traces[i]);
     }
   };
 
+  $scope.thumbsDown = function() {
+    if (!$rootScope.isLogged) {
+      $window.alert('Please note that, since you are not logged in, this action will persist only in this session');
+      // TODO: ...
+    }
+  };
+
   // hide person (remove from scope)
   $scope.hide = function(person) {
     for (var i = 0, len = $scope.persons.length; i < len; ++i) {
@@ -386,7 +393,7 @@ console.log('$rootScope.user:', $rootScope.user);
   };
 
   $scope.showPersonNationality = function(person) {
-    var nationality = getCountryName(person.nationality);
+    var nationality = $scope.getCountryName(person.nationality);
     return nationality;
   };
 
@@ -428,6 +435,19 @@ console.log('$rootScope.user:', $rootScope.user);
     });
   };
 */
+
+  $scope.getCountryName = function(countryCode) {
+    if (typeof countryCode !== 'undefined' && countryCode !== null) {
+      if (isoCountries.hasOwnProperty(countryCode.toUpperCase())) {
+        return isoCountries[countryCode.toUpperCase()];
+      } else {
+        return countryCode;
+      }
+    } else {
+      return null;
+    }
+  };
+
 });
 
 Date.daysBetween = function(date1, date2) {
@@ -692,15 +712,3 @@ var isoCountries = {
   'ZM' : 'Zambia',
   'ZW' : 'Zimbabwe'
 };
-
-function getCountryName(countryCode) {
-  if (typeof countryCode !== 'undefined' && countryCode !== null) {
-    if (isoCountries.hasOwnProperty(countryCode.toUpperCase())) {
-      return isoCountries[countryCode.toUpperCase()];
-    } else {
-      return countryCode;
-    }
-  } else {
-    return null;
-  }
-}

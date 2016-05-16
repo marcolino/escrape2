@@ -23,7 +23,7 @@ var log = config.log;
 
 exports.getAll = function(filter, options, callback) { // get all persons
   //log.debug('filter:', filter.name);
-config.time = process.hrtime(); // TODO: development only
+  config.time = process.hrtime(); // TODO: development only
   var match = {};
   var matches = [];
   matches.push({ isPresent: true }); // do not show persons who are not present
@@ -34,28 +34,8 @@ config.time = process.hrtime(); // TODO: development only
 
   Person.find(match).lean().exec(function(err, persons) {
 
-function unique(array, property) {
-  var o = {}, i, l = array.length, r = [];
-  for (i = 0; i < l; i += 1) {
-    //o[typeof this[i][property] !== 'undefined' ? this[i][property] : (Math.floor(Math.random() * 9999999999))] = this[i];
-    o[typeof array[i][property] !== 'undefined' ? array[i][property] : i] = array[i];
-  }
-  for (i in o) r.push(o[i]);
-  return r;
-}
-//console.error(persons.length);
     persons = unique(persons, 'alias');
-
-//console.error(persons.length);
-function compare(a, b) {
-  if (a.dateOfFirstSync < b.dateOfFirstSync)
-    return 1;
-  else if (a.dateOfFirstSync > b.dateOfFirstSync)
-    return -1;
-  else 
-    return 0;
-}
-persons.sort(compare);
+    persons.sort(compare);
 
     if (err) {
       return callback(err);
@@ -64,25 +44,36 @@ persons.sort(compare);
 
     /* THIS IS GOOD!!! */
     var currentUserId = 'marco'; // TODO: use _id...
-log.debug('currentUserId:', currentUserId);
+    //log.debug('currentUserId:', currentUserId);
     UserToPerson.find({ username: currentUserId }, function(err, userToPerson) {
       if (err) {
         log.error('UserToPerson.find() error:', err);
         return callback(err);
       }
-//log.debug(' *** userToPerson:', userToPerson);
-      //var userToPerson = [
-      //  { userId: 'marco', personKey: 'FORBES/Shakira', hide: false },
-      //  { userId: 'marco', personKey: 'FORBES/Ursula Burns', hide: true },
-      //];
       var userToPersonObjects = userToPerson.map(function (e) { return e.toObject(); });
-//log.debug(' *** userToPersonObjects:', userToPersonObjects);
       return callback(null, getPersonsForUser(persons, userToPersonObjects, currentUserId));
     });
 
+    function unique(array, property) {
+      var o = {}, i, l = array.length, r = [];
+      for (i = 0; i < l; i += 1) {
+        o[typeof array[i][property] !== 'undefined' ? array[i][property] : i] = array[i];
+      }
+      for (i in o) r.push(o[i]);
+      return r;
+    }
+
+    function compare(a, b) {
+      if (a.dateOfFirstSync < b.dateOfFirstSync)
+        return 1;
+      else if (a.dateOfFirstSync > b.dateOfFirstSync)
+        return -1;
+      else 
+        return 0;
+    }
+
     function getPersonsForUser(persons, userToPerson, username) {
       var visiblePersons = persons.filter(function(elementP, indexP, arrayP) {
-//log.debug('# elementP.key:', elementP.key);
         var isThisPersonVisible = !userToPerson.filter(function(elementU, indexU, arrayU) {
           return (!elementU.username || (elementU.personKey === elementP.key && elementU.hide && elementU.username === username));
         }).length;
@@ -91,38 +82,6 @@ log.debug('currentUserId:', currentUserId);
       return visiblePersons;
     }
 
-/*
-function getVisible(selUserId){
-  var visiblePersons = persons.filter(function(v,i,a){
-    var isThisPersonVisible = !usersToPersons.filter(function(vv,ii,aa){
-      return (vv.personId === v.id && !vv.hide && vv.userId === selUserId || !vv.userId);
-    }).length;
-
-    return isThisPersonVisible;
-  });
-
-  return visiblePersons;
-}
-*/
-/*
-    var username = 'marco'; // TODO: get username from client
-    for (var i = 0; i < persons.length; i++) {
-      var person = persons[i];
-      console.log('person', i, ':', person.name);
-      for (var u = 0; u < person.users.length; u++) {
-        if (person.users[u].username === username) {
-          console.log('*** found person with users data:', person.name);
-          console.log('*** person.users.username:', person.users[u].username);
-          console.log('*** person.users.hide:', person.users[u].hide);
-          if (person.users[u].hide) {
-            // remove this person from result
-            persons.splice(i, 1);
-          }
-        }
-      }
-    }
-*/
-    //return callback(null, persons);
   });
 };
 
@@ -168,6 +127,16 @@ exports.sync = function() { // sync persons
   var syncStartDate = new Date(); // start of this sync date
   var persons = [];
   var resource;
+
+/*
+var imageurl = 'http://www.torinoerotica.com/photo-escort/98192-7373/1-285905040-3671550684.jpg';
+tracesImage.sync(imageurl, function(err, results) {
+  console.info('err:', err);
+  console.info('results:', results);
+  return;
+});
+return;
+*/
 
   /**
    * get all providers
@@ -365,20 +334,17 @@ if (person.key === 'FORBES/Shakira') {
           //return log.warn('not all providers/persons sync\'d: skipping images, footprints and aliases sync');
         }
 
-/*
         // sync phone reviews for this person (aynchronously)
         log.info('persons phone reviews sync started (async)');
         local.syncReviews(persons);
-*/
+
         // sync image traces for all persons (aynchronously)
         log.info('persons image traces sync started (async)');
         local.syncTracesImage(persons);
 
-/*
         // sync phone trcaces for all persons (aynchronously)
         log.info('persons phone traces sync started (async)');
         local.syncTracesPhone(persons);
-*/
 
         // set activity status
         log.info('persons activity status setting started');
@@ -403,6 +369,7 @@ if (person.key === 'FORBES/Shakira') {
             );
 //return log.debug('image.syncPersonsImagesCheck finished');
 
+/*
             // sync persons aliases
             log.info('persons aliases sync started');
             //exports.syncAliasesLive(persons, function(err) {
@@ -412,7 +379,7 @@ if (person.key === 'FORBES/Shakira') {
               }
               log.info('persons aliases sync finished');
             });
-
+*/
           });
 
         });
@@ -434,7 +401,7 @@ local.syncReviews = function(persons) {
   //log.debug('syncReviews() - personsAvailable l (ength:', personsAvailable.length);
 
 var len = personsAvailable.length;
-var n = 0;
+//var n = 0;
   async.eachSeries(
     personsAvailable,
     function(person, callback) {
@@ -443,7 +410,7 @@ var n = 0;
           return callback(err);
         }
         //log.info('sync\'d person', person.key, 'phone', person.phone, 'reviews:', results.inserted, 'inserted,', results.updated, 'updated');
-n++; log.debug('sync\'d review', n + '/' + len);
+//n++; log.debug('sync\'d review', n + '/' + len);
         callback();
       });
     },
@@ -459,29 +426,20 @@ n++; log.debug('sync\'d review', n + '/' + len);
 local.syncTracesImage = function(persons) {
   image.getAll(function(err, images) { // get all images
     if (err) {
-log.error('syncTracesImage() - error in image.getAll:', err, 'CHECK WE ARE REALLY BAILING OUT...');
+      //log.error('syncTracesImage() - error in image.getAll:', err, 'CHECK WE ARE REALLY BAILING OUT...');
       return; // TODO: test if return really stops this function execution...
     }
     tracesImage.getAll(function(err, traces) { // get all images traces
       if (err) {
-log.error('syncTracesImage() - error in tracesImage.getAll:', err, 'CHECK WE ARE REALLY BAILING OUT...');
+        //log.error('syncTracesImage() - error in tracesImage.getAll:', err, 'CHECK WE ARE REALLY BAILING OUT...');
         return; // TODO: test if return really stops this function execution...
       }
-//log.debug('syncTracesImage() - persons length:', persons.length);
       var personsAvailable = {}; // persons available object
       persons.forEach(function(person) {
         if (person.phoneIsAvailable && person.phone) { // use only images from available persons
           personsAvailable[person.key] = true;
         }
       });
-//log.debug('syncTracesImage() - personsAvailable length:', Object.keys(personsAvailable).length);
-
-      /*
-      var tracesObj = {}; // traces images object
-      traces.forEach(function(trace) {
-        tracesObj[trace.url] = { imageUrl: trace.imageUrl, dateOfLastSync: trace.dateOfLastSync, };
-      });
-      */
 
       var imagesToSync = images.filter(function(image) { // available images array (images to sync)
         if (image.personKey in personsAvailable) { // check image belongs to an available person
@@ -495,45 +453,22 @@ log.error('syncTracesImage() - error in tracesImage.getAll:', err, 'CHECK WE ARE
         return false;
       });
 
-      /*
-      .map(function(person) { // build imagesAvailable array with person key, image, and trace date of last sync
-        var imageAvailable = {};
-        imageAvailable.key = person.key;
-        imageAvailable.imageUrl = images.filter(function(image) {
-          if (image.personKey === person.key) {
-
-          }
-          return image;
-        });
-        imageAvailable.dateOfLastSync = person.dateOfLastSync;
-        return imageAvailable;
-      });
-  
-      imagesAvailable.sort(function(a, b) { // sort imagesAvailable array to have traces never sync'd on top
-        return b.dateOfLastSync - a.dateOfLastSync;
-      });
-      */
-//log.debug('syncTracesImage() - imagesToSync length:', imagesToSync.length);
-  
 var len = imagesToSync.length;
 var n = 0;
       async.eachSeries(
         imagesToSync,
-        function(image, callback) {
-//log.debug('syncTracesImage() - sync\'ing image url:', image.url);
-          tracesImage.sync(image.url, function(err, results) {
-            if (err === 'unavailable') {
-log.error('syncTracesImage() - UNAVAILABLE in tracesImage.getAll ~ CHECK WE ARE REALLY BAILING OUT...');
-              image.setAvailability(image.url, false, function(err, result) {
-                log.error('can\'t set availability on image syncTracesImage()');
-              });
-              return callback();
-            }
-            if (err) {
-              log.error('can\'t sync image traces:', err);
+        function(img, callback) {
+          tracesImage.sync(img.url, function(err, results) {
+            image.setAvailability(img.url, err !== 'unavailable', function(err, result) {
+              if (err) {
+                log.warn('can\'t set availability on image syncTracesImage():', err);
+              }
+            });
+            if (err && err !== 'unavailable') {
+              log.warn('can\'t sync image traces:', err);
               return callback(err);
             }
-            //log.info('sync\'d image traces for person', image.personKey, 'image url', image.url, 'traces:', results.inserted, 'inserted,', results.updated, 'updated');
+            //log.info('sync\'d image traces for person', image.personKey, 'image url', img.url, 'traces:', results.inserted, 'inserted,', results.updated, 'updated');
 n++; log.debug('sync\'d image trace', n + '/' + len);
             callback();
           });
@@ -657,7 +592,6 @@ exports.upsert = function(person, callback) {
 };
 
 exports.updatePersonUserData = function(personKey, user, data, callback) {
-log.debug('updatePersonUserData - ', 'personKey:', personKey, 'user:', user, 'data:', data);
   if (!user) { // user is not valid
     return callback('user cannot be empty');
   }
@@ -695,7 +629,7 @@ exports.updatePersonUserDataARRAY = function(personKey, user, data, callback) {
       if (!user.username) { // user is not valid
         return callback('user name cannot be empty');
       }
-log.info('api controllers persons updatePersonUserData - user:', user, data);
+
 /* TODO:
       if (userId !=== logged in user id) { // user is not logged in user
         return callback('user is not valid');

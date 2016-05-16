@@ -121,7 +121,7 @@ var tracesPhoneProviderPrototype = {
         if (err) {
           return callback('could not save phone traces:' + err.toString());
         }
-        if (phone) { // no phone, no traces
+        if (phone && result.inserted) { // no phone, no traces
           log.info('phone', phone, 'traces save finished; inserted:', result.inserted, ', updated:', result.updated);
         }
         callback(null, result); // success
@@ -188,6 +188,7 @@ var tracesPhoneProviderPrototype = {
       'askfornumber.co.uk',
       'bikubik.com',
       'bs9.eu',
+      'callfornumber.com',
       'chechiamarepertelefono.besaba.com',
       'checkwhocalled.com',
       'code.wnote.net',

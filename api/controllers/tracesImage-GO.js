@@ -3,8 +3,7 @@
 var
   request = require('request') // handle network requests
 , cheerio = require('cheerio') // parse DOM
-//, fs = require('fs') // handle file-system
-//, path = require('path') // to handle file-system paths (__dirname)
+, async = require('async') // to call many async functions in a loop
 , crypto = require('crypto') // for md5
 , provider = require('../controllers/provider') // provider's controller
 , config = require('../config') // global configuration
@@ -16,17 +15,16 @@ var log = config.log;
 var GO = Object.create({});
 GO.key = 'GO'; // Google
 GO.active = true;
-//GO.unavailableImagesPath = path.join(__dirname, '../../config/images/unavailable');
 
 GO.getTraces = function(imageUrl, callback) {
-  //console.error('GO.getTraces:', imageUrl);
+  //log.debug('GO.getTraces:', imageUrl);
   var googleSearchByImageUrl = 'https://www.google.com/searchbyimage';
   var userAgent = 'Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11';
 
   var options = {
     url: googleSearchByImageUrl,
     qs: { image_url: imageUrl },
-    headers: { 'user-agent': userAgent }
+    headers: { 'user-agent': userAgent },
   };
   
   var results = [];
@@ -38,13 +36,13 @@ GO.getTraces = function(imageUrl, callback) {
     if (res.statusCode === 404) { // not found
       return callback(null, results); // return empty result set
     }
-    GO.checkUnavailable(content, function(err, result) {
+
+    GO.checkUnavailable(imageUrl, function(err, result) {
       if (err) {
         log.error('can\'t check unavailable:', err);
         return callback(err);
       }
       if (result) { // returned image content is one of the images marked as 'unavailable'
-console.info('GO.getTraces() - UNAVAILABLE image found...');
         return callback('unavailable', result); // return with 'unavailable' error
       }
 
@@ -62,7 +60,6 @@ if (!thumbnailUrl) { console.error('thumbnailUrl for imageUrl', googleSearchByIm
         var dateOfLastSync = new Date();
   
         if (url) {
-          //console.error('GO.getTraces - found:', title);
           results.push({
             imageUrl: imageUrl,
             url: url,
@@ -79,88 +76,78 @@ if (!thumbnailUrl) { console.error('thumbnailUrl for imageUrl', googleSearchByIm
   });
 };
 
-GO.checkUnavailable = function(imageContents, callback) { // check if an image contents  is one of the images marked as 'unavailable'
-  GO.getUnavailableImagesMd5(function(err, result) {
+GO.checkUnavailable = function(imageUrl, callback) { // check if an image contents is one of the images marked as 'unavailable'
+  GO.getUnavailableImagesMd5(function(err, results) {
     if (err) {
       log.err('can\'t get unavailable images md5:', err);
       return callback(err);
     }
-    GO.unavailableImagesMd5 = result;
-log.debug('GO.checkUnavailable() - unavalilable filenames md5 are:', GO.unavailableImagesMd5);
+    GO.unavailableImagesMd5 = results;
+    //log.debug('GO.checkUnavailable() - unavalilable filenames md5 are:', GO.unavailableImagesMd5);
     var isUnavailable = false;
-    Object.keys(GO.unavailableImagesMd5).some(function(element, index, array) {
-      var imageContentsMd5 = crypto.createHash('md5').update(imageContents).digest('hex');
-log.debug('GO.checkUnavailable() - comparing\n', imageContentsMd5, '\n', GO.unavailableImagesMd5[element]);
-      if (imageContentsMd5 === GO.unavailableImagesMd5[element]) {
-log.debug('GO.checkUnavailable() - image is UNAVAILABLE');
-        isUnavailable = true;
-        return true; // this image contents is unavailable, break some() loop
+
+    request.defaults({ encoding: null });
+    request(imageUrl, function(err, res, body) {
+      if (err) {
+        log.error('can\'t check unavailability of image', imageUrl + ':', err);
+        return callback(null, true); // ignore error, return true
       }
-      return false;
+
+      Object.keys(GO.unavailableImagesMd5).some(function(element, index, array) {
+        var imageContentsMd5 = crypto.createHash('md5').update(body).digest('hex');
+        //log.debug('GO.checkUnavailable() - comparing\n', imageContentsMd5, '\n', GO.unavailableImagesMd5[element]);
+        if (imageContentsMd5 === GO.unavailableImagesMd5[element]) {
+          isUnavailable = true;
+          return true; // this image contents is unavailable, break some() loop
+        }
+        return false;
+      });
+      //log.debug('GO.checkUnavailable() - image is unavailable ?', isUnavailable);
+      return callback(null, isUnavailable);
     });
-log.debug('GO.checkUnavailable() - image is unavailable ?', isUnavailable);
-  return callback(null, isUnavailable);
   });
 };
 
 GO.getUnavailableImagesMd5 = function(callback) {
   if (GO.unavailableImagesMd5) { // return unavailableImagesMd5 if already set
-log.debug('GO.getUnavailableImagesMd5 - uIM ALREADY SET, OK');
+    //log.debug('GO.getUnavailableImagesMd5 - unavailableImagesMd5 ALREADY SET, OK');
     return callback(null, GO.unavailableImagesMd5);
   }
   // load unavailable images checksusms from disk if not yet loaded
-  var results = [];
+  var results = {};
   provider.getAll({ type: 'persons' }, function(err, providers) {
     if (err) {
       log.error('error getting providers:', err);
       return callback(err);
     }
-    providers.forEach(function(element, index, array) {
-log.debug('provider:', element);
-      if (element.unavailableImageUrl) {
-        var unavailableImageUrl = element.url + element.unavailableImageUrl;
-log.debug('unavailableImageUrl:', element.unavailableImageUrl);
+    //providers.forEach(function(element, index, array) {
+    async.each(
+      providers, // 1st param in async.each() is the array of items
+      function(provider, callbackInner) { // 2nd param is the function that each item is passed to
+        if (!provider.unavailableImageUrl) {
+          return callbackInner();
+        }
+        var unavailableImageUrl = provider.url + provider.unavailableImageUrl;
         request.defaults({ encoding: null });
         request.get(unavailableImageUrl, function(error, response, body) {
           if (error || response.statusCode !== 200) {
             log.error('error getting image at', unavailableImageUrl + ':', err);
-            return callback(err);
+            return callbackInner(err);
           }
           results[unavailableImageUrl] = crypto.createHash('md5').update(body).digest('hex');
+          return callbackInner();
         });
+      },
+      function(err) { // 3rd param is the function to call when everything's done (outer callback)
+        if (err) {
+          return callback(err);
+        }
+        //log.debug('GO.getUnavailableImagesMd5() - results:', results);
+        return callback(null, results);
       }
-    });
-log.debug('GO.getUnavailableImagesMd5() - results:\n', results);
-    return callback(null, results);
+    );
   });
 };
-
-/*
-GO.getUnavailableImagesMd5 = function(dir) {
-  var results = [];
-  var filenames = [];
-
-console.info('GO.getUnavailableImagesMd5() - dir:', dir);
-  try {
-    filenames = fs.readdirSync(dir);
-  } catch (err) {
-    console.error('can\'t read dir', dir, ':', err);
-  }
-console.info('GO.getUnavailableImagesMd5() - files in dir:', filenames);
-
-  filenames.forEach(function(filename) {
-    try {
-      var content = fs.readFileSync(dir + '/' + filename);
-      //var content64 = new Buffer(content).toString('base64');
-      results[filename] = crypto.createHash('md5').update(content).digest('hex');
-    } catch (err) {
-      console.error('can\'t read file', dir + '/' + filename, ':', err);
-    }
-  });
-console.info('GO.getUnavailableImagesMd5() -', results, 'results found');
-  return results;
-};
-*/
 
 module.exports = GO;
 

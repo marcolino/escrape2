@@ -25,7 +25,6 @@ var tracesImageProviderPrototype = {
   },
 
   sync: function(imageUrl, callback) {
-//log.debug('sync() - syncyng tracesImages from all tracesImage providers for image url', imageUrl);
     var tracesImageProviders = [
       require('./tracesImage-GO'),
     ];
@@ -35,14 +34,10 @@ var tracesImageProviderPrototype = {
       inserted: 0,
       updated: 0,
     };
-    
-//log.debug('sync() - tracesImageProviders length:', tracesImageProviders.length);
-//log.debug('sync() - tracesImageProviders:', tracesImageProviders);
 
     async.each(
       tracesImageProviders,
       function(tPP, callbackInner) {
-//log.debug('sync() - provider:', tPP.key);
         tPP.getTraces(imageUrl, function(err, traces) {
           if (err) {
             return callbackInner(err);
@@ -81,7 +76,6 @@ var tracesImageProviderPrototype = {
   },
 
   save: function(traces, callback) {
-//log.debug('save() - saving', traces.length, 'image traces');
     var result = {
       inserted: 0,
       updated: 0,
@@ -89,7 +83,6 @@ var tracesImageProviderPrototype = {
     async.each(
       traces,
       function(trace, callbackInner) {
-//log.debug('save() - findOneAndUpdate:', trace);
         TracesImage.findOneAndUpdate(
           { // query
             imageUrl: trace.imageUrl,
@@ -106,10 +99,10 @@ var tracesImageProviderPrototype = {
               //log.debug('can\'t save image trace', trace.imageUrl, ':', err);
             } else {
               if (raw.lastErrorObject.updatedExisting) {
-                log.debug('save() - image trace', doc.imageUrl, 'updated');
+                //log.debug('save() - trace for image', doc.imageUrl, 'updated');
                 result.updated++;
               } else {
-                log.debug('save() - image trace', doc.imageUrl, 'inserted');
+                //log.debug('save() - trace for image', doc.imageUrl, 'inserted');
                 result.inserted++;
               }
             }
@@ -121,7 +114,9 @@ var tracesImageProviderPrototype = {
         if (err) {
           return callback('could not save image traces:' + err.toString());
         }
-        log.info('image traces save finished; inserted:', result.inserted, ', updated:', result.updated);
+        if (result.inserted) {
+          log.info('image traces save finished; inserted:', result.inserted + ', updated:', result.updated);
+        }
         callback(null, result); // success
       }
     );
